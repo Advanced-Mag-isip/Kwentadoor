@@ -8,7 +8,7 @@
 | Database | PostgreSQL |
 
 
-## Project Structure
+## Initial Project Structure
 
 ```bash
 Kwentadoor/
@@ -96,7 +96,7 @@ psql -U postgres
 ```
 
 ```sql
-CREATE USER your-user WITH PASSWORD 'yourpassword';
+CREATE USER your_user WITH PASSWORD 'yourpassword';
 CREATE DATABASE your_db OWNER your_user;
 GRANT ALL PRIVILEGES ON DATABASE your_db TO your_user;
 \q
