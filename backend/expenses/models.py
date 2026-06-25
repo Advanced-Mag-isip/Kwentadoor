@@ -44,7 +44,8 @@ class Transaction(models.Model):
 
 class Attachment(models.Model):
     transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="attachments")
-    payload = models.JSONField()
+    reference_number = models.CharField(max_length=100, blank=True)
+    photo = models.ImageField(blank=True, null=True, upload_to="attachments/")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
