@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics Endpoints</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 2rem; }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .subtitle { color: #666; font-size: 0.875rem; margin-bottom: 2rem; }
+    .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 2rem; overflow: hidden; }
+    .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 0.75rem; }
+    .method { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; background: #2563eb; color: #fff; }
+    .path { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.875rem; color: #1a1a1a; flex: 1; }
+    .fetch-btn { background: #16a34a; color: #fff; border: none; border-radius: 4px; padding: 0.4rem 1rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+    .fetch-btn:hover { background: #15803d; }
+    .fetch-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+    .card-body { padding: 1.25rem; }
+    .desc { font-size: 0.875rem; color: #555; margin-bottom: 1rem; }
+    .filters { display: flex; gap: 0.75rem; align-items: end; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .filter-group { display: flex; flex-direction: column; gap: 0.25rem; }
+    .filter-group label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; }
+    .filter-group select, .filter-group input { padding: 0.35rem 0.5rem; border: 1px solid #d0d0d0; border-radius: 4px; font-size: 0.8125rem; background: #fff; min-width: 80px; }
+    .filter-group select:focus, .filter-group input:focus { outline: none; border-color: #2563eb; }
+    h3 { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 0.75rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #f0f0f0; }
+    th { font-weight: 600; color: #555; }
+    code { background: #f0f0f0; padding: 0.125rem 0.375rem; border-radius: 3px; font-size: 0.75rem; }
+    .type { color: #666; font-size: 0.75rem; }
+    .response { margin-top: 1rem; display: none; }
+    .response.visible { display: block; }
+    .chart-area { background: #fafafa; border: 1px solid #e8e8e8; border-radius: 6px; padding: 1rem; margin-bottom: 0.75rem; }
+    .chart-area svg { display: block; margin: 0 auto; max-width: 100%; }
+    .json-toggle { cursor: pointer; font-size: 0.75rem; color: #2563eb; user-select: none; display: inline-block; margin-bottom: 0.5rem; }
+    .json-toggle:hover { text-decoration: underline; }
+    .raw-json { display: none; }
+    .raw-json.visible { display: block; }
+    .raw-json pre { background: #1e1e2e; color: #cdd6f4; padding: 1rem; border-radius: 6px; font-size: 0.75rem; overflow-x: auto; max-height: 300px; white-space: pre-wrap; font-family: 'SF Mono', 'Fira Code', monospace; }
+    .response .error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .loading { margin-top: 1rem; display: none; font-size: 0.8125rem; color: #888; }
+    .loading.visible { display: block; }
+    .auth-bar { background: #fff3cd; border: 1px solid #fecaca; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: 0.8125rem; }
+    .auth-bar label { font-weight: 600; color: #92400e; }
+    .auth-bar input { flex: 1; min-width: 200px; padding: 0.4rem 0.6rem; border: 1px solid #fecaca; border-radius: 4px; font-size: 0.8125rem; font-family: 'SF Mono', monospace; }
+    .auth-bar input:focus { outline: none; border-color: #f97316; }
+    .auth-bar .hint { color: #92400e; font-size: 0.75rem; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+    .kpi-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0.75rem; text-align: center; }
+    .kpi-card .kpi-value { font-size: 1.25rem; font-weight: 700; }
+    .kpi-card .kpi-label { font-size: 0.6875rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.25rem; }
+    .chart-legend { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; font-size: 0.75rem; }
+    .chart-legend span { display: flex; align-items: center; gap: 0.35rem; }
+    .legend-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Analytics Endpoints</h1>
+    <p class="subtitle">Adjust filters and click <strong>Fetch</strong> on any endpoint to visualize the data</p>
+
+    <div class="auth-bar">
+      <label>Token:</label>
+      <input type="text" id="tokenInput" placeholder="Paste your auth token here..." autocomplete="off">
+      <span class="hint">Leave blank to use session auth (login via /admin/)</span>
+    </div>
+
+    <div class="card" style="background:#f0f7ff;border-color:#93c5fd;">
+      <div class="card-body">
+        <div class="filters" style="margin-bottom:0;">
+          <div class="filter-group">
+            <label>Period Type</label>
+            <select id="periodType">
+              <option value="month">Month</option>
+              <option value="quarter">Quarter</option>
+              <option value="year">Year</option>
+            </select>
+          </div>
+          <div class="filter-group" style="min-width:180px;">
+            <label>Period</label>
+            <select id="periodValue"></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% for ep in endpoints %}
+    <div class="card" data-path="{{ ep.path }}">
+      <div class="card-header">
+        <span class="method">{{ ep.method }}</span>
+        <span class="path">{{ ep.path }}</span>
+        <button class="fetch-btn" onclick="fetchEndpoint(this)">Fetch</button>
+      </div>
+      <div class="card-body">
+        <p class="desc">{{ ep.description }}</p>
+
+        {% if ep.fields %}
+        <h3>Response Fields</h3>
+        <table>
+          <thead>
+            <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            {% for f in ep.fields %}
+            <tr>
+              <td><code>{{ f.name }}</code></td>
+              <td class="type">{{ f.type }}</td>
+              <td>{{ f.desc }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+
+        <div class="loading">Fetching...</div>
+        <div class="response"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <script>
+    const COLORS = ["#22c55e", "#ef4444", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
+
+    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const AVAIL_YEARS = {{ available_years|safe }};
+
+    function populatePeriods() {
+      const type = document.getElementById('periodType').value;
+      const sel = document.getElementById('periodValue');
+      sel.innerHTML = '';
+      const now = new Date();
+      const curYear = now.getFullYear();
+      const curMonth = now.getMonth();
+      const curQuarter = Math.ceil((curMonth + 1) / 3);
+      if (type === 'year') {
+        AVAIL_YEARS.forEach(y => {
+          const opt = document.createElement('option');
+          opt.value = y;
+          opt.textContent = y;
+          if (y === curYear) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      } else if (type === 'quarter') {
+        AVAIL_YEARS.forEach(y => {
+          const maxQ = y === curYear ? curQuarter : 4;
+          for (let q = 1; q <= maxQ; q++) {
+            const opt = document.createElement('option');
+            opt.value = y + '-Q' + q;
+            opt.textContent = 'Q' + q + ' ' + y;
+            if (y === curYear && q === curQuarter) opt.selected = true;
+            sel.appendChild(opt);
+          }
+        });
+      } else {
+        AVAIL_YEARS.forEach(y => {
+          const maxM = y === curYear ? curMonth : 11;
+          for (let m = 0; m <= maxM; m++) {
+            const opt = document.createElement('option');
+            opt.value = y + '-' + String(m + 1).padStart(2, '0');
+            opt.textContent = MONTHS[m] + ' ' + y;
+            if (y === curYear && m === curMonth) opt.selected = true;
+            sel.appendChild(opt);
+          }
+        });
+      }
+    }
+
+    document.getElementById('periodType').addEventListener('change', populatePeriods);
+    populatePeriods();
+
+    function getCookie(name) {
+      let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? decodeURIComponent(match[2]) : null;
+    }
+
+    function fmt(n) { return Number(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+    function renderChart(data, div) {
+      const html = [];
+
+      if (Array.isArray(data)) {
+        data.forEach(item => renderSummaryKpi(item, html));
+      } else if (data.total_income !== undefined && data.total_expenses !== undefined) {
+        renderSummaryKpi(data, html);
+      } else if (data.income && data.expenses && !data.income_utilization && !data.funding_runaway_projection) {
+        renderIncomeExpenses(data, html);
+      } else if (data.funding_runaway_projection) {
+        renderFundingRunway(data.funding_runaway_projection, html);
+      } else if (data.income_utilization) {
+        renderIncomeUtilization(data.income_utilization, html);
+      } else if (data.payroll_vs_other) {
+        renderPayrollVsOther(data.payroll_vs_other, html);
+      } else {
+        const firstVal = Object.values(data)[0];
+        if (firstVal && typeof firstVal === 'object' && !Array.isArray(firstVal)) {
+          const sub = Object.values(firstVal)[0];
+          if (sub && typeof sub === 'object' && 'amount' in sub) {
+            renderExpensesByCategory(data, html);
+          } else {
+            html.push('<div class="chart-area"><p style="text-align:center;color:#888;padding:2rem;">No chart available for this data structure</p></div>');
+          }
+        } else {
+          html.push('<div class="chart-area"><p style="text-align:center;color:#888;padding:2rem;">No chart available for this data structure</p></div>');
+        }
+      }
+
+      html.push('<span class="json-toggle" onclick="this.nextElementSibling.classList.toggle(\'visible\')">Show/Hide JSON</span>');
+      html.push('<div class="raw-json"><pre>' + JSON.stringify(data, null, 2) + '</pre></div>');
+      div.innerHTML = html.join('');
+    }
+
+    function renderSummaryKpi(data, html) {
+      const cards = [
+        {label: 'Total Income', value: data.total_income, color: '#22c55e'},
+        {label: 'Total Expenses', value: data.total_expenses, color: '#ef4444'},
+        {label: 'Avg Income', value: data.average_income, color: '#22c55e'},
+        {label: 'Avg Expenses', value: data.average_expenses, color: '#ef4444'},
+      ];
+      if (data.expense_growth !== null && data.expense_growth !== undefined) {
+        cards.push({label: 'Expense Growth', value: data.expense_growth + '%', color: data.expense_growth < 0 ? '#22c55e' : '#ef4444'});
+      }
+      if (data.missing_receipt_count !== undefined) {
+        cards.push({label: 'Missing Receipts', value: data.missing_receipt_count, color: '#f59e0b'});
+        cards.push({label: 'Undocumented %', value: data.undocumented_expenses_pct + '%', color: '#f59e0b'});
+      }
+      if (data.runaway !== undefined && data.runaway !== null) {
+        cards.push({label: 'Runway', value: data.runaway, color: '#3b82f6'});
+      }
+      html.push('<div class="chart-area"><div class="kpi-grid">');
+      cards.forEach(c => {
+        html.push('<div class="kpi-card"><div class="kpi-value" style="color:' + c.color + '">' + c.value + '</div><div class="kpi-label">' + c.label + '</div></div>');
+      });
+      html.push('</div></div>');
+    }
+
+    function renderIncomeExpenses(data, html) {
+      const labels = Object.keys(data.income);
+      const incomeVals = labels.map(k => parseFloat(data.income[k]) || 0);
+      const expenseVals = labels.map(k => parseFloat(data.expenses[k]) || 0);
+      const allVals = [...incomeVals, ...expenseVals];
+      const minVal = Math.min(...allVals, 0);
+      const maxVal = Math.max(...allVals, 1);
+      const range = maxVal - minVal || 1;
+
+      html.push('<div class="chart-area">');
+      html.push('<div class="chart-legend"><span><span class="legend-swatch" style="background:#22c55e"></span> Income</span><span><span class="legend-swatch" style="background:#ef4444"></span> Expenses</span></div>');
+      html.push(multiLineSvg(labels, [incomeVals, expenseVals], ['#22c55e', '#ef4444'], ['Income', 'Expenses'], minVal, range, 600, 250));
+      html.push('</div>');
+    }
+
+    function renderIncomeUtilization(data, html) {
+      const labels = Object.keys(data);
+      const inc = labels.map(k => parseFloat(data[k].income) || 0);
+      const exp = labels.map(k => parseFloat(data[k].expenses) || 0);
+      const bal = labels.map(k => parseFloat(data[k].balance) || 0);
+      const allVals = [...inc, ...exp, ...bal];
+      const maxVal = Math.max(Math.abs(Math.min(...allVals)), Math.max(...allVals), 1);
+
+      html.push('<div class="chart-area">');
+      html.push('<div class="chart-legend"><span><span class="legend-swatch" style="background:#22c55e"></span> Income</span><span><span class="legend-swatch" style="background:#ef4444"></span> Expenses</span><span><span class="legend-swatch" style="background:#3b82f6"></span> Balance</span></div>');
+      html.push(groupedBarSvg(labels, [inc, exp, bal], ['#22c55e', '#ef4444', '#3b82f6'], maxVal, 600, 250));
+      html.push('</div>');
+    }
+
+    function renderFundingRunway(data, html) {
+      html.push('<div class="chart-area"><div class="kpi-grid">');
+      const cards = [
+        {label: 'Current Balance', value: '₱' + fmt(data.current_balance), color: '#3b82f6'},
+        {label: 'Avg Monthly Expenses', value: '₱' + fmt(data.avg_monthly_expenses), color: '#ef4444'},
+        {label: 'Runway', value: data.runway_display, color: '#22c55e'},
+      ];
+      cards.forEach(c => {
+        html.push('<div class="kpi-card"><div class="kpi-value" style="color:' + c.color + '">' + c.value + '</div><div class="kpi-label">' + c.label + '</div></div>');
+      });
+      html.push('</div></div>');
+      if (data.chart) {
+        const vals = data.chart.values;
+        const minVal = Math.min(...vals, 0);
+        const maxVal = Math.max(...vals, 1);
+        const range = maxVal - minVal || 1;
+        html.push(multiLineSvg(data.chart.labels, [vals], ['#3b82f6'], ['Projected Balance'], minVal, range, 600, 250));
+      }
+    }
+
+    function renderPayrollVsOther(data, html) {
+      let totalPayroll = 0, totalOther = 0;
+      Object.values(data).forEach(v => {
+        totalPayroll += parseFloat(v.payroll?.amount) || 0;
+        totalOther += parseFloat(v.other_expenses?.amount) || 0;
+      });
+      const grandTotal = totalPayroll + totalOther || 1;
+
+      html.push('<div class="chart-area" style="text-align:center;">');
+      html.push('<div class="chart-legend"><span><span class="legend-swatch" style="background:#8b5cf6"></span> Payroll</span><span><span class="legend-swatch" style="background:#f59e0b"></span> Other Expenses</span></div>');
+      html.push(pieSvg([totalPayroll, totalOther], ['#8b5cf6', '#f59e0b'], 200));
+      html.push('<div style="margin-top:0.5rem;font-size:0.8125rem;">');
+      html.push('<span style="color:#8b5cf6;font-weight:600">Payroll: ' + fmt(totalPayroll) + ' (' + (totalPayroll/grandTotal*100).toFixed(1) + '%)</span> &middot; ');
+      html.push('<span style="color:#f59e0b;font-weight:600">Other: ' + fmt(totalOther) + ' (' + (totalOther/grandTotal*100).toFixed(1) + '%)</span>');
+      html.push('</div></div>');
+    }
+
+    function renderExpensesByCategory(data, html) {
+      const periods = Object.keys(data);
+      const firstWithData = periods.find(p => Object.keys(data[p]).length > 0) || periods[0];
+      if (!firstWithData) { html.push('<div class="chart-area"><p style="text-align:center;color:#888;padding:2rem;">No data</p></div>'); return; }
+
+      const cats = data[firstWithData];
+      const entries = Object.entries(cats).sort((a, b) => b[1].amount - a[1].amount).slice(0, 10);
+      const total = entries.reduce((s, e) => s + e[1].amount, 0) || 1;
+      const labels = entries.map(e => e[0]);
+      const vals = entries.map(e => e[1].amount);
+
+      html.push('<div class="chart-area"><div style="font-size:0.75rem;font-weight:600;margin-bottom:0.5rem;">Categories for ' + firstWithData + '</div>');
+      html.push(horizBarSvg(labels, vals, total, 500, Math.max(entries.length * 28, 80)));
+      html.push('</div>');
+    }
+
+    function simpleBarSvg(labels, vals, colors, w, h) {
+      const max = Math.max(...vals, 1);
+      const barW = Math.min(60, (w - 40) / labels.length - 6);
+      let svg = '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '"><rect width="' + w + '" height="' + h + '" fill="transparent"/>';
+      labels.forEach((l, i) => {
+        const barH = (vals[i] / max) * (h - 40);
+        const x = 20 + i * ((w - 40) / labels.length) + ((w - 40) / labels.length - barW) / 2;
+        const y = h - 20 - barH;
+        svg += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + barH + '" fill="' + colors[i] + '" rx="2"/>';
+        svg += '<text x="' + (x + barW / 2) + '" y="' + (h - 5) + '" text-anchor="middle" font-size="9" fill="#666">' + l + '</text>';
+        svg += '<text x="' + (x + barW / 2) + '" y="' + (y - 4) + '" text-anchor="middle" font-size="9" fill="#333" font-weight="600">' + fmt(vals[i]) + '</text>';
+      });
+      svg += '</svg>';
+      return svg;
+    }
+
+    function groupedBarSvg(labels, series, colors, maxVal, w, h) {
+      const groups = labels.length;
+      const barsPerGroup = series.length;
+      const pad = {t: 20, r: 10, b: 30, l: 50};
+      const gw = (w - pad.l - pad.r) / groups;
+      const barW = Math.max(4, gw / (barsPerGroup + 0.5));
+      const gStart = gw * 0.15;
+      const range = maxVal || 1;
+      const ch = h - pad.t - pad.b;
+
+      let svg = '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '"><rect width="' + w + '" height="' + h + '" fill="transparent"/>';
+
+      const y0 = h - pad.b;
+      svg += '<line x1="' + pad.l + '" y1="' + y0 + '" x2="' + (w - pad.r) + '" y2="' + y0 + '" stroke="#ddd" stroke-width="1"/>';
+
+      const tickCount = 4;
+      for (let t = 0; t <= tickCount; t++) {
+        const val = (t / tickCount) * maxVal;
+        const y = y0 - (val / range) * ch;
+        svg += '<line x1="' + pad.l + '" y1="' + y + '" x2="' + (w - pad.r) + '" y2="' + y + '" stroke="#eee" stroke-width="1"/>';
+        svg += '<text x="' + (pad.l - 5) + '" y="' + (y + 3) + '" text-anchor="end" font-size="8" fill="#999">' + fmt(val) + '</text>';
+      }
+
+      labels.forEach((l, gi) => {
+        const gx = pad.l + gi * gw + gStart;
+        series.forEach((vals, si) => {
+          const v = parseFloat(vals[gi]) || 0;
+          const barH = Math.abs(v / range) * ch;
+          const x = gx + si * barW;
+          const y = v >= 0 ? y0 - barH : y0;
+          svg += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + barH + '" fill="' + colors[si] + '" rx="1" opacity="0.85"/>';
+          if (barH > 15) {
+            svg += '<text x="' + (x + barW / 2) + '" y="' + (y + (v >= 0 ? -3 : barH + 10)) + '" text-anchor="middle" font-size="7" fill="#333" font-weight="600">' + fmt(v) + '</text>';
+          }
+        });
+        svg += '<text x="' + (gx + (barsPerGroup * barW) / 2) + '" y="' + (h - 8) + '" text-anchor="middle" font-size="8" fill="#666">' + l + '</text>';
+      });
+      svg += '</svg>';
+      return svg;
+    }
+
+    function lineSvg(labels, vals, color, minVal, range, w, h) {
+      const pad = {t: 20, r: 10, b: 30, l: 50};
+      const ch = h - pad.t - pad.b;
+      const cw = w - pad.l - pad.r;
+      const n = labels.length;
+      range = range || 1;
+
+      let points = [];
+      vals.forEach((v, i) => {
+        const x = pad.l + (i / (n - 1 || 1)) * cw;
+        const y = (h - pad.b) - ((v - minVal) / range) * ch;
+        points.push(x + ',' + y);
+      });
+
+      let svg = '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '"><rect width="' + w + '" height="' + h + '" fill="transparent"/>';
+      const y0 = h - pad.b;
+
+      const tickCount = 4;
+      for (let t = 0; t <= tickCount; t++) {
+        const val = minVal + (t / tickCount) * range;
+        const y = y0 - ((val - minVal) / range) * ch;
+        svg += '<line x1="' + pad.l + '" y1="' + y + '" x2="' + (w - pad.r) + '" y2="' + y + '" stroke="#eee" stroke-width="1"/>';
+        svg += '<text x="' + (pad.l - 5) + '" y="' + (y + 3) + '" text-anchor="end" font-size="8" fill="#999">' + fmt(val) + '</text>';
+      }
+
+      svg += '<polyline points="' + points.join(' ') + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linejoin="round"/>';
+      svg += '<polygon points="' + pad.l + ',' + y0 + ' ' + points.join(' ') + ' ' + (pad.l + cw) + ',' + y0 + '" fill="' + color + '" opacity="0.1"/>';
+
+      vals.forEach((v, i) => {
+        const x = pad.l + (i / (n - 1 || 1)) * cw;
+        const y = y0 - ((v - minVal) / range) * ch;
+        svg += '<circle cx="' + x + '" cy="' + y + '" r="3" fill="' + color + '" stroke="#fff" stroke-width="1.5"/>';
+        svg += '<text x="' + x + '" y="' + (y - 8) + '" text-anchor="middle" font-size="7" fill="#333" font-weight="600">' + fmt(v) + '</text>';
+        svg += '<text x="' + x + '" y="' + (h - 8) + '" text-anchor="middle" font-size="8" fill="#666">' + labels[i] + '</text>';
+      });
+      svg += '</svg>';
+      return svg;
+    }
+
+    function multiLineSvg(labels, series, colors, names, minVal, range, w, h) {
+      const pad = {t: 20, r: 10, b: 30, l: 50};
+      const ch = h - pad.t - pad.b;
+      const cw = w - pad.l - pad.r;
+      const n = labels.length;
+      range = range || 1;
+
+      let svg = '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '"><rect width="' + w + '" height="' + h + '" fill="transparent"/>';
+      const y0 = h - pad.b;
+
+      const tickCount = 4;
+      for (let t = 0; t <= tickCount; t++) {
+        const val = minVal + (t / tickCount) * range;
+        const y = y0 - ((val - minVal) / range) * ch;
+        svg += '<line x1="' + pad.l + '" y1="' + y + '" x2="' + (w - pad.r) + '" y2="' + y + '" stroke="#eee" stroke-width="1"/>';
+        svg += '<text x="' + (pad.l - 5) + '" y="' + (y + 3) + '" text-anchor="end" font-size="8" fill="#999">' + fmt(val) + '</text>';
+      }
+
+      series.forEach((vals, si) => {
+        const points = vals.map((v, i) => {
+          const x = pad.l + (i / (n - 1 || 1)) * cw;
+          const y = y0 - ((v - minVal) / range) * ch;
+          return x + ',' + y;
+        });
+        svg += '<polyline points="' + points.join(' ') + '" fill="none" stroke="' + colors[si] + '" stroke-width="2" stroke-linejoin="round"/>';
+        vals.forEach((v, i) => {
+          const x = pad.l + (i / (n - 1 || 1)) * cw;
+          const y = y0 - ((v - minVal) / range) * ch;
+          svg += '<circle cx="' + x + '" cy="' + y + '" r="3" fill="' + colors[si] + '" stroke="#fff" stroke-width="1.5"/>';
+        });
+      });
+
+      labels.forEach((l, i) => {
+        const x = pad.l + (i / (n - 1 || 1)) * cw;
+        svg += '<text x="' + x + '" y="' + (h - 8) + '" text-anchor="middle" font-size="8" fill="#666">' + l + '</text>';
+      });
+      svg += '</svg>';
+      return svg;
+    }
+
+    function pieSvg(vals, colors, size) {
+      const total = vals.reduce((a, b) => a + b, 0) || 1;
+      const r = size / 2 - 2;
+      const cx = size / 2;
+      const cy = size / 2;
+      let svg = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '"><rect width="' + size + '" height="' + size + '" fill="transparent"/>';
+      const nonZero = vals.filter(v => v > 0);
+      let cumAngle = -Math.PI / 2;
+      vals.forEach((v, i) => {
+        if (v <= 0) return;
+        const frac = v / total;
+        if (nonZero.length === 1) {
+          svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + colors[i % colors.length] + '"/>';
+          return;
+        }
+        const a1 = cumAngle;
+        const a2 = cumAngle + frac * 2 * Math.PI;
+        cumAngle = a2;
+        const x1 = cx + r * Math.cos(a1);
+        const y1 = cy + r * Math.sin(a1);
+        const x2 = cx + r * Math.cos(a2);
+        const y2 = cy + r * Math.sin(a2);
+        const large = frac > 0.5 ? 1 : 0;
+        svg += '<path d="M ' + cx + ' ' + cy + ' L ' + x1 + ' ' + y1 + ' A ' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ' ' + y2 + ' Z" fill="' + colors[i % colors.length] + '"/>';
+      });
+      svg += '<text x="' + cx + '" y="' + (cy + 4) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#333">' + fmt(total) + '</text>';
+      svg += '</svg>';
+      return svg;
+    }
+
+    function donutSvg(vals, colors, size) {
+      const total = vals.reduce((a, b) => a + b, 0) || 1;
+      const r = size / 2 - 4;
+      const cx = size / 2;
+      const cy = size / 2;
+      let svg = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '"><rect width="' + size + '" height="' + size + '" fill="transparent"/>';
+
+      let cumAngle = -Math.PI / 2;
+      vals.forEach((v, i) => {
+        if (v <= 0) return;
+        const frac = v / total;
+        const a1 = cumAngle;
+        const a2 = cumAngle + frac * 2 * Math.PI;
+        cumAngle = a2;
+        const x1 = cx + r * Math.cos(a1);
+        const y1 = cy + r * Math.sin(a1);
+        const x2 = cx + r * Math.cos(a2);
+        const y2 = cy + r * Math.sin(a2);
+        const large = frac > 0.5 ? 1 : 0;
+        svg += '<path d="M ' + x1 + ' ' + y1 + ' A ' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ' ' + y2 + ' L ' + cx + ' ' + cy + ' Z" fill="' + colors[i % colors.length] + '"/>';
+      });
+
+      svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (size * 0.25) + '" fill="#fff"/>';
+      svg += '<text x="' + cx + '" y="' + (cy + 3) + '" text-anchor="middle" font-size="10" font-weight="700" fill="#333">' + fmt(total) + '</text>';
+      svg += '</svg>';
+      return svg;
+    }
+
+    function horizBarSvg(labels, vals, total, w, h) {
+      const pad = {t: 10, r: 80, b: 10, l: 100};
+      const ch = (h - pad.t - pad.b) / labels.length;
+      const barH = Math.max(8, ch - 4);
+
+      let svg = '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '"><rect width="' + w + '" height="' + h + '" fill="transparent"/>';
+      const maxVal = Math.max(...vals, 1);
+      labels.forEach((l, i) => {
+        const y = pad.t + i * ch;
+        const bw = (vals[i] / maxVal) * (w - pad.l - pad.r);
+        const pct = (vals[i] / total * 100).toFixed(1);
+        svg += '<text x="' + (pad.l - 8) + '" y="' + (y + barH / 2 + 3) + '" text-anchor="end" font-size="8" fill="#555">' + l + '</text>';
+        svg += '<rect x="' + pad.l + '" y="' + y + '" width="' + bw + '" height="' + barH + '" fill="#3b82f6" rx="2" opacity="0.8"/>';
+        svg += '<text x="' + (pad.l + bw + 4) + '" y="' + (y + barH / 2 + 3) + '" font-size="8" fill="#333" font-weight="600">' + fmt(vals[i]) + ' (' + pct + '%)</text>';
+      });
+      svg += '</svg>';
+      return svg;
+    }
+
+    async function fetchEndpoint(btn) {
+      const card = btn.closest('.card');
+      const path = card.dataset.path;
+      const type = document.getElementById('periodType').value;
+      const val = document.getElementById('periodValue').value;
+
+      let period, year, month;
+      if (type === 'month') {
+        period = 'monthly';
+        year = val.split('-')[0];
+        month = val.split('-')[1];
+      } else if (type === 'quarter') {
+        period = 'quarterly';
+        year = val.split('-')[0];
+        const q = parseInt(val.split('Q')[1]);
+        month = String((q - 1) * 3 + 1);
+      } else {
+        period = 'yearly';
+        year = val;
+        month = '';
+      }
+
+      const qs = 'period=' + encodeURIComponent(period) + '&year=' + encodeURIComponent(year);
+      const url = month ? path + '?' + qs + '&month=' + encodeURIComponent(month) : path + '?' + qs;
+
+      const loading = card.querySelector('.loading');
+      const responseDiv = card.querySelector('.response');
+
+      loading.classList.add('visible');
+      responseDiv.classList.remove('visible');
+      btn.disabled = true;
+
+      const token = document.getElementById('tokenInput').value.trim();
+      const headers = { 'Accept': 'application/json' };
+      const opts = { headers };
+      if (token) {
+        headers['Authorization'] = 'Token ' + token;
+      } else {
+        headers['X-CSRFToken'] = getCookie('csrftoken') || '';
+        opts.credentials = 'same-origin';
+      }
+
+      try {
+        const res = await fetch(url, opts);
+        let data;
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          data = await res.json();
+        } else {
+          data = { error: 'Non-JSON response (status ' + res.status + ')' };
+        }
+
+        if (!res.ok) {
+          responseDiv.innerHTML = '<pre class="error">HTTP ' + res.status + ' ' + res.statusText + '\n\n' + JSON.stringify(data, null, 2) + '</pre>';
+        } else {
+          renderChart(data, responseDiv);
+        }
+      } catch (err) {
+        responseDiv.innerHTML = '<pre class="error">Network error: ' + err.message + '</pre>';
+      }
+
+      loading.classList.remove('visible');
+      responseDiv.classList.add('visible');
+      btn.disabled = false;
+    }
+  </script>
+</body>
+</html>
