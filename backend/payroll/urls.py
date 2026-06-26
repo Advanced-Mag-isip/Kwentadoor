@@ -1,3 +1,25 @@
 from django.urls import path
+from . import views
 
-urlpatterns = []
+urlpatterns = [
+    # Workers
+    path('workers/', views.list_workers),
+    path('workers/sync/', views.sync_workers_view),
+
+    # Timesheets
+    path('timesheets/', views.list_timesheets),
+    path('timesheets/sync/', views.sync_timesheets_view),
+
+    # Payroll Runs
+    path('runs/', views.list_payroll_runs),
+    path('runs/build/', views.build_payroll_run_view),
+    path('runs/<int:pk>/', views.get_payroll_run),
+    path('runs/<int:pk>/approve/', views.approve_payroll_run_view),
+
+    # Entries
+    path('entries/<int:pk>/', views.get_payroll_entry),
+
+    # Adjustments
+    path('entries/<int:entry_id>/adjustments/', views.add_adjustment),
+    path('entries/<int:entry_id>/adjustments/<int:adjustment_id>/', views.delete_adjustment),
+]

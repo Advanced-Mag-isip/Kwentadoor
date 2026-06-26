@@ -146,14 +146,18 @@ python manage.py createsuperuser
 ### 4. Set up the frontend
 
 ```bash
+cd ..
+npm create astro@latest frontend
 cd ../frontend
-npm install
+npx astro add react
+npx astro add tailwind
+npm install axios
 ```
 
 Create a `.env.local` file inside `frontend/`:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8000/api
+PUBLIC_API_URL=http://localhost:8000/api
 ```
 
 ## Running the Project
@@ -163,7 +167,7 @@ Open two terminals:
 ```bash
 # Terminal 1 — backend
 cd backend
-venv\Scripts\activate       # Windows
+venv\Scripts\activate   
 python manage.py runserver
 ```
 
