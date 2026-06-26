@@ -61,17 +61,16 @@ Kwentadoor/
 │   └── .env
 └── frontend/
     ├── src/
-    │   └── app/
-    │       ├── favicon.ico
-    │       ├── globals.css
-    │       ├── layout.tsx
-    │       └── page.tsx
+    │   ├── components/    
+    │   ├── layouts/       
+    │   ├── pages/  
+    │   └── lib/
+    │       └── api.ts    
     ├── public/
-    ├── .env.local
-    ├── next.config.ts
-    ├── package.json
-    ├── tailwind.config.ts
-    └── tsconfig.json
+    ├── .env
+    ├── astro.config.mjs
+    ├── tsconfig.json
+    └── package.json
 ```
 
 ## Prerequisites
@@ -147,11 +146,8 @@ python manage.py createsuperuser
 
 ```bash
 cd ..
-npm create astro@latest frontend
-cd ../frontend
-npx astro add react
-npx astro add tailwind
-npm install axios
+cd frontend
+npm install 
 ```
 
 Create a `.env.local` file inside `frontend/`:
