@@ -1,5 +1,7 @@
 from django.db.models import Sum, Avg, Q, Count
-from analytics.services.chart import get_funding_runaway_projection
+
+
+PAYROLL_CATEGORIES = ["salaries"]
 
 
 def get_monthly_summary(queryset, year, month):
@@ -11,14 +13,14 @@ def get_monthly_summary(queryset, year, month):
     return {
         "year": int(year),
         "month": int(month),
-        "total_income": float(current["total_income"]),
-        "total_expenses": float(current["total_expenses"]),
-        "average_income": float(current["average_income"]),
-        "average_expenses": float(current["average_expenses"]),
-        "expense_growth": _growth(current["total_expenses"], previous["total_expenses"]),
-        "missing_receipt_count": current["missing_receipt_count"],
+        "total_incoming_funds": float(current["total_incoming_funds"]),
+        "total_outgoing_funds": float(current["total_outgoing_funds"]),
+        "average_incoming_funds": float(current["average_incoming_funds"]),
+        "average_outgoing_funds": float(current["average_outgoing_funds"]),
+        "total_payroll_cost": float(current["total_payroll_cost"]),
+        "total_missing_receipts": current["total_missing_receipts"],
         "undocumented_expenses_pct": current["undocumented_expenses_pct"],
-        "runaway": _compute_runway(queryset, "monthly", year, month),
+        "expense_growth": _growth(current["total_outgoing_funds"], previous["total_outgoing_funds"]),
     }
 
 
@@ -42,41 +44,41 @@ def get_quarterly_summary(queryset, year, month):
     return {
         "year": int(year),
         "quarter": quarter,
-        "total_income": float(current["total_income"]),
-        "total_expenses": float(current["total_expenses"]),
-        "average_income": float(current["average_income"]),
-        "average_expenses": float(current["average_expenses"]),
-        "expense_growth": _growth(current["total_expenses"], previous["total_expenses"]),
-        "missing_receipt_count": current["missing_receipt_count"],
+        "total_incoming_funds": float(current["total_incoming_funds"]),
+        "total_outgoing_funds": float(current["total_outgoing_funds"]),
+        "average_incoming_funds": float(current["average_incoming_funds"]),
+        "average_outgoing_funds": float(current["average_outgoing_funds"]),
+        "total_payroll_cost": float(current["total_payroll_cost"]),
+        "total_missing_receipts": current["total_missing_receipts"],
         "undocumented_expenses_pct": current["undocumented_expenses_pct"],
-        "runaway": _compute_runway(queryset, "quarterly", year, month),
+        "expense_growth": _growth(current["total_outgoing_funds"], previous["total_outgoing_funds"]),
     }
 
 
 def get_yearly_summary(queryset, year):
     qs = queryset.filter(transaction_date__year=year)
     qs = qs.values("transaction_date__year").annotate(
-        total_income=Sum("amount", filter=Q(transaction_type="income")),
-        total_expenses=Sum("amount", filter=Q(transaction_type="expense")),
-        average_income=Avg("amount", filter=Q(transaction_type="income")),
-        average_expenses=Avg("amount", filter=Q(transaction_type="expense")),
+        total_income=Sum("amount", filter=Q(transaction_type="add funds")),
+        total_expenses=Sum("amount", filter=Q(transaction_type="spend funds")),
+        average_income=Avg("amount", filter=Q(transaction_type="add funds")),
+        average_expenses=Avg("amount", filter=Q(transaction_type="spend funds")),
     ).order_by("transaction_date__year")
 
     results = []
     for item in qs:
         y = item["transaction_date__year"]
-        prev_total = _period_expenses(queryset, y - 1, 1, 12)["total_expenses"]
+        prev_total = _period_expenses(queryset, y - 1, 1, 12)["total_outgoing_funds"]
         yr_stats = _period_expenses(queryset, y, 1, 12)
         results.append({
             "year": y,
-            "total_income": float(item["total_income"] or 0),
-            "total_expenses": float(item["total_expenses"] or 0),
-            "average_income": float(item["average_income"] or 0),
-            "average_expenses": float(item["average_expenses"] or 0),
-            "expense_growth": _growth(float(item["total_expenses"] or 0), prev_total),
-            "missing_receipt_count": yr_stats["missing_receipt_count"],
+            "total_incoming_funds": float(item["total_income"] or 0),
+            "total_outgoing_funds": float(item["total_expenses"] or 0),
+            "average_incoming_funds": float(item["average_income"] or 0),
+            "average_outgoing_funds": float(item["average_expenses"] or 0),
+            "total_payroll_cost": float(yr_stats["total_payroll_cost"]),
+            "total_missing_receipts": yr_stats["total_missing_receipts"],
             "undocumented_expenses_pct": yr_stats["undocumented_expenses_pct"],
-            "runaway": _compute_runway(queryset, "yearly", y),
+            "expense_growth": _growth(float(item["total_expenses"] or 0), prev_total),
         })
 
     return results
@@ -96,13 +98,17 @@ def _period_expenses(queryset, year, month_start, month_end):
         )
 
     stats = qs.aggregate(
-        total_income=Sum("amount", filter=Q(transaction_type="income")),
-        total_expenses=Sum("amount", filter=Q(transaction_type="expense")),
-        average_income=Avg("amount", filter=Q(transaction_type="income")),
-        average_expenses=Avg("amount", filter=Q(transaction_type="expense")),
+        total_income=Sum("amount", filter=Q(transaction_type="add funds")),
+        total_expenses=Sum("amount", filter=Q(transaction_type="spend funds")),
+        average_income=Avg("amount", filter=Q(transaction_type="add funds")),
+        average_expenses=Avg("amount", filter=Q(transaction_type="spend funds")),
+        total_payroll=Sum("amount", filter=Q(
+            transaction_type="spend funds",
+            category__in=PAYROLL_CATEGORIES,
+        )),
     )
 
-    expense_qs = qs.filter(transaction_type="expense")
+    expense_qs = qs.filter(transaction_type="spend funds")
     total_expense_count = expense_qs.count()
     exp_with_rcpt = expense_qs.annotate(
         rcpt_count=Count("attachments")
@@ -110,21 +116,16 @@ def _period_expenses(queryset, year, month_start, month_end):
     missing = total_expense_count - exp_with_rcpt
 
     return {
-        "total_income": stats["total_income"] or 0,
-        "total_expenses": stats["total_expenses"] or 0,
-        "average_income": stats["average_income"] or 0,
-        "average_expenses": stats["average_expenses"] or 0,
-        "missing_receipt_count": missing,
+        "total_incoming_funds": stats["total_income"] or 0,
+        "total_outgoing_funds": stats["total_expenses"] or 0,
+        "average_incoming_funds": stats["average_income"] or 0,
+        "average_outgoing_funds": stats["average_expenses"] or 0,
+        "total_payroll_cost": stats["total_payroll"] or 0,
+        "total_missing_receipts": missing,
         "undocumented_expenses_pct": round(
             missing / total_expense_count * 100, 2
         ) if total_expense_count > 0 else 0.0,
     }
-
-
-def _compute_runway(queryset, period, year, month=None):
-    proj = get_funding_runaway_projection(queryset, year, period, month)
-    d = proj.get("funding_runaway_projection", {})
-    return d.get("runway_display", "0 months")
 
 
 def _growth(current, previous):

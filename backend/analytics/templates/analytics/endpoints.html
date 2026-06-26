@@ -62,9 +62,12 @@
     <p class="subtitle">Adjust filters and click <strong>Fetch</strong> on any endpoint to visualize the data</p>
 
     <div class="auth-bar">
-      <label>Token:</label>
-      <input type="text" id="tokenInput" placeholder="Paste your auth token here..." autocomplete="off">
-      <span class="hint">Leave blank to use session auth (login via /admin/)</span>
+      <label>Auth:</label>
+      <input type="text" id="authUser" placeholder="Username" autocomplete="off" style="min-width:120px;">
+      <input type="password" id="authPass" placeholder="Password" autocomplete="off" style="min-width:120px;">
+      <span style="color:#92400e;font-size:0.75rem;">or</span>
+      <input type="text" id="tokenInput" placeholder="API Token" autocomplete="off" style="min-width:200px;">
+      <span class="hint">Enter credentials or token, then click Fetch</span>
     </div>
 
     <div class="card" style="background:#f0f7ff;border-color:#93c5fd;">
@@ -183,7 +186,7 @@
 
       if (Array.isArray(data)) {
         data.forEach(item => renderSummaryKpi(item, html));
-      } else if (data.total_income !== undefined && data.total_expenses !== undefined) {
+      } else if (data.total_incoming_funds !== undefined && data.total_outgoing_funds !== undefined) {
         renderSummaryKpi(data, html);
       } else if (data.income && data.expenses && !data.income_utilization && !data.funding_runaway_projection) {
         renderIncomeExpenses(data, html);
@@ -191,21 +194,22 @@
         renderFundingRunway(data.funding_runaway_projection, html);
       } else if (data.income_utilization) {
         renderIncomeUtilization(data.income_utilization, html);
-      } else if (data.payroll_vs_other) {
-        renderPayrollVsOther(data.payroll_vs_other, html);
-      } else {
-        const firstVal = Object.values(data)[0];
-        if (firstVal && typeof firstVal === 'object' && !Array.isArray(firstVal)) {
-          const sub = Object.values(firstVal)[0];
-          if (sub && typeof sub === 'object' && 'amount' in sub) {
-            renderExpensesByCategory(data, html);
-          } else {
-            html.push('<div class="chart-area"><p style="text-align:center;color:#888;padding:2rem;">No chart available for this data structure</p></div>');
-          }
-        } else {
-          html.push('<div class="chart-area"><p style="text-align:center;color:#888;padding:2rem;">No chart available for this data structure</p></div>');
+    } else {
+        const periods = Object.keys(data);
+        let firstWithData = null;
+        for (const p of periods) {
+            const vals = Object.values(data[p]);
+            if (vals.length > 0 && typeof vals[0] === 'object' && 'amount' in vals[0]) {
+                firstWithData = data[p];
+                break;
+            }
         }
-      }
+        if (firstWithData) {
+            renderExpensesByCategory(data, html);
+        } else {
+            html.push('<div class="chart-area"><p style="text-align:center;color:#888;padding:2rem;">No chart available for this data structure</p></div>');
+        }
+    }
 
       html.push('<span class="json-toggle" onclick="this.nextElementSibling.classList.toggle(\'visible\')">Show/Hide JSON</span>');
       html.push('<div class="raw-json"><pre>' + JSON.stringify(data, null, 2) + '</pre></div>');
@@ -213,21 +217,20 @@
     }
 
     function renderSummaryKpi(data, html) {
+      const fmt = n => '₱' + Number(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
       const cards = [
-        {label: 'Total Income', value: data.total_income, color: '#22c55e'},
-        {label: 'Total Expenses', value: data.total_expenses, color: '#ef4444'},
-        {label: 'Avg Income', value: data.average_income, color: '#22c55e'},
-        {label: 'Avg Expenses', value: data.average_expenses, color: '#ef4444'},
+        {label: 'Total Incoming Funds', value: fmt(data.total_incoming_funds), color: '#22c55e'},
+        {label: 'Total Outgoing Funds', value: fmt(data.total_outgoing_funds), color: '#ef4444'},
+        {label: 'Avg Incoming Funds', value: fmt(data.average_incoming_funds), color: '#22c55e'},
+        {label: 'Avg Outgoing Funds', value: fmt(data.average_outgoing_funds), color: '#ef4444'},
+        {label: 'Payroll Cost', value: fmt(data.total_payroll_cost), color: '#8b5cf6'},
       ];
       if (data.expense_growth !== null && data.expense_growth !== undefined) {
         cards.push({label: 'Expense Growth', value: data.expense_growth + '%', color: data.expense_growth < 0 ? '#22c55e' : '#ef4444'});
       }
-      if (data.missing_receipt_count !== undefined) {
-        cards.push({label: 'Missing Receipts', value: data.missing_receipt_count, color: '#f59e0b'});
+      if (data.total_missing_receipts !== undefined) {
+        cards.push({label: 'Missing Receipts', value: data.total_missing_receipts, color: '#f59e0b'});
         cards.push({label: 'Undocumented %', value: data.undocumented_expenses_pct + '%', color: '#f59e0b'});
-      }
-      if (data.runaway !== undefined && data.runaway !== null) {
-        cards.push({label: 'Runway', value: data.runaway, color: '#3b82f6'});
       }
       html.push('<div class="chart-area"><div class="kpi-grid">');
       cards.forEach(c => {
@@ -564,10 +567,14 @@
       btn.disabled = true;
 
       const token = document.getElementById('tokenInput').value.trim();
+      const authUser = document.getElementById('authUser').value.trim();
+      const authPass = document.getElementById('authPass').value.trim();
       const headers = { 'Accept': 'application/json' };
       const opts = { headers };
       if (token) {
         headers['Authorization'] = 'Token ' + token;
+      } else if (authUser && authPass) {
+        headers['Authorization'] = 'Basic ' + btoa(authUser + ':' + authPass);
       } else {
         headers['X-CSRFToken'] = getCookie('csrftoken') || '';
         opts.credentials = 'same-origin';

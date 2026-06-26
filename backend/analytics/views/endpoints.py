@@ -6,21 +6,21 @@ ENDPOINTS = [
     {
         "method": "GET",
         "path": "/api/analytics/summary/",
-        "description": "Return aggregated income and expense totals for a given period.",
+        "description": "Return aggregated incoming/outgoing totals, payroll cost, and receipt documentation stats for a given period.",
         "params": [
             {"name": "period", "type": "string", "default": "monthly", "desc": "One of: monthly, quarterly, yearly"},
             {"name": "year", "type": "int", "default": "current", "desc": "Filter year (e.g. 2026)"},
             {"name": "month", "type": "int", "default": "current", "desc": "Filter month 1-12"},
         ],
         "fields": [
-            {"name": "total_income", "type": "float", "desc": "Sum of all income"},
-            {"name": "total_expenses", "type": "float", "desc": "Sum of all expenses"},
-            {"name": "average_income", "type": "float", "desc": "Average income per transaction"},
-            {"name": "average_expenses", "type": "float", "desc": "Average expense per transaction"},
+            {"name": "total_incoming_funds", "type": "float", "desc": "Sum of all incoming (add funds) transactions"},
+            {"name": "total_outgoing_funds", "type": "float", "desc": "Sum of all outgoing (spend funds) transactions"},
+            {"name": "average_incoming_funds", "type": "float", "desc": "Average incoming amount per transaction"},
+            {"name": "average_outgoing_funds", "type": "float", "desc": "Average outgoing amount per transaction"},
+            {"name": "total_payroll_cost", "type": "float", "desc": "Sum of outgoing transactions in salaries category"},
+            {"name": "total_missing_receipts", "type": "int", "desc": "Outgoing transactions without attachments"},
+            {"name": "undocumented_expenses_pct", "type": "float", "desc": "% of outgoing transactions missing receipts"},
             {"name": "expense_growth", "type": "float|null", "desc": "% change vs previous period"},
-            {"name": "missing_receipt_count", "type": "int", "desc": "Expenses without attachments"},
-            {"name": "undocumented_expenses_pct", "type": "float", "desc": "% of expenses missing receipts"},
-            {"name": "runaway", "type": "string", "desc": "Runway duration (e.g. '5 months', '114 days')"},
         ],
     },
     {
@@ -65,19 +65,6 @@ ENDPOINTS = [
         ],
         "fields": [
             {"name": "<period_key>", "type": "object", "desc": "Key is Jan/Q1/W1, value is {category: {amount, percentage}}"},
-        ],
-    },
-    {
-        "method": "GET",
-        "path": "/api/analytics/charts/payroll-vs-other/",
-        "description": "Payroll vs other expenses — yearly=Jan-Dec, quarterly=Q1-Q4, monthly=W1-W5.",
-        "params": [
-            {"name": "period", "type": "string", "default": "yearly", "desc": "yearly, quarterly, or monthly"},
-            {"name": "year", "type": "int", "default": "current", "desc": "Filter year (e.g. 2026)"},
-            {"name": "month", "type": "int", "desc": "Required if period=monthly (1-12)"},
-        ],
-        "fields": [
-            {"name": "payroll_vs_other", "type": "object", "desc": "{period_key: {payroll, other_expenses}}"},
         ],
     },
     {

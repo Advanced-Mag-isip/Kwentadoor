@@ -2,19 +2,23 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from expenses.models import Wallet, Transaction
-from datetime import timedelta
+from datetime import date, timedelta
 import random
 
 User = get_user_model()
+
 
 class Command(BaseCommand):
     help = "Seed the database with sample expenses data"
 
     def handle(self, *args, **options):
-        user, _ = User.objects.get_or_create(
+        user, created = User.objects.get_or_create(
             username="admin",
             defaults={"email": "admin@example.com"},
         )
+        if created:
+            user.set_password("admin")
+            user.save()
 
         wallets = []
         for name in ["Personal", "Business", "Savings"]:
@@ -26,10 +30,22 @@ class Command(BaseCommand):
 
         Transaction.objects.all().delete()
 
-        categories = {
-            "add funds": ["Salary", "Freelance", "Investment", "Refund", "Allowance"],
-            "spend funds": ["Food", "Transport", "Rent", "Utilities", "Entertainment", "Healthcare", "Shopping", "Education"],
-        }
+        categories = [
+            "internet_phone", "office_supplies", "team_meals",
+            "software_tools", "salaries", "rent", "grants_donations",
+        ]
+
+        counterparties = [
+            "", "Globe Telecom", "National Bookstore", "Meralco",
+            "Google Workspace", "Juan Dela Cruz", "GCash",
+            "Lazada", "Grab Philippines", "PLDT",
+        ]
+
+        notes = [
+            "", "Monthly payment", "One-time purchase",
+            "Recurring subscription", "Office supplies",
+            "Team lunch", "Quarterly grant",
+        ]
 
         today = timezone.now().date()
 
@@ -37,24 +53,18 @@ class Command(BaseCommand):
             days_ago = random.randint(0, 365)
             tx_date = today - timedelta(days=days_ago)
 
-            # Match exact database choice string constants
-            tx_type = random.choices(["add funds", "spend funds"], weights=[1, 3])[0]
-            cat = random.choice(categories[tx_type])
-
-            if tx_type == "add funds":
-                amount = round(random.uniform(100, 50000), 2)
-            else:
-                amount = round(random.uniform(10, 15000), 2)
+            cat = random.choice(categories)
+            amount = round(random.uniform(50, 50000), 2)
 
             Transaction.objects.create(
-                transaction_type=tx_type,
+                transaction_type="spend funds",
                 user=user,
                 wallet=random.choice(wallets),
                 category=cat,
                 transaction_date=tx_date,
                 amount=amount,
-                counterparty=random.choice(["", "Acme Corp", "Grocery Store", "Landlord", "Client A", "Shopee", "Grab"]),
-                note=random.choice(["", "Monthly payment", "One-time purchase", "Recurring", "Refund"]),
+                counterparty=random.choice(counterparties),
+                note=random.choice(notes),
             )
 
         self.stdout.write(self.style.SUCCESS(f"Seeded {Transaction.objects.count()} transactions"))
