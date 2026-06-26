@@ -7,6 +7,7 @@ class User(AbstractUser):
 
     class Meta:
         db_table = "users"
+
 class Wallet(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
@@ -20,11 +21,23 @@ class Wallet(models.Model):
 
     def __str__(self):
         return self.name
+    
 class Transaction(models.Model):
+
+    CATEGORY_CHOICES = [
+        ("internet_phone", "Internet & Phone"),
+        ("office_supplies", "Office Supplies"),
+        ("team_meals", "Team Meals & Meetings"),
+        ("software_tools", "Software Tools & Subscriptions"),
+        ("salaries", "Salaries & Allowances"),
+        ("rent", "Rent/Co-working Space"),
+        ("grants_donations", "Grants / Donations Received"),
+    ]
+
     transaction_type = models.CharField(max_length=100)
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="transactions")
     wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="transactions")
-    category = models.CharField(max_length=100)
+    category = models.CharField(max_length=100, choices=CATEGORY_CHOICES)
     transaction_date = models.DateField()
 
     amount = models.FloatField()
@@ -41,7 +54,6 @@ class Transaction(models.Model):
     def __str__(self):
         return f"{self.transaction_type} - {self.amount}"
 
-
 class Attachment(models.Model):
     transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="attachments")
     reference_number = models.CharField(max_length=100, blank=True)
@@ -53,7 +65,6 @@ class Attachment(models.Model):
 
     def __str__(self):
         return f"Attachment #{self.id}"
-
 
 class Log(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="logs")

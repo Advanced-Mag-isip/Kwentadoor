@@ -1,11 +1,60 @@
 from rest_framework import viewsets, permissions
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from django.db.models import Sum
 from django.forms.models import model_to_dict
 
 from .models import Wallet, Transaction, Attachment, Log
 from .serializers import WalletSerializer, TransactionSerializer, AttachmentSerializer, LogSerializer
+
+EXPENSE_CATEGORIES = [
+    {
+        "id": "internet_phone",
+        "label": "Internet & Phone",
+        "bir_mapping": "Communication, Light and Water"
+    },
+    {
+        "id": "office_supplies",
+        "label": "Office Supplies",
+        "bir_mapping": "Office Supplies"
+    },
+    {
+        "id": "team_meals",
+        "label": "Team Meals & Meetings",
+        "bir_mapping": "Representation and Entertainment"
+    },
+    {
+        "id": "software_tools",
+        "label": "Software Tools & Subscriptions",
+        "bir_mapping": "Professional Fees / Other Services"
+    },
+    {
+        "id": "salaries",
+        "label": "Salaries & Allowances",
+        "bir_mapping": "Salaries and Wages"
+    },
+    {
+        "id": "rent",
+        "label": "Rent/Co-working Space",
+        "bir_mapping": "Rental"
+    },
+    {
+        "id": "grants_donations",
+        "label": "Grants / Donations Received",
+        "bir_mapping": "Grants / Donations"
+    },
+]
+
+class CategoryViewSet(viewsets.ViewSet):
+    """
+    A simple ViewSet for listing static expense categories.
+    Accessed via /api/expenses/categories/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request):
+        return Response(EXPENSE_CATEGORIES)
+
 
 class WalletViewSet(viewsets.ModelViewSet):
     queryset = Wallet.objects.all()
