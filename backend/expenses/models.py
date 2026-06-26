@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from .constants import CATEGORY_CHOICES, TRANSACTION_TYPE_CHOICES
 
-# Create your models here.
 class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -23,24 +23,12 @@ class Wallet(models.Model):
         return self.name
     
 class Transaction(models.Model):
-
-    CATEGORY_CHOICES = [
-        ("internet_phone", "Internet & Phone"),
-        ("office_supplies", "Office Supplies"),
-        ("team_meals", "Team Meals & Meetings"),
-        ("software_tools", "Software Tools & Subscriptions"),
-        ("salaries", "Salaries & Allowances"),
-        ("rent", "Rent/Co-working Space"),
-        ("grants_donations", "Grants / Donations Received"),
-    ]
-
-    transaction_type = models.CharField(max_length=100)
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE_CHOICES)
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="transactions")
     wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="transactions")
     category = models.CharField(max_length=100, choices=CATEGORY_CHOICES)
     transaction_date = models.DateField()
-
-    amount = models.FloatField()
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
     counterparty = models.CharField(max_length=255, blank=True)
     note = models.TextField(blank=True)
 
