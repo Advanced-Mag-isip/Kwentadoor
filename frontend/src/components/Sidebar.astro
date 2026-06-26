@@ -1,9 +1,40 @@
----
-import homeLogo from '../assets/homeicon.svg?raw'; 
-import walletIcon from '../assets/wallet-icon.svg?raw'; 
-import analyticsIcon from '../assets/analytics.svg?raw';
-import payrollIcon from '../assets/payroll-icon.svg?raw'; 
-import '../styles/global.css';
-const currentPath = Astro.url.pathname;
----
-<!DOCTYPE html>
+<div id="sidebar">
+    <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/contact">Contact</a></li>
+    </ul>
+    <div id="sidebar-footer">
+        <p>&copy; 2024 Kwentadoor. All rights reserved.</p>
+    </div>
+</div>
+<style>
+    #sidebar {
+        width: 200px;
+        background-color: #0080ff;
+        padding: 20px;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    #sidebar ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    #sidebar li {
+        margin-bottom: 10px;
+    }
+
+    #sidebar a {
+        text-decoration: none;
+        color: #333;
+        font-weight: bold;
+    }
+
+    #sidebar a:hover {
+        text-decoration: underline;
+    }
+</style>
