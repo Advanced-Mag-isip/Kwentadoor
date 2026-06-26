@@ -1,40 +1,90 @@
-<div id="sidebar">
-    <ul>
-        <li><a href="/">Home</a></li>
-        <li><a href="/about">About</a></li>
-        <li><a href="/contact">Contact</a></li>
-    </ul>
-    <div id="sidebar-footer">
-        <p>&copy; 2024 Kwentadoor. All rights reserved.</p>
+---
+import homeIcon from '../assets/home-icon.svg?raw'; 
+import walletIcon from '../assets/wallet-icon.svg?raw'; 
+import analyticsIcon from '../assets/analytics-icon.svg?raw';
+import payrollIcon from '../assets/payroll-icon.svg?raw'; 
+import companyLogo from '../assets/trabahadoor-logo.svg?raw'; 
+import logoutLogo from '../assets/log-out-icon.svg?raw'; 
+import '../styles/global.css';
+const currentPath = Astro.url.pathname;
+---
+<nav id = "main-navigation">
+    <div id = "nav-safe-area">
+        <div id = "sidebar-up">
+            <div id = "logo-area">
+                <a href = "/" id = "company-logo">
+                <Fragment set:html={companyLogo} height = 20 width = 20/>
+                </a>
+                <h1>Kwentadoor</h1>
+            </div> 
+
+            <div id = "nav-links">
+
+                <label for = "navigation-group">NAVIGATION</label>
+                <div id = "navigation-group">
+                   <a href = "">
+                        <div>
+                            <Fragment set:html={homeIcon} />
+                            <span>Dashboard</span>
+                        </div>
+                   </a>
+                </div>
+
+                <label for = "financials-group">FINANCIALS</label>
+                <div id = "financials-group">
+                   <a href = "">
+                        <div>
+                            <Fragment set:html={walletIcon} />
+                            <span>Wallet</span>
+                        </div>
+                   </a>
+
+                   <a href = "">
+                        <div>
+                            <Fragment set:html={analyticsIcon} />
+                            <span>Analytics</span>
+                        </div>
+                   </a>
+                </div>
+
+                <label for = "team-group">TEAM</label>
+                <div id = "team-group">
+
+                    <a href = "/">
+                        <div>
+                            <Fragment set:html={payrollIcon} />
+                            <span>Payroll</span>
+                        </div>
+                    </a>
+                   
+                </div>
+            </div>
+        </div>
+        
+        <div id = "sidebar-down">
+            <a href = "/">
+                <div>
+                    <Fragment set:html={logoutLogo} />
+                    <span>Logout</span>
+                </div>
+            </a>
+        </div>
     </div>
-</div>
-<style>
-    #sidebar {
+</nav>
+
+<style> 
+    #nav-links :global(svg){
+        width: 19px;
+        height: auto; 
+    }
+    #company-logo :global(svg) {
+        width: 55px;
+        height: auto;
+    }
+
+    #main-navigation{
+        background-color: var(--primary-blue);
         width: 200px;
-        background-color: #0080ff;
-        padding: 20px;
-        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-
-    #sidebar ul {
-        list-style-type: none;
-        padding: 0;
-    }
-
-    #sidebar li {
-        margin-bottom: 10px;
-    }
-
-    #sidebar a {
-        text-decoration: none;
-        color: #333;
-        font-weight: bold;
-    }
-
-    #sidebar a:hover {
-        text-decoration: underline;
+        height: 100vh;
     }
 </style>

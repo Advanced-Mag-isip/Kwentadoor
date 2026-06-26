@@ -9,4 +9,10 @@
     --navyblue-gradient: linear-gradient(var(--darker-blue), #253B62); 
 
     --default-shadow: 0 4px 4px rgba(0, 0, 0, 0.3);
+
+    --display-headings-text: 42px;
+    --metrics-text: 32px; 
+    --title-text: 24px; 
+    --button-text: 20px; 
+    --paragraph-text: 16px; 
 }
