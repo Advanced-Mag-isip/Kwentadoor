@@ -1,6 +1,7 @@
 :root{
     --primary-orange: #F26B2A;
     --primary-navyblue: #1A2B4A;
+    --light-navyblue:#213250;
 
     --white: #FFFFFF;
     --black: #000000;
@@ -14,5 +15,8 @@
     --metrics-text: 32px; 
     --title-text: 24px; 
     --button-text: 20px; 
-    --paragraph-text: 16px; 
+    --paragraph-text: 16px;
+    
+    --display-headings-font: 'Monsterrat', sans-serif; 
+    --general-text-font: 'Roboto', arial; 
 }
