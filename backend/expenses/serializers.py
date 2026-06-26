@@ -1,8 +1,10 @@
 from rest_framework import serializers
 from .models import User, Wallet, Transaction, Attachment, Log
-from .constants import CATEGORY_LABELS
+from .constants import BIR_MAPPING
 
 class WalletSerializer(serializers.ModelSerializer):
+    balance = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+
     class Meta:
         model = Wallet
         fields = '__all__'
@@ -14,15 +16,15 @@ class AttachmentSerializer(serializers.ModelSerializer):
 
 class TransactionSerializer(serializers.ModelSerializer):
     attachments = AttachmentSerializer(many=True, read_only=True)
-    category_label = serializers.SerializerMethodField()
+    BIR_label = serializers.SerializerMethodField()
     
     class Meta:
         model = Transaction
         fields = '__all__'
         read_only_fields = ['user']
 
-    def get_category_label(self, obj):
-        return CATEGORY_LABELS.get(obj.category, obj.category)
+    def get_BIR_label(self, obj):
+        return BIR_MAPPING.get(obj.category, obj.category)
 
 class LogSerializer(serializers.ModelSerializer):
     class Meta:

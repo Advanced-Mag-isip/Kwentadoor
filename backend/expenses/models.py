@@ -22,6 +22,13 @@ class Wallet(models.Model):
     def __str__(self):
         return self.name
     
+    @property
+    def balance(self):
+        """Dynamically calculates the wallet balance based on related transactions."""
+        additions = self.transactions.filter(transaction_type='add funds').aggregate(models.Sum('amount'))['amount__sum'] or 0
+        deductions = self.transactions.filter(transaction_type='spend funds').aggregate(models.Sum('amount'))['amount__sum'] or 0
+        return additions - deductions
+    
 class Transaction(models.Model):
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE_CHOICES)
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="transactions")

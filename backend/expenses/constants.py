@@ -37,7 +37,7 @@ EXPENSE_CATEGORIES_DATA = [
 ]
 
 CATEGORY_CHOICES = [(cat["id"], cat["label"]) for cat in EXPENSE_CATEGORIES_DATA]
-CATEGORY_LABELS = {cat["id"]: cat["label"] for cat in EXPENSE_CATEGORIES_DATA}
+BIR_MAPPING = {cat["id"]: cat["bir_mapping"] for cat in EXPENSE_CATEGORIES_DATA}
 
 TRANSACTION_TYPE_CHOICES = [
     ("add funds", "Add Funds"),

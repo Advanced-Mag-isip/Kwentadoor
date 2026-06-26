@@ -2,11 +2,10 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from expenses.models import Wallet, Transaction
-from datetime import date, timedelta
+from datetime import timedelta
 import random
 
 User = get_user_model()
-
 
 class Command(BaseCommand):
     help = "Seed the database with sample expenses data"
@@ -28,8 +27,8 @@ class Command(BaseCommand):
         Transaction.objects.all().delete()
 
         categories = {
-            "income": ["Salary", "Freelance", "Investment", "Refund", "Allowance"],
-            "expense": ["Food", "Transport", "Rent", "Utilities", "Entertainment", "Healthcare", "Shopping", "Education"],
+            "add funds": ["Salary", "Freelance", "Investment", "Refund", "Allowance"],
+            "spend funds": ["Food", "Transport", "Rent", "Utilities", "Entertainment", "Healthcare", "Shopping", "Education"],
         }
 
         today = timezone.now().date()
@@ -38,10 +37,11 @@ class Command(BaseCommand):
             days_ago = random.randint(0, 365)
             tx_date = today - timedelta(days=days_ago)
 
-            tx_type = random.choices(["income", "expense"], weights=[30, 70])[0]
+            # Match exact database choice string constants
+            tx_type = random.choices(["add funds", "spend funds"], weights=[1, 3])[0]
             cat = random.choice(categories[tx_type])
 
-            if tx_type == "income":
+            if tx_type == "add funds":
                 amount = round(random.uniform(100, 50000), 2)
             else:
                 amount = round(random.uniform(10, 15000), 2)
