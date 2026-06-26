@@ -1,1 +1,70 @@
-@import "tailwindcss";
+:root{
+    --primary-orange: #F26B2A;
+    --primary-blue: #1A2B4A;
+    --white: #FFFF;
+    --light-gray: #e2e8f0;
+    --black: #000000;
+    --transparent-orange: #F26B2A1A;
+    --transparent-blue: #1A2B4A1A;
+    --dark-orange: #C85C27; 
+    --darkest-blue: #0B1019; 
+    --darker-blue: #233658;
+    --grey-text: #828A9C; 
+    --input-text-field: #E9EAED;
+    --orange-gradient: linear-gradient(var(--orange),var(--dark-orange)); 
+    --blue-gradient: linear-gradient(var(--darker-blue), var(--darkest-blue)); 
+
+    --default-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--white);
+    color: var(--black);
+    font-family: 'Monsterrat', sans-serif;
+}
+
+.page-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-height: calc(100vh - 80px);
+    font-family: 'Monsterrat', sans-serif;
+}
+
+.content-container {
+    width: 100%;
+    height: 100%;
+    padding-bottom: 20px;
+}
+
+.section-header{
+    width: 100%;
+    margin: 10px 0;
+    text-align: left;
+    font-family: 'Monsterrat', sans-serif;
+    font-size: 1.2rem;
+    color: var(--blue);
+    display: flex;
+    align-items: center;
+}
+
+.section-header-line{
+    width: 10px;
+    height: 50px;
+    background-color: var(--orange);
+    margin-right: 10px;
+    border-radius: 10px;
+}
+
+h2{
+    font-size: 2.5em;
+}
+
+.hover-effect{
+    transition: all 0.5s ease-in-out;
+}
+.hover-effect:hover {
+    transform: scale(1.02);
+}
