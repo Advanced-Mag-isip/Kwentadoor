@@ -4,12 +4,14 @@
     --primary-orange: #F26B2A;
     --primary-navyblue: #1A2B4A;
     --light-navyblue:#213250;
+    --filter-background: #AE4917; 
+    --light-grey: #D9D9D9; 
 
     --white: #FFFFFF;
     --black: #000000;
     
-    --orange-gradient: linear-gradient(var(--orange), #BE521E); 
-    --navyblue-gradient: linear-gradient(var(--darker-blue), #253B62); 
+    --orange-gradient: linear-gradient(var(--primary-orange), #BE521E); 
+    --navyblue-gradient: linear-gradient(var(--primary-navyblue), #253B62); 
 
     --default-shadow: 0 4px 4px rgba(0, 0, 0, 0.3);
 
@@ -19,6 +21,9 @@
     --button-text: 20px; 
     --paragraph-text: 16px;
     
-    --display-headings-font: 'Monsterrat', sans-serif; 
+    --display-headings-font: 'Montserrat', sans-serif; 
     --general-text-font: 'Roboto', arial; 
+
+    --temporary-background-color: #F0F3F8; 
+
 }
