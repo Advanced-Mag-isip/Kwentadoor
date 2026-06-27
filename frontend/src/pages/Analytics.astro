@@ -1,0 +1,326 @@
+---
+import Layout from "../layouts/Layout.astro";
+import cashIcon from "../assets/cash-icon.svg?raw";
+import cashUpIcon from "../assets/cash-up-icon.svg?raw";
+import cashDownIcon from "../assets/cash-down-arrow.svg?raw";
+import percentageUpIcon from "../assets/percentage-note-up.svg?raw";
+import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
+---
+
+<Layout>
+    <div id="analytics-container">
+        <div id="filter-header">
+            <span id="filter-summary-text">Showing Results for JUNE 2026</span>
+            
+            <div id="filters">
+                <form>
+                    <input type="text" id="filter-category" class="filter" name="filter-category" placeholder="Filter by">
+                    <input type="text" id="filter-specifications" class="filter" name="filter-specifications" placeholder="Select period">
+                </form>
+                <button id="export-button" class="custom-button">Export</button>
+            </div>
+        </div>
+
+        <div id="metrics-container">
+            <div class="metrics-row">
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">TOTAL INCOMING FUNDS</span>
+                        <span class="metric-value">23,983,389.00</span>
+                    </div>
+                    <div class="metric-icon-wrapper">
+                        <Fragment set:html={cashDownIcon} />
+                    </div>
+                </div>
+
+                 <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">TOTAL OUTGOING FUNDS</span>
+                        <span class="metric-value">3,983,389.00</span>
+                    </div>
+                    <div class="metric-icon-wrapper">
+                        <Fragment set:html={cashUpIcon} />
+                    </div>
+                </div>
+            </div>
+
+            <div class="metrics-row">
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">AVERAGE INCOMING FUNDS</span>
+                        <span class="metric-value">3,983,389.00</span>
+                    </div>
+                    <div class="metric-icon-wrapper">
+                        <Fragment set:html={percentageDownIcon} />
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">AVERAGE OUTGOING FUNDS</span>
+                        <span class="metric-value">3,983,389.00</span>
+                    </div>
+                    <div class="metric-icon-wrapper">
+                        <Fragment set:html={percentageUpIcon} />
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">TOTAL PAYROLL COSTS</span>
+                        <span class="metric-value">3,983,389.00</span>
+                    </div>
+                    <div class="metric-icon-wrapper">
+                        <Fragment set:html={cashDownIcon} />
+                    </div>
+                </div>
+            </div>
+
+            <div class="metrics-row">
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">TOTAL MISSING RECEIPTS</span>
+                        <span class="metric-value">3,983,389.00</span>
+                    </div>
+                    <div class="metric-icon-wrapper">
+                        <Fragment set:html={cashDownIcon} />
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">UNDOCUMENTED EXPENSES %</span>
+                        <span class="metric-value">30%</span>
+                    </div>
+                    <div class="metric-icon-wrapper">
+                        <Fragment set:html={cashDownIcon} />
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">TOTAL MISSING RECEIPTS</span>
+                        <span class="metric-value">3,983,389.00</span>
+                    </div>
+                    <div class="metric-icon-wrapper">
+                        <Fragment set:html={cashDownIcon} />
+                    </div>
+                </div>
+            </div>
+
+            <div class="metrics-row">
+                <div class="graph-card">
+                    <span class="graph-label orange">TOTAL INCOMING VS OUTGOING THIS MONTH</span>
+                    <span class="graph-content">
+                        INSERT GRAPH HERE
+                    </span>
+                </div>
+
+                <div class="graph-card">
+                    <span class="graph-label blue">FUNDING RUNAWAY PROJECTION</span>
+                    <span class="graph-content">
+                        INSERT GRAPH HERE
+                    </span>
+                </div>
+            </div>
+
+            <div class="metrics-row">
+                <div class="graph-card">
+                    <span class="graph-label blue">EXPENSES BY CATEGORY AND DOCUMENTATION</span>
+                    <span class="graph-content">
+                        INSERT GRAPH HERE
+                    </span>
+                </div>
+
+                <div class="graph-card">
+                    <span class="graph-label orange">INCOME UTILIZATION</span>
+                    <span class="graph-content">
+                        INSERT GRAPH HERE
+                    </span>
+                </div>
+            </div>
+        </div>
+   </div>
+</Layout>
+
+<style>
+    /* =========================================
+       LAYOUT & CONTAINERS
+       ========================================= */
+    #analytics-container {
+        width: 100%;
+    }
+
+    .metrics-row {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        height: auto;
+        gap: 15px;
+        margin-bottom: 20px; 
+    }
+
+    /* =========================================
+       HEADER & FILTERS
+       ========================================= */
+    #filter-header {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        height: 65px;
+        width: 100%;
+        border-radius: 25px;
+        box-sizing: border-box;
+        padding: 15px;
+        background-image: var(--orange-gradient);
+        font-family: var(--display-headings-font);
+        font-size: var(--title-text);
+        font-weight: bold;
+        color: var(--white);
+        box-shadow: var(--default-shadow);
+        margin-bottom: 20px;
+    }
+
+    #filters, form {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px; 
+    }
+
+    .filter {
+        appearance: none; 
+        border: 2px solid var(--white); 
+        outline: none; 
+        width: 182px;
+        max-width: 300px;
+        padding: 12px 16px;
+        border-radius: 8px; 
+        background-color: var(--filter-background);
+        font-family: var(--general-text-font); 
+        font-size: 16px; 
+        color: var(--white); 
+        transition: all 0.3s ease;
+    }
+
+    .filter::placeholder {
+        color: var(--light-grey);
+    }
+
+    .custom-button {
+        appearance: none;
+        outline: none;
+        padding: 12px 24px;
+        background-image: var(--navyblue-gradient); 
+        border-radius: 8px;
+        align-items: center;
+        border: 2px solid var(--white); 
+        font-family: var(--display-headings-font);
+        font-weight: bold;
+        font-size: 16px;
+        color: var(--white);
+        cursor: pointer;
+        transition: all 0.2s ease; 
+    }
+
+    .custom-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(242, 107, 42, 0.2); 
+    }
+
+    .custom-button:active {
+        transform: translateY(1px); 
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+    }
+
+    
+    .metric-card {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        flex: 1; 
+        height: 125px; 
+        padding: 20px;
+        border-radius: 25px;
+        box-sizing: border-box;
+        background-color: var(--white);
+        box-shadow: var(--default-shadow);
+    }
+
+    .metric-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .metric-label {
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text); 
+        color: var(--primary-navyblue);
+    }
+
+    .metric-value {
+        font-size: var(--display-headings-text);
+        font-family: var(--display-headings-font);
+        color: var(--primary-navyblue);
+        font-weight: bold;
+        margin-top: 10px;
+    }
+
+    .metric-value::before {
+        content: "\20B1";
+    }
+
+    .metric-icon-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 45px;
+        height: 45px;
+        background-color: var(--light-grey);
+        border-radius: 10px;
+    }
+
+    .metric-icon-wrapper :global(svg) {
+        width: 24px;
+        height: auto;
+    }
+
+
+    .graph-card {
+        display: flex;
+        flex-direction: column;
+        flex: 1; 
+        height: 320px;
+        padding: 20px;
+        border-radius: 25px;
+        box-sizing: border-box;
+        background-color: var(--white);
+        box-shadow: var(--default-shadow); 
+    }
+
+    .graph-content {
+        margin-top: auto; 
+    }
+
+    .graph-label {
+        box-sizing: border-box;
+        display: block; 
+        padding: 15px;
+        margin: -20px -20px 20px -20px; 
+        border-radius: 23px 23px 0 0; 
+        color: var(--white);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text); 
+    }
+
+    .blue {
+        background-image: var(--navyblue-gradient);
+    }
+
+    .orange {
+        background-image: var(--orange-gradient);
+    }
+</style>

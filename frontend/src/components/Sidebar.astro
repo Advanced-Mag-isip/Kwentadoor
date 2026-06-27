@@ -23,7 +23,7 @@ const currentPath = Astro.url.pathname;
                 
                 <div id = "navigation-group" class = "nav-group">
                     <label for = "navigation-group">NAVIGATION</label>
-                   <a href = "">
+                   <a href = "/">
                         <div>
                             <Fragment set:html={homeIcon} />
                             <span>Dashboard</span>
@@ -41,7 +41,7 @@ const currentPath = Astro.url.pathname;
                         </div>
                    </a>
 
-                   <a href = "">
+                   <a href = "/Analytics" class={currentPath === '/Analytics' ? 'active' : ''}>
                         <div>
                             <Fragment set:html={analyticsIcon} />
                             <span>Analytics</span>
@@ -76,6 +76,7 @@ const currentPath = Astro.url.pathname;
 </nav>
 
 <style> 
+
     label,#sidebar-down{
         font-size: 13px;
     }
