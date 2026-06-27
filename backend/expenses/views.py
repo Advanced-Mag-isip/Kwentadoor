@@ -9,6 +9,9 @@ from .models import Wallet, Transaction, Attachment, Log
 from .serializers import WalletSerializer, TransactionSerializer, AttachmentSerializer, LogSerializer
 from .constants import EXPENSE_CATEGORIES_DATA
 
+# IMPORT ADDED: Bring in the global AuditLog model
+from audit.models import AuditLog 
+
 # Pagination class to improve performance on large datasets
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 50
@@ -30,6 +33,47 @@ class WalletViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination
 
+    # ADDED: Audit logs for creating, updating, and deleting Wallets
+    def perform_create(self, serializer):
+        wallet = serializer.save()
+        
+        AuditLog.objects.create(
+            user=self.request.user,
+            action='CREATE',
+            model_name='Wallet',
+            object_id=str(wallet.id),
+            changes={'new_data': serializer.data},
+            description="Created a new wallet."
+        )
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        old_data = self.get_serializer(instance).data
+        wallet = serializer.save()
+        
+        AuditLog.objects.create(
+            user=self.request.user,
+            action='UPDATE',
+            model_name='Wallet',
+            object_id=str(wallet.id),
+            changes={'old_data': old_data, 'new_data': serializer.data},
+            description="Updated a wallet."
+        )
+
+    def perform_destroy(self, instance):
+        old_data = self.get_serializer(instance).data
+        wallet_id = instance.id
+        instance.delete()
+        
+        AuditLog.objects.create(
+            user=self.request.user,
+            action='DELETE',
+            model_name='Wallet',
+            object_id=str(wallet_id),
+            changes={'old_data': old_data},
+            description="Deleted a wallet."
+        )
+
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
@@ -39,10 +83,21 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         transaction = serializer.save(user=self.request.user)
 
+        # 1. Local expense log
         Log.objects.create(
             user=self.request.user,
             action="Create Expense",
             new_data=serializer.data
+        )
+
+        # 2. Global Audit Log
+        AuditLog.objects.create(
+            user=self.request.user,
+            action='CREATE',
+            model_name='Transaction',
+            object_id=str(transaction.id),
+            changes={'new_data': serializer.data},
+            description=f"Created a new {transaction.transaction_type} transaction."
         )
 
     def perform_update(self, serializer):
@@ -51,6 +106,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
         
         transaction = serializer.save()
         
+        # 1. Local expense log
         Log.objects.create(
             user=self.request.user,
             action="Update Expense",
@@ -58,15 +114,39 @@ class TransactionViewSet(viewsets.ModelViewSet):
             new_data=serializer.data
         )
 
+        # 2. Global Audit Log
+        AuditLog.objects.create(
+            user=self.request.user,
+            action='UPDATE',
+            model_name='Transaction',
+            object_id=str(transaction.id),
+            changes={'old_data': old_data, 'new_data': serializer.data},
+            description=f"Updated a {transaction.transaction_type} transaction."
+        )
+
     def perform_destroy(self, instance):
         old_data = self.get_serializer(instance).data
+        transaction_id = instance.id
+        transaction_type = instance.transaction_type
         
+        # 1. Local expense log
         Log.objects.create(
             user=self.request.user,
             action="Delete Expense",
             old_data=old_data
         )
+        
         instance.delete()
+
+        # 2. Global Audit Log
+        AuditLog.objects.create(
+            user=self.request.user,
+            action='DELETE',
+            model_name='Transaction',
+            object_id=str(transaction_id),
+            changes={'old_data': old_data},
+            description=f"Deleted a {transaction_type} transaction."
+        )
 
     @action(detail=False, methods=['get'])
     def analytics(self, request):
