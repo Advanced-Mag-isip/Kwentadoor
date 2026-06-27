@@ -1,0 +1,159 @@
+---
+interface Props {
+  chartId?: string;
+  period?: string;
+  year?: number;
+  month?: number | null;
+}
+
+const {
+  chartId = "expenses-by-category-chart",
+  period = "yearly",
+  year = 2026,
+  month = null,
+} = Astro.props;
+---
+
+<div class="chart-wrap" id={chartId} data-period={period} data-year={year} data-month={month === null ? "" : month}>
+  <div class="chart-status" id={`${chartId}-status`}>Loading...</div>
+  <canvas class="chart-canvas" id={`${chartId}-canvas`} style="display:none;"></canvas>
+</div>
+
+<script>
+  const _chartId = "expenses-by-category-chart";
+
+  async function _loadChart() {
+    const canvas = document.getElementById(`${_chartId}-canvas`);
+    const status = document.getElementById(`${_chartId}-status`);
+    if (!canvas || !status) return;
+
+    if (typeof Chart === "undefined") {
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Chart.js CDN load timed out")), 8000));
+      await Promise.race([
+        new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js";
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        }),
+        timeout,
+      ]);
+    }
+
+    const BASE = "http://127.0.0.1:8000/api/analytics";
+    const el = document.getElementById(_chartId);
+    const defaults = { period: el.dataset.period, year: parseInt(el.dataset.year), month: el.dataset.month ? parseInt(el.dataset.month) : null };
+    const f = window.__chartFilters || defaults;
+    const p = f.period;
+    const y = f.year;
+    const m = f.month;
+
+    let qs = `period=${p}&year=${y}`;
+    if (m) qs += `&month=${m}`;
+
+    try {
+      const res = await fetch(`${BASE}/charts/expenses-by-category/?${qs}`, { headers: { Accept: "application/json" } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      const keys = Object.keys(data);
+      if (keys.length === 0) {
+        status.textContent = "No data for this timeframe.";
+        canvas.style.display = "none";
+        status.style.display = "block";
+        return;
+      }
+
+      const periodKey = keys[0];
+      const cats = data[periodKey];
+      const catEntries = Object.entries(cats).sort((a, b) => parseFloat(b[1].amount) - parseFloat(a[1].amount));
+
+      if (catEntries.length === 0) {
+        status.textContent = "No data for this timeframe.";
+        canvas.style.display = "none";
+        status.style.display = "block";
+        return;
+      }
+
+      const labels = catEntries.map((e) => e[0]);
+      const amounts = catEntries.map((e) => parseFloat(e[1].amount) || 0);
+
+      status.style.display = "none";
+      canvas.style.display = "block";
+
+      if (canvas._chart) canvas._chart.destroy();
+
+      canvas._chart = new Chart(canvas, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Amount (₱)",
+              data: amounts,
+              backgroundColor: "#1A2B4A",
+              borderRadius: 3,
+              barThickness: 24,
+            },
+          ],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 600 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => "₱" + Number(ctx.parsed.x).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+              },
+            },
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: {
+                callback: (val) => {
+                  if (val >= 1000000) return "₱" + (val / 1000000).toFixed(1) + "M";
+                  if (val >= 1000) return "₱" + (val / 1000).toFixed(0) + "k";
+                  return "₱" + val;
+                },
+                font: { size: 10 },
+              },
+              grid: { color: "rgba(0,0,0,0.06)" },
+            },
+            y: {
+              ticks: { font: { size: 10 } },
+              grid: { display: false },
+            },
+          },
+        },
+      });
+    } catch (err) {
+      status.textContent = "Error: " + err.message;
+      canvas.style.display = "none";
+      status.style.display = "block";
+      console.error("ExpensesByCategory error:", err);
+    }
+  }
+
+  function _init() {
+    _loadChart().catch(err => {
+      const status = document.getElementById(`${_chartId}-status`);
+      if (status) status.textContent = "Error: " + err.message;
+      console.error("ExpensesByCategory init error:", err);
+    });
+  }
+
+  _init();
+  document.addEventListener("astro:page-load", _init);
+  document.addEventListener("chart-update", _loadChart);
+</script>
+
+<style>
+  .chart-wrap { width: 100%; height: 100%; position: relative; font-family: system-ui, sans-serif; }
+  .chart-status { text-align: center; color: #9ca3af; padding: 1.5rem; font-size: 0.875rem; }
+  .chart-canvas { width: 100% !important; height: 100% !important; max-height: 100%; }
+</style>

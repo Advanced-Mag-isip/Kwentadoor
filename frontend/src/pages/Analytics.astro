@@ -1,5 +1,12 @@
 ---
 import Layout from "../layouts/Layout.astro";
+
+import AnalyticsFilters from "../components/AnalyticsFilters.astro";
+import IncomeVsExpenses from "../Charts/IncomeVsExpenses.astro";
+import RunawayChart from "../Charts/RunawayChart.astro";
+import ExpensesByCategory from "../Charts/ExpensesByCategory.astro";
+import IncomeUtilization from "../Charts/IncomeUtilization.astro";
+
 import cashIcon from "../assets/cash-icon.svg?raw";
 import cashUpIcon from "../assets/cash-up-icon.svg?raw";
 import cashDownIcon from "../assets/cash-down-arrow.svg?raw";
@@ -9,18 +16,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
 
 <Layout>
     <div id="analytics-container">
-        <div id="filter-header">
-            <span id="filter-summary-text">Showing Results for JUNE 2026</span>
-            
-            <div id="filters">
-                <form>
-                    <input type="text" id="filter-category" class="filter" name="filter-category" placeholder="Filter by">
-                    <input type="text" id="filter-specifications" class="filter" name="filter-specifications" placeholder="Select period">
-                </form>
-                <button id="export-button" class="custom-button">Export</button>
-            </div>
-        </div>
-
+        <AnalyticsFilters />
         <div id="metrics-container">
             <div class="metrics-row">
                 <div class="metric-card">
@@ -111,36 +107,36 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
             <div class="metrics-row">
                 <div class="graph-card">
                     <span class="graph-label orange">TOTAL INCOMING VS OUTGOING THIS MONTH</span>
-                    <span class="graph-content">
-                        INSERT GRAPH HERE
-                    </span>
+                    <div class="graph-content">
+                        <IncomeVsExpenses />
+                    </div>
                 </div>
 
                 <div class="graph-card">
                     <span class="graph-label blue">FUNDING RUNAWAY PROJECTION</span>
-                    <span class="graph-content">
-                        INSERT GRAPH HERE
-                    </span>
+                    <div class="graph-content">
+                        <RunawayChart />
+                    </div>
                 </div>
             </div>
 
             <div class="metrics-row">
                 <div class="graph-card">
                     <span class="graph-label blue">EXPENSES BY CATEGORY AND DOCUMENTATION</span>
-                    <span class="graph-content">
-                        INSERT GRAPH HERE
-                    </span>
+                    <div class="graph-content">
+                        <ExpensesByCategory />
+                    </div>
                 </div>
 
                 <div class="graph-card">
                     <span class="graph-label orange">INCOME UTILIZATION</span>
-                    <span class="graph-content">
-                        INSERT GRAPH HERE
-                    </span>
+                    <div class="graph-content">
+                        <IncomeUtilization />
+                    </div>
                 </div>
             </div>
         </div>
-   </div>
+    </div>
 </Layout>
 
 <style>
@@ -155,77 +151,6 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
         height: auto;
         gap: 15px;
         margin-bottom: 20px; 
-    }
-
-    #filter-header {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        height: 65px;
-        width: 100%;
-        border-radius: 25px;
-        box-sizing: border-box;
-        padding: 15px;
-        background-image: var(--orange-gradient);
-        font-family: var(--display-headings-font);
-        font-size: var(--title-text);
-        font-weight: bold;
-        color: var(--white);
-        box-shadow: var(--default-shadow);
-        margin-bottom: 20px;
-    }
-
-    #filters, form {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 8px; 
-    }
-
-    .filter {
-        appearance: none; 
-        border: 2px solid var(--white); 
-        outline: none; 
-        width: 182px;
-        max-width: 300px;
-        padding: 12px 16px;
-        border-radius: 8px; 
-        background-color: var(--filter-background);
-        font-family: var(--general-text-font); 
-        font-size: 16px; 
-        color: var(--white); 
-        transition: all 0.3s ease;
-    }
-
-    .filter::placeholder {
-        color: var(--light-grey);
-    }
-
-    .custom-button {
-        appearance: none;
-        outline: none;
-        padding: 12px 24px;
-        background-image: var(--navyblue-gradient); 
-        border-radius: 8px;
-        align-items: center;
-        border: 2px solid var(--white); 
-        font-family: var(--display-headings-font);
-        font-weight: bold;
-        font-size: 16px;
-        color: var(--white);
-        cursor: pointer;
-        transition: all 0.2s ease; 
-    }
-
-    .custom-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(242, 107, 42, 0.2); 
-    }
-
-    .custom-button:active {
-        transform: translateY(1px); 
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
     }
 
     
@@ -292,11 +217,12 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
         border-radius: 25px;
         box-sizing: border-box;
         background-color: var(--white);
-        box-shadow: var(--default-shadow); 
+        box-shadow: var(--default-shadow);
     }
 
     .graph-content {
-        margin-top: auto; 
+        flex: 1;
+        min-height: 0;
     }
 
     .graph-label {

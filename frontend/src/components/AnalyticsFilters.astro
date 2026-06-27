@@ -1,0 +1,198 @@
+<div id="filter-header">
+    <span id="filter-summary-text">No filters selected</span>
+    
+    <div id="filters">
+        <form>
+            <select id="filter-period-type" class="filter" name="period_type">
+                <option value="" disabled selected>Filter by</option>
+                <option value="month">Month</option>
+                <option value="quarter">Quarter</option>
+                <option value="year">Year</option>
+            </select>
+            <select id="filter-year" class="filter" name="year">
+                <option value="" disabled selected>Select Year</option>
+            </select>
+            <select id="filter-period-value" class="filter" name="period_value">
+                <option value="" disabled selected></option>
+            </select>
+        </form>
+        <button id="apply-filters" type="button" class="custom-button">Apply</button>
+        <button id="export-button" type="button" class="custom-button">Export</button>
+    </div>
+</div>
+
+<script>
+    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const CUR_YEAR = new Date().getFullYear();
+    const CUR_MONTH = new Date().getMonth();
+    const CUR_QUARTER = Math.ceil((CUR_MONTH + 1) / 3);
+    const AVAIL_YEARS = [];
+    for (let y = 2020; y <= CUR_YEAR + 1; y++) AVAIL_YEARS.push(y);
+
+    const typeSel = document.getElementById('filter-period-type');
+    const yearSel = document.getElementById('filter-year');
+    const valueSel = document.getElementById('filter-period-value');
+    const summaryText = document.getElementById('filter-summary-text');
+
+    for (let y = 2020; y <= CUR_YEAR + 1; y++) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        if (y === CUR_YEAR) opt.selected = true;
+        yearSel.appendChild(opt);
+    }
+
+    function populatePeriodValue() {
+        const type = typeSel.value;
+        const y = parseInt(yearSel.value);
+        valueSel.innerHTML = '<option value="" disabled selected></option>';
+        if (!type || !y || isNaN(y)) return;
+        if (type === 'year') {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            opt.selected = true;
+            valueSel.appendChild(opt);
+        } else if (type === 'quarter') {
+            const maxQ = y === CUR_YEAR ? CUR_QUARTER : 4;
+            for (let q = 1; q <= maxQ; q++) {
+                const opt = document.createElement('option');
+                opt.value = 'Q' + q;
+                opt.textContent = 'Q' + q;
+                if (y === CUR_YEAR && q === CUR_QUARTER) opt.selected = true;
+                valueSel.appendChild(opt);
+            }
+        } else {
+            const maxM = y === CUR_YEAR ? CUR_MONTH : 11;
+            for (let m = 0; m <= maxM; m++) {
+                const opt = document.createElement('option');
+                opt.value = m + 1;
+                opt.textContent = MONTHS[m];
+                if (y === CUR_YEAR && m === CUR_MONTH) opt.selected = true;
+                valueSel.appendChild(opt);
+            }
+        }
+    }
+
+    function getFilters() {
+        const type = typeSel.value;
+        const y = parseInt(yearSel.value);
+        const rawVal = valueSel.value;
+        if (!type || !y || isNaN(y)) return null;
+        if (type === 'year') return { period: 'yearly', year: y, month: null };
+        if (!rawVal) return null;
+        if (type === 'month') return { period: 'monthly', year: y, month: parseInt(rawVal) };
+        if (type === 'quarter') {
+            const q = parseInt(rawVal.replace('Q', ''));
+            return { period: 'quarterly', year: y, month: (q - 1) * 3 + 1 };
+        }
+        return null;
+    }
+
+    function updateSummary() {
+        const f = getFilters();
+        if (!f) { summaryText.textContent = 'No filters selected'; return; }
+        let text = '';
+        if (f.period === 'monthly' && f.month) {
+            text = MONTHS[f.month - 1] + ' ' + f.year;
+        } else if (f.period === 'quarterly' && f.month) {
+            const q = Math.floor((f.month - 1) / 3) + 1;
+            text = 'Q' + q + ' ' + f.year;
+        } else {
+            text = 'All ' + f.year;
+        }
+        summaryText.textContent = 'Showing Results for ' + text.toUpperCase();
+    }
+
+    function applyFilters() {
+        const f = getFilters();
+        window.__chartFilters = f;
+        updateSummary();
+        document.dispatchEvent(new CustomEvent('chart-update', { detail: f }));
+    }
+
+    typeSel.addEventListener('change', () => { populatePeriodValue(); });
+    yearSel.addEventListener('change', () => { populatePeriodValue(); });
+    valueSel.addEventListener('change', () => {});
+    document.getElementById('apply-filters').addEventListener('click', applyFilters);
+    document.getElementById('export-button').addEventListener('click', () => {});
+    document.querySelector('#filters form').addEventListener('submit', (e) => e.preventDefault());
+
+    populatePeriodValue();
+</script>
+
+<style>
+    #filter-header {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        height: 65px;
+        width: 100%;
+        border-radius: 25px;
+        box-sizing: border-box;
+        padding: 15px;
+        background-image: var(--orange-gradient);
+        font-family: var(--display-headings-font);
+        font-size: var(--title-text);
+        font-weight: bold;
+        color: var(--white);
+        box-shadow: var(--default-shadow);
+        margin-bottom: 20px;
+    }
+
+    #filters, form {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px; 
+    }
+
+    .filter {
+        appearance: none; 
+        border: 2px solid var(--white); 
+        outline: none; 
+        width: 182px;
+        max-width: 300px;
+        padding: 12px 16px;
+        border-radius: 8px; 
+        background-color: var(--filter-background);
+        font-family: var(--general-text-font); 
+        font-size: 16px; 
+        color: var(--white); 
+        transition: all 0.3s ease;
+    }
+
+    .custom-button {
+        appearance: none;
+        outline: none;
+        padding: 12px 24px;
+        background-image: var(--navyblue-gradient); 
+        border-radius: 8px;
+        align-items: center;
+        border: 2px solid var(--white); 
+        font-family: var(--display-headings-font);
+        font-weight: bold;
+        font-size: 16px;
+        color: var(--white);
+        cursor: pointer;
+        transition: all 0.2s ease; 
+    }
+
+    .custom-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(242, 107, 42, 0.2); 
+    }
+
+    .custom-button:active {
+        transform: translateY(1px); 
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+    }
+
+    select.filter {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 36px;
+    }
+</style>
