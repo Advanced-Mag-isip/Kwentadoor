@@ -267,3 +267,43 @@ def delete_adjustment(request, entry_id, adjustment_id):
     recalculate_entry(entry)
     updated_entry = PayrollEntrySerializer(entry)
     return Response(updated_entry.data)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_worker_rates_view(request, pk):
+    """
+    PUT /api/payroll/workers/<id>/rates/
+    Updates worker rates in DTR and syncs local Worker table.
+    """
+    worker = get_object_or_404(Worker, pk=pk)
+
+    allowed_fields = [
+        'hourly_rate',
+        'daily_salary',
+        'monthly_salary',
+        'overtime_hourly_rate',
+        'payment_type',
+    ]
+
+    data = {
+        k: v for k, v in request.data.items()
+        if k in allowed_fields
+    }
+
+    if not data:
+        return Response(
+            {'error': 'No valid fields provided'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        from .services.payroll_calculator import update_worker_rates
+        worker = update_worker_rates(worker, data)
+        serializer = WorkerSerializer(worker)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

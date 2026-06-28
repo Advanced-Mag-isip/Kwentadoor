@@ -22,4 +22,6 @@ urlpatterns = [
     # Adjustments
     path('entries/<int:entry_id>/adjustments/', views.add_adjustment),
     path('entries/<int:entry_id>/adjustments/<int:adjustment_id>/', views.delete_adjustment),
+
+    path('workers/<int:pk>/rates/', views.update_worker_rates_view),
 ]

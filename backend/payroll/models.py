@@ -54,16 +54,13 @@ class Worker(models.Model):
 
 
 class TimesheetSync(models.Model):
-    """
-    Stores raw timesheet data pulled from DTR for a period.
-    This is Step 1 — sync without calculating money yet.
-    """
     worker = models.ForeignKey(Worker, on_delete=models.CASCADE, related_name='timesheet_syncs')
     period_start = models.DateField()
     period_end = models.DateField()
     synced_at = models.DateTimeField(auto_now_add=True)
 
-    # Raw shift data from DTR
+    dtr_shift_id = models.IntegerField(null=True, blank=True)   # ADD
+
     date = models.DateField()
     morning_time_in = models.CharField(max_length=10, blank=True, null=True)
     morning_time_out = models.CharField(max_length=10, blank=True, null=True)
@@ -77,19 +74,16 @@ class TimesheetSync(models.Model):
     total_hours = models.FloatField(default=0)
 
     is_holiday = models.BooleanField(default=False)
-    HOLIDAY_TYPE_CHOICES = [
+    holiday_type = models.CharField(max_length=30, choices=[
         ('regular', 'Regular Holiday'),
         ('special_non_working', 'Special Non-Working'),
         ('special_working', 'Special Working'),
-    ]
-    holiday_type = models.CharField(
-        max_length=30,
-        choices=HOLIDAY_TYPE_CHOICES,
-        blank=True,
-        null=True
-    )
+    ], blank=True, null=True)
     holiday_name = models.CharField(max_length=100, blank=True, null=True)
     face_verified = models.BooleanField(default=False)
+
+    is_paid_in_dtr = models.BooleanField(default=False)         # ADD
+    paid_at_in_dtr = models.DateTimeField(blank=True, null=True)  # ADD
 
     def __str__(self):
         return f"{self.worker.full_name} - {self.date}"
