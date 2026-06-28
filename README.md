@@ -4,7 +4,7 @@
 | Layer    | Technology |
 |----------|-----------|
 | Backend  | Django + Django REST Framework |
-| Frontend | Next.js (TypeScript + Tailwind CSS) |
+| Frontend | Astro.js |
 | Database | PostgreSQL |
 
 

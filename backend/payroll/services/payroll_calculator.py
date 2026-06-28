@@ -19,10 +19,6 @@ def _to_decimal(value, default=0):
         return Decimal(str(default))
 
 
-# ---------------------------------------------------------------------------
-# Sync workers from DTR
-# ---------------------------------------------------------------------------
-
 def sync_workers():
     client = DTRClient()
     dtr_workers = client.get_workers()
@@ -50,10 +46,6 @@ def sync_workers():
 
     return synced
 
-
-# ---------------------------------------------------------------------------
-# Update worker rates — writes back to DTR
-# ---------------------------------------------------------------------------
 
 def update_worker_rates(worker, data):
     """
@@ -87,9 +79,6 @@ def update_worker_rates(worker, data):
     return worker
 
 
-# ---------------------------------------------------------------------------
-# Sync timesheets from DTR
-# ---------------------------------------------------------------------------
 
 def sync_timesheets(period_start, period_end):
     client = DTRClient()
@@ -135,10 +124,6 @@ def sync_timesheets(period_start, period_end):
 
     return created_syncs
 
-
-# ---------------------------------------------------------------------------
-# Build payroll run using DTR's salary calculator
-# ---------------------------------------------------------------------------
 
 def build_payroll_run(period_start, period_end, generated_by):
     """
@@ -232,10 +217,6 @@ def build_payroll_run(period_start, period_end, generated_by):
     return payroll_run, entries
 
 
-# ---------------------------------------------------------------------------
-# Recalculate entry after adjustments
-# ---------------------------------------------------------------------------
-
 def recalculate_entry(entry):
     adjustments = entry.adjustments.all()
 
@@ -265,14 +246,9 @@ def recalculate_entry(entry):
 
     return entry
 
-
-# ---------------------------------------------------------------------------
-# Approve payroll — writes back to DTR
-# ---------------------------------------------------------------------------
-
 def approve_payroll_run(payroll_run, source_wallet=None):
     """
-    Finalizes payroll and marks specific shifts as paid in DTR.
+    Finalizes payroll, creates transaction entries, and writes back to DTR.
     """
     # 1. Approve the run
     payroll_run.status = 'approved'
@@ -281,10 +257,45 @@ def approve_payroll_run(payroll_run, source_wallet=None):
         payroll_run.source_wallet = source_wallet
     payroll_run.save()
 
-    # 2. Mark all entries as logged
+    # 2. Create Transaction records
+    try:
+        from expenses.models import Transaction, Wallet
+        
+        # Get or create a "Salaries & Allowances" wallet
+        salary_wallet, _ = Wallet.objects.get_or_create(
+            name='Salaries & Allowances',
+            defaults={'description': 'Payroll expenses'}
+        )
+        
+        transactions_created = 0
+        for entry in payroll_run.entries.all():
+            if entry.logged_to_expenses:
+                continue
+                
+            Transaction.objects.create(
+                transaction_type='spend funds',
+                category='salaries',
+                transaction_date=payroll_run.period_end,
+                amount=entry.net_pay,
+                counterparty=entry.worker.full_name,
+                note=f"Payroll - {entry.worker.full_name} ({payroll_run.period_start} to {payroll_run.period_end})",
+                wallet=salary_wallet,
+                user=payroll_run.generated_by,
+            )
+            transactions_created += 1
+        
+        payroll_run.notes = (payroll_run.notes or '') + f"\n✅ Transactions created: {transactions_created} on {timezone.now().strftime('%Y-%m-%d %H:%M')}"
+        payroll_run.save()
+        
+    except Exception as e:
+        print(f"⚠️ Could not log to expenses: {e}")
+        payroll_run.notes = (payroll_run.notes or '') + f"\n⚠️ Transaction creation error: {e}"
+        payroll_run.save()
+
+    # 3. Mark all entries as logged
     payroll_run.entries.update(logged_to_expenses=True)
 
-    # 3. Get all unpaid shift IDs for this period
+    # 4. Get all unpaid shift IDs for this period
     shift_ids = list(
         TimesheetSync.objects.filter(
             period_start=payroll_run.period_start,
@@ -294,13 +305,12 @@ def approve_payroll_run(payroll_run, source_wallet=None):
         .values_list('dtr_shift_id', flat=True)
     )
 
-    # 4. Write back to DTR
+    # 5. Write back to DTR
     if shift_ids:
         try:
             client = DTRClient()
             client.mark_paid(shift_ids)
 
-            # Update local TimesheetSync records
             TimesheetSync.objects.filter(
                 dtr_shift_id__in=shift_ids
             ).update(
