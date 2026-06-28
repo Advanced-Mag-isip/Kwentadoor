@@ -250,14 +250,14 @@ def approve_payroll_run(payroll_run, source_wallet=None):
     """
     Finalizes payroll, creates transaction entries, and writes back to DTR.
     """
-    # 1. Approve the run
+    # Approve the run
     payroll_run.status = 'approved'
     payroll_run.approved_at = timezone.now()
     if source_wallet:
         payroll_run.source_wallet = source_wallet
     payroll_run.save()
 
-    # 2. Create Transaction records
+    # Create Transaction records
     try:
         from expenses.models import Transaction, Wallet
         
@@ -284,18 +284,18 @@ def approve_payroll_run(payroll_run, source_wallet=None):
             )
             transactions_created += 1
         
-        payroll_run.notes = (payroll_run.notes or '') + f"\n✅ Transactions created: {transactions_created} on {timezone.now().strftime('%Y-%m-%d %H:%M')}"
+        payroll_run.notes = (payroll_run.notes or '') + f"\nTransactions created: {transactions_created} on {timezone.now().strftime('%Y-%m-%d %H:%M')}"
         payroll_run.save()
         
     except Exception as e:
-        print(f"⚠️ Could not log to expenses: {e}")
-        payroll_run.notes = (payroll_run.notes or '') + f"\n⚠️ Transaction creation error: {e}"
+        print(f"Could not log to expenses: {e}")
+        payroll_run.notes = (payroll_run.notes or '') + f"\nTransaction creation error: {e}"
         payroll_run.save()
 
-    # 3. Mark all entries as logged
+    # Mark all entries as logged
     payroll_run.entries.update(logged_to_expenses=True)
 
-    # 4. Get all unpaid shift IDs for this period
+    # Get all unpaid shift IDs for this period
     shift_ids = list(
         TimesheetSync.objects.filter(
             period_start=payroll_run.period_start,
@@ -305,7 +305,7 @@ def approve_payroll_run(payroll_run, source_wallet=None):
         .values_list('dtr_shift_id', flat=True)
     )
 
-    # 5. Write back to DTR
+    # Write back to DTR
     if shift_ids:
         try:
             client = DTRClient()
@@ -318,8 +318,8 @@ def approve_payroll_run(payroll_run, source_wallet=None):
                 paid_at_in_dtr=timezone.now()
             )
 
-            print(f"✅ Marked {len(shift_ids)} shifts as paid in DTR")
+            print(f"Marked {len(shift_ids)} shifts as paid in DTR")
         except Exception as e:
-            print(f"⚠️ Could not write back to DTR: {e}")
+            print(f"Could not write back to DTR: {e}")
 
     return payroll_run
