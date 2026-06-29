@@ -1,0 +1,728 @@
+---
+import Layout from '../layouts/Layout.astro';
+import WalletCard from '../components/WalletCard.astro';
+import IconBalanceShow from '../assets/funds-visible-icon.svg?raw';
+import IconAddFunds from '../assets/add-funds-icon.svg?raw'; 
+import IconSpendFunds from '../assets/spend-funds-icon.svg?raw';
+import IconMoveFunds from '../assets/move-funds-icon.svg?raw';
+import IconCash from "../assets/cash-icon.svg?raw";
+import IconBank from "../assets/bank-icon.svg?raw";
+import IconEWallet from "../assets/gcash-icon.svg?raw";
+import IconEdit from "../assets/pen-line-icon.svg?raw";
+import IconDelete from "../assets/trash-2-icon.svg?raw";
+
+const walletType = {
+  cash: {
+    icon: IconCash,
+  },
+  bank: {
+    icon: IconBank,
+  },
+  "e-wallet": {
+    icon: IconEWallet,
+  },
+};
+const wallets = [
+    {
+        id: 1,
+        name: "Petty Cash",
+        description: "Daily operational cash kept on hand for small business expenses and immediate purchases. This wallet is used for quick transactions that do not require bank transfers or digital payments. Regular monitoring helps ensure accurate cash reconciliation.",
+        amount: 1250.00,
+        type: "cash",
+        created_at: "2026-06-01T08:00:00Z",
+        updated_at: "2026-06-25T14:30:00Z"
+    },
+    {
+        id: 2,
+        name: "Emergency Cash",
+        description: "Reserved cash set aside for unexpected expenses or urgent financial situations. These funds should only be used when absolutely necessary to avoid disrupting regular operations. Maintaining this reserve provides additional financial security.",
+        amount: 5000.00,
+        type: "cash",
+        created_at: "2026-06-01T08:00:00Z",
+        updated_at: "2026-06-20T09:15:00Z"
+    },
+    {
+        id: 3,
+        name: "GCash",
+        description: "Primary digital wallet used for mobile payments, online purchases, and fund transfers. It offers a convenient way to send and receive money instantly. Transactions are synchronized regularly to keep balances up to date.",
+        amount: 2845.50,
+        type: "e-wallet",
+        created_at: "2026-05-10T12:00:00Z",
+        updated_at: "2026-06-27T17:45:00Z"
+    },
+    {
+        id: 4,
+        name: "Maya Wallet",
+        description: "Secondary e-wallet dedicated to online shopping, subscriptions, and digital services. Keeping it separate from the primary wallet makes budgeting and expense tracking easier. It also serves as a backup payment option when needed.",
+        amount: 9120.00,
+        type: "e-wallet",
+        created_at: "2026-05-15T12:00:00Z",
+        updated_at: "2026-06-26T11:20:00Z"
+    },
+    {
+        id: 5,
+        name: "UnionBank Savings",
+        description: "Main savings account used for storing long-term funds and personal savings. Interest earned helps grow the balance over time while keeping funds readily accessible. Large deposits and planned withdrawals are typically managed through this account.",
+        amount: 38750.80,
+        type: "bank",
+        created_at: "2026-04-01T09:00:00Z",
+        updated_at: "2026-06-28T10:30:00Z"
+    },
+    {
+        id: 6,
+        name: "BDO Checkings",
+        description: "Primary checking account used for recurring bills, supplier payments, and everyday banking transactions. It supports higher transaction volumes and provides easy access through checks and online banking. Regular activity ensures smooth financial operations.",
+        amount: 112450.25,
+        type: "bank",
+        created_at: "2026-03-01T09:00:00Z",
+        updated_at: "2026-06-29T08:15:00Z"
+    }
+];
+const selectedWallet = wallets[0];
+
+const icon = walletType[selectedWallet.type as keyof typeof walletType].icon;
+
+---
+
+<Layout>
+    <div class="wallets-page">
+        <div class="page-inner">
+            <div class="balancecard">
+                <div class="wallet-button-group">
+                    <button
+                        id="edit-wallet"
+                        class="wallet-button"
+                        type="button"
+                        aria-label="Edit wallet"
+                    >
+                        <span set:html={IconEdit}></span>
+                        <span>Edit</span>
+                    </button>
+
+                    <button
+                        id="delete-wallet"
+                        class="wallet-button danger"
+                        type="button"
+                        aria-label="Delete wallet"
+                    >
+                        <span set:html={IconDelete}></span>
+                        <span>Delete</span>
+                    </button>
+                </div>
+                <div class="balancecard-header">
+                    <div
+                        id="wallet-icon"
+                        class="balancecard-icon-wrapper"
+                        set:html={icon}
+                    ></div>
+                    <div
+                        id="wallet-name"
+                        class="balancecard-heading"
+                    >
+                        {selectedWallet.name}
+                    </div>
+                </div>
+
+                <div
+                    id="balance-amount"
+                    class="balancecard-amount truncate"
+                    data-balance={selectedWallet.amount}
+                >
+                    {`₱${selectedWallet.amount.toLocaleString("en-PH", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    })}`}
+                </div>
+
+                <div
+                    id="wallet-description"
+                    class="wallet-description"
+                >
+                    {selectedWallet.description}
+                </div>
+
+                <div class="balancecard-action-buttons">
+                    <button class="card-button"><span set:html={IconAddFunds}></span>Add Funds</button>
+                    <button class="card-button"><span set:html={IconSpendFunds}></span>Spend Funds</button>
+                    <button class="card-button"><span set:html={IconMoveFunds}></span>Move Funds</button>
+                </div>
+            </div>
+            <div class="left-container">
+                <div class="button-group flex justify-between items-center">
+                    <p class="[font-family:var(--display-headings-font)] font-bold">WALLETS</p>
+                    <button class="p-2 px-5 bg-[var(--primary-orange)] rounded-2xl text-white">
+                        Add Wallet
+                    </button>
+                </div>
+                    <div class="h-100 overflow-y-auto overflow-x-hidden scrollbar-thin">
+                        <div class="wallets-group">
+                        {
+                            wallets.map((wallet) => (
+                                <div
+                                    class="wallet-item"
+                                    data-id={wallet.id}
+                                    data-name={wallet.name}
+                                    data-description={wallet.description}
+                                    data-amount={wallet.amount}
+                                    data-type={wallet.type}
+                                >
+                                    <WalletCard
+                                        name={wallet.name}
+                                        amount={`₱${wallet.amount.toLocaleString("en-PH", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        })}`}
+                                        type={wallet.type as "cash" | "e-wallet" | "bank"}
+                                    />
+                                </div>
+                            ))
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="transaction-history">
+                <div class="transaction-headings blue">
+                    <div class="transaction-top-row">
+                        <div>
+                            <p>RECENT TRANSACTIONS</p>
+                            <p>Showing results for </p>
+                        </div>
+                        <div class="filtergroup">
+                            <button class="filter-chip active" data-filter="all">All</button>
+                            <button class="filter-chip" data-filter="added">Added Funds</button>
+                            <button class="filter-chip" data-filter="spent">Spent Funds</button>
+                        </div>
+                    </div>
+                    <div class="transactionlabels">
+                        <p>AMOUNT</p>
+                        <p>WALLET</p>
+                        <p>CATEGORY</p>
+                        <p>NOTE</p>
+                        <p>USER</p>
+                        <p>DATE</p>
+                    </div>
+                </div>
+                <div class="transaction-history-scrollable">
+                    <div class="transaction-history-slots">
+                        <div class="transactionrow">
+                            <p>P1021</p>
+                            <p>GCash</p>
+                            <p>Food and waht</p>
+                            <p>--</p>
+                            <p>User 1</p>
+                            <p>Jun 26, 2026</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</Layout>
+
+<style>
+    .page-inner {
+        --balancecard-width: 680px;
+        --heading-text: 1.75rem;
+        --label-text: 0.8125rem;
+        --small-text: 0.875rem;
+    }
+
+    .wallets-page {
+        display: flex;
+        justify-content: center;
+    }
+
+    .page-inner {
+        width: 100%;
+        max-width: 1600px;
+        display: grid;
+        grid-template-columns: var(--balancecard-width) 1fr;
+        grid-template-rows: auto auto;
+        align-items: start;
+        gap: var(--space-lg);
+    }
+
+    /* ---------- Balance card ---------- */
+    .balancecard {
+        position: relative;
+        grid-column: 1;
+        grid-row: 1;
+        background: var(--orange-gradient);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: var(--space-md);
+        box-shadow: var(--default-shadow);
+        min-width: 0;
+        transition: transform .25s ease, box-shadow .25s ease;
+        height: 100%;
+    }
+
+    .balancecard:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 18px 36px rgba(0,0,0,.16);
+    }
+
+    .balancecard-header {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
+    }
+
+    .balancecard-icon-wrapper {
+        width: 5rem;
+        height: 5rem;
+        flex-shrink: 0;
+        border-radius: var(--radius-md);
+        background-color: rgba(255,255,255,.3);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .balancecard-icon-wrapper :global(svg) {
+        width: 3rem;
+        height: 3rem;
+        stroke: #ffffff;
+    }
+
+    .balancecard-heading {
+        font-family: var(--display-headings-font);
+        font-size: var(--heading-text);
+        font-weight: 700;
+    }
+
+    .wallet-button-group {
+        position: absolute;
+        top: var(--space-md);
+        right: var(--space-md);
+
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .wallet-button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        padding: 0.55rem 0.9rem;
+
+        border: none;
+        border-radius: var(--radius-pill);
+
+        background: rgba(255,255,255,.18);
+        color: white;
+
+        font-family: var(--general-text-font);
+        font-size: 0.875rem;
+        font-weight: 600;
+
+        cursor: pointer;
+
+        transition:
+            background .2s ease,
+            transform .2s ease;
+    }
+
+    .wallet-button:hover {
+        background: rgba(255,255,255,.28);
+        transform: translateY(-2px);
+    }
+
+    .wallet-button:active {
+        transform: scale(.97);
+    }
+
+    .wallet-button span:first-child {
+        display: flex;
+        align-items: center;
+    }
+
+    .wallet-button svg {
+        width: 18px;
+        height: 18px;
+        stroke: white;
+    }
+
+    .balancecard-amount {
+        font-family: var(--display-headings-font);
+        font-size: 60px;
+        font-weight: 700;
+        transition: opacity .25s ease, transform .25s ease;
+    }
+
+    .wallet-description {
+        display: flex;
+        flex-wrap: wrap;
+        font-size: var(--small-text);
+        opacity: .9;
+    }
+
+    .balancecard-action-buttons {
+        display: flex;
+        gap: var(--space-sm);
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .card-button {
+        flex: 1;
+        min-width: 120px;
+        max-width: 150px;
+        padding: var(--space-sm);
+        border: 2px solid #ffffff;
+        border-radius: var(--radius-md);
+        background-color: color-mix(in srgb, var(--primary-orange) 50%, transparent);
+        color: #ffffff;
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: bold;
+        box-shadow: var(--default-shadow);
+        transition: transform .15s ease, background-color .15s ease, box-shadow .15s ease;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .card-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0,0,0,.15);
+    }
+
+    .card-button:active {
+        transform: scale(.97);
+    }
+
+    /* ---------- Left container / wallets ---------- */
+    .left-container {
+        grid-column: 2;
+        grid-row: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        gap: 5px;
+    }
+
+    .wallets-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: var(--space-md);
+        padding-top: 10px;
+    }
+
+    .wallet-item,
+    .wallet-card {
+        width: 100%;
+    }
+
+    /* ---------- Transaction history ---------- */
+    .transaction-history {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        background-color: var(--white);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--default-shadow);
+        min-width: 0;
+    }
+
+    .transaction-headings {
+        padding: var(--space-md) var(--space-lg);
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .transaction-top-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+    }
+
+    .transaction-top-row > div:first-child p:first-child {
+        font-family: var(--display-headings-font);
+        font-size: 1.125rem;
+        font-weight: 700;
+        letter-spacing: .02em;
+    }
+
+    .transaction-top-row > div:first-child p:last-child {
+        font-size: var(--small-text);
+        opacity: .85;
+        margin-top: 2px;
+    }
+
+    .filtergroup {
+        display: flex;
+        gap: var(--space-sm);
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .filter-chip {
+        border: 2px solid #ffffff;
+        border-radius: var(--radius-pill);
+        padding: var(--space-sm) var(--space-md);
+        font-size: var(--small-text);
+        cursor: pointer;
+        background: transparent;
+        color: white;
+        transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+    }
+
+    .filter-chip:hover {
+        background: rgba(255,255,255,.15);
+    }
+
+    .filter-chip.active {
+        background: var(--primary-orange);
+        border-color: var(--primary-orange);
+        color: white;
+    }
+
+    .transactionlabels {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr 1fr;
+        gap: var(--space-sm);
+    }
+
+    .transactionlabels p {
+        font-size: var(--label-text);
+        font-weight: 600;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        opacity: .85;
+    }
+
+    .transaction-history-scrollable {
+        min-height: 200px;
+        max-height: 500px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+    }
+
+    .transactionrow {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr 1fr;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: var(--space-md) var(--space-lg);
+        border-bottom: 1px solid var(--light-grey);
+        transition: background-color .15s ease, transform .15s ease;
+    }
+
+    .transactionrow p {
+        font-size: var(--small-text);
+    }
+
+    .transactionrow p:first-child {
+        font-weight: 600;
+    }
+
+    .wallet-item {
+        cursor: pointer;
+    }
+
+    .wallet-item.active .card-body {
+        background-image: var(--orange-gradient) !important;
+    }
+
+    .wallet-item.active {
+        /* active state handled by card background */
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 1400px) {
+        .page-inner {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto auto;
+        }
+        .balancecard {
+            grid-column: 1;
+            grid-row: 1;
+        }
+        .left-container {
+            grid-column: 1;
+            grid-row: 2;
+        }
+        .transaction-history {
+            grid-column: 1;
+            grid-row: 3;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .page-inner {
+            gap: var(--space-md);
+        }
+
+        /* --- Balance card --- */
+        .balancecard {
+            padding: var(--space-md);
+            gap: var(--space-sm);
+            border-radius: var(--radius-md);
+        }
+
+        .balancecard-icon-wrapper {
+            width: 3rem;
+            height: 3rem;
+            border-radius: var(--radius-sm);
+        }
+
+        .balancecard-icon-wrapper :global(svg) {
+            width: 1.8rem;
+            height: 1.8rem;
+        }
+
+        .balancecard-heading {
+            font-size: 1.2rem;
+        }
+
+        .balancecard-amount {
+            font-size: 2rem;
+        }
+
+        .wallet-description {
+            font-size: 0.75rem;
+        }
+
+        .wallet-button {
+            padding: 0.4rem 0.65rem;
+            font-size: 0.75rem;
+        }
+
+        .wallet-button svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .card-button {
+            font-size: 0.75rem;
+            padding: 6px 8px;
+            min-width: 90px;
+        }
+
+        .balancecard-action-buttons {
+            justify-content: center;
+        }
+
+        /* --- Wallets grid --- */
+        .wallets-group {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: var(--space-sm);
+        }
+
+        /* --- Transaction history --- */
+        .transaction-headings {
+            padding: var(--space-sm) var(--space-md);
+            gap: var(--space-sm);
+        }
+
+        .transaction-top-row > div:first-child p:first-child {
+            font-size: 0.9rem;
+        }
+
+        .filter-chip {
+            padding: 5px 10px;
+            font-size: 0.7rem;
+        }
+
+        .transactionlabels,
+        .transactionrow {
+            grid-template-columns: 1fr 1fr 1.2fr 1fr;
+        }
+
+        .transactionrow {
+            padding: var(--space-sm) var(--space-md);
+        }
+
+        .transactionlabels p:nth-child(4),
+        .transactionlabels p:nth-child(5),
+        .transactionrow p:nth-child(4),
+        .transactionrow p:nth-child(5) {
+            display: none;
+        }
+    }
+</style>
+
+<script define:vars={{ IconCash, IconBank, IconEWallet }}>
+    // Temporary transaction filter UI
+    const chips = document.querySelectorAll(".filter-chip");
+    const transactionLabel = document.querySelector(
+        ".transaction-top-row div p:nth-child(2)"
+    );
+
+    chips.forEach((chip) => {
+        chip.addEventListener("click", () => {
+            chips.forEach((c) => c.classList.remove("active"));
+            chip.classList.add("active");
+
+            const filter = chip.dataset.filter;
+            if (!transactionLabel) return;
+
+            switch (filter) {
+                case "added":
+                    transactionLabel.textContent = "Showing results for Added Funds";
+                    break;
+                case "spent":
+                    transactionLabel.textContent = "Showing results for Spent Funds";
+                    break;
+                default:
+                    transactionLabel.textContent = "Showing results for All Transactions";
+            }
+        });
+    });
+
+    const walletIcons = {
+        cash: IconCash,
+        bank: IconBank,
+        "e-wallet": IconEWallet
+    };
+
+    const walletItems = document.querySelectorAll(".wallet-item");
+    const walletName = document.getElementById("wallet-name");
+    const walletDescription = document.getElementById("wallet-description");
+    const walletAmount = document.getElementById("balance-amount");
+    const walletIcon = document.getElementById("wallet-icon");
+
+    walletItems.forEach(item => {
+        item.addEventListener("click", () => {
+            // Reset all card bodies back to navy
+            walletItems.forEach(w => {
+                w.classList.remove("active");
+                const body = w.querySelector(".card-body");
+                if (body) body.style.backgroundImage = "var(--navyblue-gradient)";
+                const shell = w.querySelector(".card-shell");
+                if (shell) shell.style.backgroundColor = "var(--primary-navyblue)";
+            });
+
+            // Set clicked card body to orange
+            item.classList.add("active");
+            const activeBody = item.querySelector(".card-body");
+            if (activeBody) activeBody.style.backgroundImage = "var(--orange-gradient)";
+            const activeShell = item.querySelector(".card-shell");
+            if (activeShell) activeShell.style.backgroundColor = "var(--primary-orange-dark)";
+
+            walletName.textContent = item.dataset.name;
+            walletDescription.textContent = item.dataset.description;
+
+            const amount = Number(item.dataset.amount);
+            walletAmount.textContent = "₱" + amount.toLocaleString("en-PH", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            walletAmount.dataset.balance = amount;
+            walletIcon.innerHTML = walletIcons[item.dataset.type];
+        });
+    });
+</script>

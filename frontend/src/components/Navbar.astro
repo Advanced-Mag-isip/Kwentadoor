@@ -1,16 +1,32 @@
+---
+import IconSidebar from "../assets/dashboard-icon.svg?raw"
+---
+
 <div id="navbar">
-	<nav>
-		<a href="/">Home</a>
-		<a href="/about">About</a>
-		<a href="/contact">Contact</a>
-	</nav>
+    <div class="left-group">
+        <button id="sidebar-toggle" class="bg-[var(--primary-navyblue)] p-2 rounded-xl [&>svg]:stroke-white" set:html={IconSidebar} />
+    </div>
+    <div class="right-group">
+        <a href="/">Users</a>
+    </div>
 </div>
 
 <style>
     #navbar {
-        background-color: #471919;
-        background-blur: 10px;
-        padding: 10px;
-        
+        background-color: #ffffff00;
+        background-blur: 1px;
+        box-shadow: var();
+        height: 60px;
+        padding: 20px;
+        border-bottom: 1px solid #00000050;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .right-group{
+        display: flex;
+        gap: 20px;
     }
 </style>
