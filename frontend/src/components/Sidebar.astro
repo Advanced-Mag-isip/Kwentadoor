@@ -65,7 +65,7 @@ const currentPath = Astro.url.pathname;
         </div>
         
         <div id = "sidebar-down" class = "nav-group">
-            <a href = "/">
+            <a href =  "/Login" class={currentPath === '/Analytics' ? 'active' : ''}>
                 <div>
                     <Fragment set:html={logoutLogo} />
                     <span>Logout</span>
