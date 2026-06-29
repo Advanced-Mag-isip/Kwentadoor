@@ -1,5 +1,7 @@
+from django.http import JsonResponse
 from django.shortcuts import render
 from expenses.models import Transaction
+from collections import defaultdict
 
 
 ENDPOINTS = [
@@ -90,3 +92,23 @@ def endpoints_view(request):
         "endpoints": ENDPOINTS,
         "available_years": year_list,
     })
+
+
+def available_periods(request):
+    qs = Transaction.objects.all()
+    if request.user.is_authenticated:
+        qs = qs.filter(user=request.user)
+
+    year_dates = qs.dates("transaction_date", "year", order="ASC")
+    years = [d.year for d in year_dates]
+
+    months_by_year = defaultdict(set)
+    month_dates = qs.dates("transaction_date", "month", order="ASC")
+    for d in month_dates:
+        months_by_year[d.year].add(d.month)
+
+    result = {"years": years, "months": {}}
+    for y in years:
+        result["months"][str(y)] = sorted(months_by_year[y])
+
+    return JsonResponse(result)

@@ -22,7 +22,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">TOTAL INCOMING FUNDS</span>
-                        <span class="metric-value">23,983,389.00</span>
+                        <span class="metric-value" id="metric-incoming-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
                         <Fragment set:html={cashDownIcon} />
@@ -32,7 +32,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
                  <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">TOTAL OUTGOING FUNDS</span>
-                        <span class="metric-value">3,983,389.00</span>
+                        <span class="metric-value" id="metric-outgoing-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
                         <Fragment set:html={cashUpIcon} />
@@ -44,7 +44,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">AVERAGE INCOMING FUNDS</span>
-                        <span class="metric-value">3,983,389.00</span>
+                        <span class="metric-value" id="metric-avg-incoming-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
                         <Fragment set:html={percentageDownIcon} />
@@ -54,7 +54,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">AVERAGE OUTGOING FUNDS</span>
-                        <span class="metric-value">3,983,389.00</span>
+                        <span class="metric-value" id="metric-avg-outgoing-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
                         <Fragment set:html={percentageUpIcon} />
@@ -64,7 +64,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">TOTAL PAYROLL COSTS</span>
-                        <span class="metric-value">3,983,389.00</span>
+                        <span class="metric-value" id="metric-payroll-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
                         <Fragment set:html={cashDownIcon} />
@@ -76,7 +76,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">TOTAL MISSING RECEIPTS</span>
-                        <span class="metric-value">3,983,389.00</span>
+                        <span class="metric-value" id="metric-missing-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
                         <Fragment set:html={cashDownIcon} />
@@ -86,7 +86,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">UNDOCUMENTED EXPENSES %</span>
-                        <span class="metric-value">30%</span>
+                        <span class="metric-value" id="metric-undocumented-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
                         <Fragment set:html={cashDownIcon} />
@@ -95,11 +95,11 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
 
                 <div class="metric-card">
                     <div class="metric-info">
-                        <span class="metric-label">TOTAL MISSING RECEIPTS</span>
-                        <span class="metric-value">3,983,389.00</span>
+                        <span class="metric-label">EXPENSE GROWTH</span>
+                        <span class="metric-value" id="metric-growth-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
-                        <Fragment set:html={cashDownIcon} />
+                        <Fragment set:html={cashIcon} />
                     </div>
                 </div>
             </div>
@@ -188,9 +188,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
         margin-top: 10px;
     }
 
-    .metric-value::before {
-        content: "\20B1";
-    }
+
 
     .metric-icon-wrapper {
         display: flex;
@@ -244,3 +242,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
         background-image: var(--orange-gradient);
     }
 </style>
+
+<script>
+  import "../scripts/analytics-metrics.js";
+</script>
