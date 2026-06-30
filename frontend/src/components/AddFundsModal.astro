@@ -1,6 +1,12 @@
 ---
 import '../styles/global.css';
 import cashUpcon from "../assets/cash-up-icon.svg?raw";
+import IconWallet from '../assets/wallet-icon.svg?raw';
+import IconPeso from '../assets/philippine-peso.svg?raw';
+import IconAttachment from '../assets/paperclip.svg?raw';
+import IconTag from '../assets/tag-icon.svg?raw'; 
+import IconCounterParty from '../assets/users-icon.svg?raw'
+
 ---
 
 <dialog id="addExpenseModal" class="modal-dialog">
@@ -13,14 +19,14 @@ import cashUpcon from "../assets/cash-up-icon.svg?raw";
       </div>
 
 
-    <button type="button" id="close-modal-icon" class="close-btn">&times;</button>
+    <button type="button" id="close-modal-icon" class="close-btn">✕</button>
     </div>
     
     <div class="modal-body">
       <div class="input-group">
         <label for="fund-amount-input">FUND AMOUNT</label>
         <div class="input-wrapper">
-          <span class="input-icon font-peso">₱</span>
+          <span class="input-icon font-peso"><Fragment set:html={IconPeso}></Fragment></span>
           <input type="number" id="fund-amount-input" name="amount" placeholder="Enter Amount"/>
         </div>
       </div>
@@ -29,7 +35,7 @@ import cashUpcon from "../assets/cash-up-icon.svg?raw";
         <div class="input-group">
           <label for="spend-category-input">SPEND CATEGORY</label>
           <div class="select-wrapper">
-            <span class="input-icon"></span>
+            <span class="input-icon"><Fragment set:html = {IconTag}></Fragment></span>
             <select id="spend-category-input" name="category">
               <option value="" disabled selected>Select Category</option>
               <option value="food">Food & Beverage</option>
@@ -42,7 +48,7 @@ import cashUpcon from "../assets/cash-up-icon.svg?raw";
         <div class="input-group">
           <label for="source-wallet-input">SOURCE WALLET</label>
           <div class="select-wrapper">
-            <span class="input-icon"></span>
+            <span class="input-icon"><Fragment set:html = {IconWallet}></Fragment></span>
             <select id="source-wallet-input" name="wallet">
               <option value="" disabled selected>Select Wallet</option>
               <option value="cash">Cash</option>
@@ -64,7 +70,7 @@ import cashUpcon from "../assets/cash-up-icon.svg?raw";
           <div class="input-group">
             <label for="counter-party-input">COUNTER PARTY</label>
             <div class="input-wrapper">
-              <span class="input-icon"></span>
+              <span class="input-icon"><Fragment set:html={IconCounterParty}></Fragment></span>
               <input type="text" id="counter-party-input" name="counterparty" placeholder="Enter counter party name..." />
             </div>
           </div>
@@ -79,7 +85,7 @@ import cashUpcon from "../assets/cash-up-icon.svg?raw";
               <label>ATTACHMENT</label>
               <label class="file-upload-wrapper" for="attachment-input">
                 <span class="placeholder-text">Select files</span>
-                <span class="paperclip-icon">📎</span>
+                <span class="paperclip-icon"><Fragment set:html={IconAttachment}></Fragment></span>
               </label>
               <input type="file" id="attachment-input" name="attachment" accept="image/*" style="display: none;" />
             </div>
@@ -135,6 +141,13 @@ import cashUpcon from "../assets/cash-up-icon.svg?raw";
     --border-color: #7F7F7F;
     --bg-white: #ffffff;
   }
+
+.modal-body :global(svg),
+  .modal-body :global(svg path) {
+    stroke: var(--text-muted);
+    height: 20px;
+    width: auto;
+  }
 .modal-dialog {
     position: fixed;
     top: 50%;
@@ -143,12 +156,13 @@ import cashUpcon from "../assets/cash-up-icon.svg?raw";
     margin: 0; 
     padding: 0;
     border: none;
-    border-radius: 25px;
+    border-radius: var(--radius-lg);
     background-color: var(--white);
-    width: 470px;
-    min-height: 754px; 
-    max-width: 100%;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    max-width: 480px;
+    min-height: fit-content; 
+    width: 100%;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.25);
+ 
     overflow: hidden;
   }
 
@@ -156,6 +170,7 @@ import cashUpcon from "../assets/cash-up-icon.svg?raw";
   .modal-dialog[open] {
     display: flex;
     flex-direction: column;
+    
   }
 
   .modal-dialog::backdrop {
@@ -189,8 +204,8 @@ import cashUpcon from "../assets/cash-up-icon.svg?raw";
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     fill: white;
   }
 
@@ -201,27 +216,32 @@ import cashUpcon from "../assets/cash-up-icon.svg?raw";
   }
 
   .close-btn {
-    background: none;
+    background: rgba(255, 255, 255, 0.15);
     border: none;
-    font-size: 24px;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
     cursor: pointer;
-    color: white;
-    line-height: 1;
-    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+    flex-shrink: 0;
+    font-size: 15px;
   }
 
   .close-btn:hover {
-    opacity: 1;
+    background: rgba(255, 255, 255, 0.3);
   }
 
   .modal-body {
-    padding: 24px;
     font-family: var(--general-text-font);
-    flex: 1;
-    overflow-y: auto;
+    padding: var(--space-lg);
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: var(--space-md);
   }
 
   .form-row {
@@ -234,14 +254,13 @@ import cashUpcon from "../assets/cash-up-icon.svg?raw";
     flex: 1;
   }
 
-  /* Typography & Labels */
   label {
     display: block;
-    font-size: 11px;
+    font-family: var(--general-text-font);
+    font-size: 0.72rem;
     font-weight: 700;
+    letter-spacing: 0.06em;
     color: var(--primary-navyblue);
-    margin-bottom: 6px;
-    letter-spacing: 0.5px;
   }
 
   /* Form Inputs */
@@ -250,16 +269,25 @@ import cashUpcon from "../assets/cash-up-icon.svg?raw";
   input[type="date"],
   select,
   textarea {
-    width: 100%;
-    height: 44px;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 0 16px;
-    font-size: 14px;
-    color: var(--text-dark);
-    outline: none;
-    font-family: inherit;
-    transition: border-color 0.2s ease;
+     width: 100%;
+        box-sizing: border-box;
+        border: 1.5px solid #e0e4ed;
+        border-radius: 999px; /* pill shape like the design */
+        padding: 12px var(--space-md);
+        padding-left: 42px; /* space for left icon */
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        color: var(--primary-navyblue);
+        background: #f3f5f9;
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        resize: none;
+        appearance: none;
+        -webkit-appearance: none;
+  }
+
+  input[type = 'date'], #note-input{
+     border-radius: var(--radius-md);
   }
 
   input:focus, select:focus, textarea:focus {
@@ -309,17 +337,36 @@ import cashUpcon from "../assets/cash-up-icon.svg?raw";
   }
 
   /* File Upload Styling */
+
+  .file-upload-wrapper:hover{
+    border-color: var(--primary-orange-hover);
+  }
   .file-upload-wrapper {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    height: 44px;
+    height: 48px;
     border: 1px solid var(--border-color);
-    border-radius: 12px;
     padding: 0 16px;
     cursor: pointer;
     margin: 0;
+
+      width: 100%;
+    box-sizing: border-box;
+    border: 1.5px solid #e0e4ed;
+    border-radius: 999px; /* pill shape like the design */
+    padding: 19px 19px;
+    padding-left: 42px; /* space for left icon */
+    font-family: var(--general-text-font);
+    font-size: var(--paragraph-text);
+    color: var(--primary-navyblue);
+    background: #f3f5f9;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    resize: none;
+    appearance: none;
+    -webkit-appearance: none;
   }
 
   .file-upload-wrapper .placeholder-text {

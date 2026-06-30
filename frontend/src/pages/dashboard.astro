@@ -16,6 +16,7 @@ import IconChevronDown from '../assets/chevron-down.svg?raw';
 import IconWallet from '../assets/wallet-icon.svg?raw';
 import IconPeso from '../assets/philippine-peso.svg?raw';
 import IconAttachment from '../assets/paperclip.svg?raw';
+import AddExpenseModal from "../components/AddFundsModal.astro"; 
 
 const wallets = [
     {
@@ -152,7 +153,7 @@ const partitionColors = [
                     </div>
                     <div class="balancecard-action-buttons">
                         <button class="card-button" data-modal="add-funds-modal"><span set:html={IconAddFunds}></span>Add Funds</button>
-                        <button class="card-button" data-modal="spend-funds-modal"><span set:html={IconSpendFunds}></span>Spend Funds</button>
+                        <button class="card-button" data-modal="spend-funds-modal" id = "spend-funds-button"><span set:html={IconSpendFunds}></span>Spend Funds</button>
                         <button class="card-button" data-modal="move-funds-modal"><span set:html={IconMoveFunds}></span>Move Funds</button>
                     </div>
                 </div>
@@ -454,9 +455,17 @@ const partitionColors = [
         </div>
     </div>
 </Layout>
+<AddExpenseModal />
 
 <script>
   import "../scripts/dashboard-metrics.js";
+
+  const openBtn = document.getElementById('spend-funds-button');
+  const modalOutside = document.getElementById('addExpenseModal');
+
+  openBtn.addEventListener('click', () => {
+    modalOutside.showModal(); 
+  });
 </script>
 
 <script is:inline>
