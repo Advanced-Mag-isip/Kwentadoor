@@ -1,0 +1,432 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout>
+    <div class="payrolls-page">
+        <div class="payrolls-inner">
+
+            <div class="heading-section blue">
+                <div class="heading-top-row">
+                    <h2 class="heading-title">Showing Results For</h2>
+                    <div class="date-filters">
+                        <div class="date-chip">Custom ▼</div>
+                        <div class="date-chip">27/05/2026</div>
+                        <span class="date-separator">to</span>
+                        <div class="date-chip">30/05/2026</div>
+                    </div>
+                </div>
+                <div class="heading-divider"></div>
+                <div class="overviews">
+                    <div class="overview-item">
+                        <p class="overview-label">TOTAL PAYROLL</p>
+                        <p class="overview-value">P1236821</p>
+                    </div>
+                    <div class="overview-item">
+                        <p class="overview-label">TOTAL EMPLOYEES</p>
+                        <p class="overview-value">21</p>
+                    </div>
+                    <div class="overview-item">
+                        <p class="overview-label">PAID EMPLOYEES</p>
+                        <p class="overview-value">8</p>
+                    </div>
+                    <div class="overview-item">
+                        <p class="overview-label">UNPAID EMPLOYEES</p>
+                        <p class="overview-value">13</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="transaction-history">
+                <div class="transaction-headings orange">
+                    <div class="transaction-top-row">
+                        <div>
+                            <p class="table-heading-title">EMPLOYEE PAYROLL</p>
+                            <p class="table-heading-sub">Showing results for</p>
+                        </div>
+                        <div class="filtergroup">
+                            <button class="filter-chip active" data-filter="all">All</button>
+                            <button class="filter-chip" data-filter="Paid">Paid</button>
+                            <button class="filter-chip" data-filter="Unpaid">Unpaid</button>
+                        </div>
+                    </div>
+                    <div class="payroll-labels">
+                        <p>EMPLOYEE</p>
+                        <p>POSITION</p>
+                        <p>SALARY RATE</p>
+                        <p>REMAINING</p>
+                        <p>STATUS</p>
+                    </div>
+                </div>
+                <div class="transaction-history-scrollable">
+                    <div class="transaction-history-slots">
+                        <div class="transactionrow" data-status="Paid">
+                            <p>Admin User</p>
+                            <p>Admin Developer</p>
+                            <p>₱1,999.99/hr</p>
+                            <p>₱00.00</p>
+                            <p class="status-badge paid">Paid</p>
+                        </div>
+                        <div class="transactionrow" data-status="Unpaid">
+                            <p>Juan Dela Cruz</p>
+                            <p>Cashier</p>
+                            <p>₱80.00/hr</p>
+                            <p>₱3,200.00</p>
+                            <p class="status-badge unpaid">Unpaid</p>
+                        </div>
+                        <div class="transactionrow" data-status="Paid">
+                            <p>Maria Santos</p>
+                            <p>Supervisor</p>
+                            <p>₱120.00/hr</p>
+                            <p>₱00.00</p>
+                            <p class="status-badge paid">Paid</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</Layout>
+
+<style>
+    .payrolls-page {
+        display: flex;
+        justify-content: center;
+    }
+
+    .payrolls-inner {
+        width: 100%;
+        max-width: 1600px;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-lg);
+    }
+
+    .heading-section {
+        color: #ffffff;
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .heading-top-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: var(--space-md);
+    }
+
+    .heading-title {
+        font-family: var(--display-headings-font);
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+
+    .date-filters {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        flex-wrap: wrap;
+    }
+
+    .date-chip {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius-md);
+        padding: var(--space-sm) var(--space-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+    }
+
+    .date-separator {
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        opacity: 0.7;
+    }
+
+    .heading-divider {
+        height: 1px;
+        width: 100%;
+        background-color: #ffffff;
+    }
+
+    .overviews {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+    }
+
+    .overview-item {
+        padding: var(--space-sm) var(--space-lg);
+        border-right: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .overview-item:last-child {
+        border-right: none;
+    }
+
+    .overview-label {
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        opacity: 0.8;
+        margin-bottom: var(--space-sm);
+        letter-spacing: 0.04em;
+    }
+
+    .overview-value {
+        font-family: var(--display-headings-font);
+        font-size: var(--display-headings-text);
+        font-weight: 700;
+    }
+
+    .transaction-history {
+        background-color: var(--white);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--default-shadow);
+        min-width: 0;
+    }
+
+    .transaction-headings {
+        padding: var(--space-md);
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .transaction-top-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+    }
+
+    .table-heading-title {
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 700;
+    }
+
+    .table-heading-sub {
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        opacity: 0.8;
+    }
+
+    .filtergroup {
+        display: flex;
+        gap: var(--space-sm);
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .filter-chip {
+        border: 2px solid #ffffff;
+        border-radius: var(--radius-pill);
+        padding: var(--space-sm) var(--space-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        cursor: pointer;
+        background: transparent;
+        color: #ffffff;
+        transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+    }
+
+    .filter-chip:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .filter-chip.active {
+        background: var(--primary-orange);
+        border-color: var(--primary-orange);
+        color: #ffffff;
+    }
+
+    .payroll-labels {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+        padding: 0 var(--space-lg);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+    }
+
+    .transaction-history-scrollable {
+        min-height: 200px;
+        max-height: 500px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+    }
+
+    .transactionrow {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+        align-items: center;
+        padding: var(--space-md) var(--space-lg);
+        border-bottom: 1px solid var(--light-grey);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        transition: background-color 150ms ease;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: var(--radius-pill);
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .status-badge.paid {
+        background: rgba(46, 196, 160, 0.15);
+        color: #1a9e7a;
+    }
+
+    .status-badge.unpaid {
+        background: rgba(232, 109, 138, 0.15);
+        color: #c0365a;
+    }
+
+    .transactionrow.hidden {
+        display: none;
+    }
+
+    @media (max-width: 1500px) {
+        .overviews {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .overview-item {
+            border-right: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+            padding: var(--space-sm) var(--space-md);
+        }
+
+        .overview-item:nth-child(odd) {
+            border-right: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .overview-item:nth-last-child(-n+2) {
+            border-bottom: none;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .payrolls-inner {
+            gap: var(--space-md);
+        }
+
+        /* --- Heading section --- */
+        .heading-section {
+            padding: var(--space-md);
+            gap: var(--space-sm);
+            border-radius: var(--radius-md);
+        }
+
+        .heading-title {
+            font-size: 1.3rem;
+        }
+
+        .date-chip {
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            border-radius: var(--radius-sm);
+        }
+
+        .date-separator {
+            font-size: 0.75rem;
+        }
+
+        /* --- Overview stats --- */
+        .overviews {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .overview-item {
+            padding: var(--space-sm) var(--space-md);
+        }
+
+        .overview-label {
+            font-size: 0.7rem;
+            margin-bottom: 4px;
+        }
+
+        .overview-value {
+            font-size: 1.6rem;
+        }
+
+        /* --- Transaction table --- */
+        .transaction-headings {
+            padding: var(--space-sm) var(--space-md);
+            gap: var(--space-sm);
+        }
+
+        .table-heading-title {
+            font-size: 0.85rem;
+        }
+
+        .table-heading-sub {
+            font-size: 0.75rem;
+        }
+
+        .filter-chip {
+            padding: 5px 10px;
+            font-size: 0.7rem;
+        }
+
+        .payroll-labels,
+        .transactionrow {
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: var(--space-sm) var(--space-md);
+        }
+
+        .payroll-labels {
+            font-size: 0.7rem;
+        }
+
+        .transactionrow {
+            font-size: 0.75rem;
+        }
+
+        .payroll-labels p:nth-child(n+4),
+        .transactionrow p:nth-child(n+4) {
+            display: none;
+        }
+    }
+</style>
+
+<script>
+    const chips = document.querySelectorAll(".filter-chip");
+    const rows = document.querySelectorAll(".transactionrow");
+    const subLabel = document.querySelector(".table-heading-sub");
+
+    chips.forEach((chip) => {
+        chip.addEventListener("click", () => {
+            chips.forEach((c) => c.classList.remove("active"));
+            chip.classList.add("active");
+
+            const filter = chip.dataset.filter;
+
+            if (subLabel) {
+                subLabel.textContent =
+                    filter === "all"
+                        ? "Showing all employees"
+                        : `Showing ${filter} employees`;
+            }
+
+            rows.forEach((row) => {
+                const status = row.dataset.status;
+                if (filter === "all" || status === filter) {
+                    row.classList.remove("hidden");
+                } else {
+                    row.classList.add("hidden");
+                }
+            });
+        });
+    });
+</script>

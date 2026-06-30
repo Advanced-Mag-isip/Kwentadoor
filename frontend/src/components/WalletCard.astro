@@ -1,0 +1,107 @@
+---
+import IconCash from "../assets/cash-icon.svg?raw";
+import IconBank from "../assets/bank-icon.svg?raw";
+import IconEWallet from "../assets/gcash-icon.svg?raw";
+
+interface Props {
+  amount: string;
+  name: string;
+  type: "cash" | "bank" | "e-wallet";
+  isActive?: boolean;
+}
+
+const { amount, name, type, isActive = false } = Astro.props;
+
+const wallets = {
+  cash: {
+    icon: IconCash,
+    background: "var(--navyblue-gradient)",
+  },
+  bank: {
+    icon: IconBank,
+    background: "var(--navyblue-gradient)",
+  },
+  "e-wallet": {
+    icon: IconEWallet,
+    background: "var(--navyblue-gradient)",
+  },
+};
+
+const { icon } = wallets[type];
+const background = isActive ? "var(--orange-gradient)" : "var(--navyblue-gradient)";
+---
+
+<div class="wallet-card">
+  <div class="card-shell relative h-[220px] bg-[var(--primary-navyblue)] rounded-[2.5rem] overflow-hidden p-2 shadow-2xl font-sans">
+    <div class="absolute top-4 left-3 right-3 h-24 bg-gradient-to-b from-white to-gray-200 rounded-t-[2rem] shadow-inner"></div>
+
+    <div
+      class="card-body absolute top-12 left-0 right-0 bottom-0 rounded-[2rem] p-5 flex flex-col shadow-[0_-8px_15px_rgba(0,0,0,0.15)] border-t border-white/10"
+      style={`background-image: ${background};`}
+    >
+      <div
+        class="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-[1rem] flex items-center justify-center shadow-sm [&>svg]:w-7 [&>svg]:h-7 [&>svg]:stroke-white"
+        set:html={icon}
+      />
+
+      <div class="mt-2 mb-2 tracking-wide">
+        <h2 class="text-white text-[1.2em] font-medium mb-2 truncate">
+          {name}
+        </h2>
+
+        <p class="text-white text-[1.5em] font-bold font-(family-name:--display-headings-font) leading-none tracking-tight truncate">
+          {amount}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .wallet-card {
+      width: 100%;
+      transition:
+          transform 180ms ease,
+          box-shadow 180ms ease;
+  }
+  .wallet-card:hover {
+    transform: translateY(-6px);
+  }
+  @media (max-width: 640px) {
+      .wallet-card :global(.card-shell) {
+          height: 170px;
+          border-radius: 1.8rem;
+      }
+
+      .wallet-card :global(.card-body) {
+          padding: 12px;
+          border-radius: 1.5rem;
+          top: 40px;
+      }
+
+      .wallet-card :global(.absolute.top-4) {
+          height: 72px;
+          border-radius: 1.5rem 1.5rem 0 0;
+      }
+
+      .wallet-card :global([class*="w-12"][class*="h-12"]) {
+          width: 36px;
+          height: 36px;
+          border-radius: 0.7rem;
+      }
+
+      .wallet-card :global([class*="w-12"][class*="h-12"] svg) {
+          width: 20px;
+          height: 20px;
+      }
+
+      .wallet-card :global(h2) {
+          font-size: 0.95em;
+          margin-bottom: 4px;
+      }
+
+      .wallet-card :global(p) {
+          font-size: 1.15em;
+      }
+  }
+</style>

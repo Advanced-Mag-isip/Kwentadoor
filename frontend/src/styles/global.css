@@ -4,14 +4,17 @@
     --primary-orange: #F26B2A;
     --primary-navyblue: #1A2B4A;
     --light-navyblue:#213250;
+    --primary-orange-dark: #c45a00;
     --filter-background: #AE4917; 
     --light-grey: #D9D9D9; 
+    --normal-grey: #8b8b8b;
+    --dark-grey: #414141; 
 
     --white: #FFFFFF;
     --black: #000000;
     
-    --orange-gradient: linear-gradient(var(--primary-orange), #BE521E); 
-    --navyblue-gradient: linear-gradient(var(--primary-navyblue), #253B62); 
+    --orange-gradient: linear-gradient(to bottom right, var(--primary-orange), #BE521E); 
+    --navyblue-gradient: linear-gradient(to bottom right, var(--primary-navyblue), #253B62); 
 
     --default-shadow: 0 4px 4px rgba(0, 0, 0, 0.3);
 
@@ -26,4 +29,41 @@
 
     --temporary-background-color: #F0F3F8; 
 
+    --space-sm:    10px;
+    --space-md:    20px;
+    --space-lg:    30px;
+
+    --radius-sm:   10px;
+    --radius-md:   16px;
+    --radius-lg:   24px;
+    --radius-pill: 100px;
 }
+
+.blue {
+    background-image: var(--navyblue-gradient);
+}
+
+.orange {
+    background-image: var(--orange-gradient);
+}
+
+
+body{
+    font-family: var(--general-text-font);
+    font-weight: 500;
+}
+
+button {
+    transition: all 0.2s;
+}
+
+button:hover {
+    filter: brightness(1.3);
+    transform: scale(1.02);
+}
+
+button:active {
+    filter: brightness(0.9);
+    transform: scale(1);
+}
+

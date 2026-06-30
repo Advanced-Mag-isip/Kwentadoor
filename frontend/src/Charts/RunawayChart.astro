@@ -1,0 +1,181 @@
+---
+interface Props {
+  chartId?: string;
+  period?: string;
+  year?: number;
+  month?: number | null;
+}
+
+const {
+  chartId = "runaway-chart",
+  period = "yearly",
+  year = 2026,
+  month = null,
+} = Astro.props;
+---
+
+<div class="chart-wrap" id={chartId} data-period={period} data-year={year} data-month={month === null ? "" : month}>
+  <div class="chart-status" id={`${chartId}-status`}>Loading...</div>
+  <canvas class="chart-canvas" id={`${chartId}-canvas`} style="display:none;"></canvas>
+</div>
+
+<script>
+  const _chartId = "runaway-chart";
+
+  async function _loadChart() {
+    const canvas = document.getElementById(`${_chartId}-canvas`);
+    const status = document.getElementById(`${_chartId}-status`);
+    if (!canvas || !status) return;
+
+    if (typeof Chart === "undefined") {
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Chart.js CDN load timed out")), 8000));
+      await Promise.race([
+        new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js";
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        }),
+        timeout,
+      ]);
+    }
+
+    const BASE = "http://127.0.0.1:8000/api/analytics";
+    const el = document.getElementById(_chartId);
+    const defaults = { period: el.dataset.period, year: parseInt(el.dataset.year), month: el.dataset.month ? parseInt(el.dataset.month) : null };
+    const f = window.__chartFilters || defaults;
+    const p = f.period;
+    const y = f.year;
+    const m = f.month;
+
+    let qs = `period=${p}&year=${y}`;
+    if (m) qs += `&month=${m}`;
+
+    try {
+      const res = await fetch(`${BASE}/charts/funding-runaway-projection/?${qs}`, { headers: { Accept: "application/json" } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      const chartData = data.funding_runaway_projection.chart;
+      if (!chartData || !chartData.labels || chartData.labels.length === 0) {
+        status.textContent = "No data for this timeframe.";
+        canvas.style.display = "none";
+        status.style.display = "block";
+        return;
+      }
+
+      const labels = chartData.labels;
+      const values = chartData.values.map((v) => parseFloat(v) || 0);
+
+      const historicalLen = data.funding_runaway_projection.historical_count || labels.length;
+
+      const histValues = values.map((v, i) => (i < historicalLen ? v : null));
+      const projValues = values.map((v, i) => (i >= historicalLen - 1 ? v : null));
+
+      status.style.display = "none";
+      canvas.style.display = "block";
+
+      if (canvas._chart) canvas._chart.destroy();
+
+      canvas._chart = new Chart(canvas, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Running Balance",
+              data: histValues,
+              borderColor: "#1A2B4A",
+              backgroundColor: "rgba(26,43,74,0.06)",
+              borderWidth: 2.5,
+              pointRadius: 3,
+              pointBackgroundColor: "#1A2B4A",
+              pointBorderColor: "#fff",
+              pointBorderWidth: 1.5,
+              tension: 0.3,
+              fill: true,
+              spanGaps: false,
+            },
+            {
+              label: "Projected",
+              data: projValues,
+              borderColor: "#1A2B4A",
+              backgroundColor: "rgba(26,43,74,0.04)",
+              borderWidth: 2.5,
+              borderDash: [6, 3],
+              pointRadius: 3,
+              pointBackgroundColor: "rgba(26,43,74,0.5)",
+              pointBorderColor: "#fff",
+              pointBorderWidth: 1.5,
+              tension: 0.3,
+              fill: true,
+              spanGaps: true,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 600 },
+          plugins: {
+            legend: {
+              position: "top",
+              align: "end",
+              labels: {
+                boxWidth: 14, boxHeight: 10, borderRadius: 2,
+                font: { size: 11 }, padding: 16,
+              },
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ctx.dataset.label + ": ₱" + Number(ctx.parsed.y).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+              },
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (val) => {
+                  if (val >= 1000000) return "₱" + (val / 1000000).toFixed(1) + "M";
+                  if (val >= 1000) return "₱" + (val / 1000).toFixed(0) + "k";
+                  return "₱" + val;
+                },
+                font: { size: 10 },
+              },
+              grid: { color: "rgba(0,0,0,0.06)" },
+            },
+            x: {
+              ticks: { font: { size: 10 } },
+              grid: { display: false },
+            },
+          },
+        },
+      });
+    } catch (err) {
+      status.textContent = "Error: " + err.message;
+      canvas.style.display = "none";
+      status.style.display = "block";
+      console.error("RunawayChart error:", err);
+    }
+  }
+
+  function _init() {
+    _loadChart().catch(err => {
+      const status = document.getElementById(`${_chartId}-status`);
+      if (status) status.textContent = "Error: " + err.message;
+      console.error("RunawayChart init error:", err);
+    });
+  }
+
+  _init();
+  document.addEventListener("astro:page-load", _init);
+  document.addEventListener("chart-update", _loadChart);
+</script>
+
+<style>
+  .chart-wrap { width: 100%; height: 100%; position: relative; font-family: system-ui, sans-serif; }
+  .chart-status { text-align: center; color: #9ca3af; padding: 1.5rem; font-size: 0.875rem; }
+  .chart-canvas { width: 100% !important; height: 100% !important; max-height: 100%; }
+</style>

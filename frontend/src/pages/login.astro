@@ -37,20 +37,16 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
         
         <div id="login-header">
           <img src="/src/assets/Trabahadoor-logo-white.svg" alt="Trabahadoor Logo" height="50" width="50"/>
-          <h2>Kwenta<span class = "text-orange">Door</span></h2>
+          <h2>Kwenta<span class="text-orange">Door</span></h2>
         </div>
 
-      
         <form id="login-form">
-          
-          <div id = "login-welcome">
+          <div id="login-welcome">
             <h2>Welcome back!</h2>
-            <p>Login to <span class = "embolden">KwentaDoor</span></p>
+            <p>Login to <span class="embolden">KwentaDoor</span></p>
           </div>
-          
-
-           <div id="error-message" class="hidden bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg p-3 text-center transition-all"></div>
-
+        
+          <div id="error-message" class="hidden"></div>
 
           <div class="input-group">
             <label for="username">USERNAME</label>
@@ -76,21 +72,19 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
 
       </div>
     </section>
-
   </main>
 
-  <script lang="ts">
+  <script>
     const API_BASE_URL = 'http://127.0.0.1:8000';
-    
-    const form = document.getElementById('login-form') as HTMLFormElement;
+    const form = document.getElementById('login-form');
     const errorMessage = document.getElementById('error-message');
-    const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+    const submitBtn = document.getElementById('submit-btn');
     const btnText = submitBtn.querySelector('span');
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      if(errorMessage) errorMessage.classList.add('hidden');
+      if (errorMessage) errorMessage.classList.add('hidden');
       submitBtn.disabled = true;
       if (btnText) btnText.textContent = 'Signing in...';
 
@@ -108,16 +102,24 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
           body: JSON.stringify({ username, password }),
         });
 
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          throw new Error("Server returned a non-JSON response.");
+        }
 
         if (response.ok) {
           localStorage.setItem('auth_token', data.token);
           localStorage.setItem('user_data', JSON.stringify(data.user));
           window.location.href = '/'; 
         } else {
-          const errorText = data.non_field_errors 
-            ? data.non_field_errors 
-            : 'Invalid username or password. Please try again.';
+          let errorText = 'Invalid username or password. Please try again.';
+          if (data.non_field_errors && data.non_field_errors.length > 0) {
+            errorText = data.non_field_errors;
+          } else if (data.detail) {
+            errorText = data.detail;
+          }
             
           if (errorMessage) {
             errorMessage.textContent = errorText;
@@ -132,11 +134,10 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
         }
       } finally {
         submitBtn.disabled = false;
-        if (btnText) btnText.textContent = 'Sign in';
+        if (btnText) btnText.textContent = 'Login';
       }
     });
   </script>
-</body>
 
 <style>
   #main-container {
@@ -146,7 +147,6 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
     width: 100vw;
     font-family: var(--general-text-font, 'Roboto', sans-serif);
   }
-
 
   #login-text-container {
     width: 60%;
@@ -194,7 +194,7 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
     font-weight: 800;
     margin: 0 0 10px 0;
     font-family: var(--display-headings-font);
-    color: var(--primary-navyblue); 
+    color: var(--primary-navyblue);
   }
 
   .paragraph-text {
@@ -204,7 +204,6 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
     color: var(--primary-navyblue); 
     font-weight: 550;
   }
-
 
   #login-form-main-container {
     width: 40%; 
@@ -222,7 +221,6 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
     padding: 20px;
     border-radius: 25px; 
     box-shadow: var(--default-shadow);
-
     display: flex;
     flex-direction: column;
   }
@@ -256,10 +254,7 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
   #login-form{
     box-sizing: border-box;
     padding-top: 30px;
-
     flex: 1; 
-  
-  
     display: flex; 
     flex-direction: column;
   }
@@ -271,12 +266,11 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
     margin-bottom: 30px;
   }
 
-   #login-welcome h2{
+  #login-welcome h2{
     font-family: var(--display-headings-font);
     font-size: var(--title-text);
     color: var(--primary-navyblue);
     font-weight: bold;
-
   }
 
   #login-welcome p{
@@ -284,20 +278,36 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
     font-size: var(--paragraph-text);
     color: #000000;
     opacity: 50%;
-    font-weight: bold; 
+    font-weight: bold;
   }
 
   .embolden{
     font-weight: bold;
     font-family: var(--display-headings-font);
+  }
 
+  #error-message {
+    background-color: rgba(220, 38, 38, 0.1); 
+    border: 1px solid rgba(220, 38, 38, 0.4);
+    color: #dc2626;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: var(--paragraph-text, 14px);
+    text-align: center;
+    margin-bottom: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    font-weight: 550;
+  }
+
+  .hidden {
+    display: none !important;
   }
 
   .input-group {
     display: flex;
     flex-direction: column;
     margin-bottom: 1rem;
-    
   }
 
   .input-group label {
@@ -310,16 +320,17 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
     font-weight: 400;
   }
 
-.input-group input {
-  padding: 10px;
-  border-radius: 15px;
-  background-color: rgba(0, 0, 0, 0.05); 
-  color: #C2C2C2; 
-  font-size: var(--paragraph-text);
-  font-family: var(--general-text-font);
-  border: none;
-  font-weight: 550;
-}
+  .input-group input {
+    padding: 10px;
+    border-radius: 15px;
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #000; 
+    font-size: var(--paragraph-text);
+    font-family: var(--general-text-font);
+    border: none;
+    font-weight: 550;
+  }
+
   #submit-btn {
     width: 100%;
     padding: 12px;
@@ -338,4 +349,5 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
     cursor: not-allowed;
   }
 </style>
+</body>
 </html>

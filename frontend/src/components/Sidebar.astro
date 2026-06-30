@@ -3,103 +3,133 @@ import homeIcon from '../assets/home-icon.svg?raw';
 import walletIcon from '../assets/wallet-icon.svg?raw'; 
 import analyticsIcon from '../assets/analytics-icon.svg?raw';
 import payrollIcon from '../assets/payroll-icon.svg?raw'; 
-import companyLogo from '../assets/Trabahadoor-logo-white.svg?raw'; 
+import companyLogo from '../assets/Trabahadoor-logo-white.svg?raw';
 import logoutLogo from '../assets/log-out-icon.svg?raw'; 
 import '../styles/global.css';
+
 const currentPath = Astro.url.pathname;
 ---
-<nav id = "main-navigation">
-    <div id = "nav-safe-area">
-        <div id = "sidebar-up">
-            <div id = "logo-area">
-                <a href = "/" id = "company-logo">
-                <Fragment set:html={companyLogo} height = 20 width = 20/>
+<nav id="main-navigation">
+    <div id="nav-safe-area">
+        <div id="sidebar-up">
+            <div id="logo-area">
+                <a href="/" id="company-logo">
+                    <Fragment set:html={companyLogo} height={20} width={20} />
                 </a>
-                <h1><span style = "color: var(--white);">Kwenta</span><span style= "color: var(--primary-orange);">Door</span></h1>
+                <h1 class="text-2xl">
+                    <span style="color: var(--white);">Kwenta</span><span style="color: var(--primary-orange);">Door</span>
+                </h1>
             </div> 
 
-            <div id = "nav-links">
-
-                
-                <div id = "navigation-group" class = "nav-group">
-                    <label for = "navigation-group">NAVIGATION</label>
-                   <a href = "/">
+            <div id="nav-links">
+                <div id="navigation-group" class="nav-group">
+                    <label for="navigation-group">NAVIGATION</label>
+                    <a href="/dashboard" class={currentPath === '/dashboard' ? 'active' : ''}>
                         <div>
                             <Fragment set:html={homeIcon} />
                             <span>Dashboard</span>
                         </div>
-                   </a>
+                    </a>
                 </div>
 
-               
-                <div id = "financials-group" class = "nav-group">
-                     <label for = "financials-group">FINANCIALS</label>
-                   <a href = "">
+                <div id="financials-group" class="nav-group">
+                    <label for="financials-group">FINANCIALS</label>
+                    <a href="/wallets" class={currentPath === '/wallets' ? 'active' : ''}>
                         <div>
                             <Fragment set:html={walletIcon} />
-                            <span>Wallet</span>
+                            <span>Wallets</span>
                         </div>
-                   </a>
+                    </a>
 
-                   <a href = "/Analytics" class={currentPath === '/Analytics' ? 'active' : ''}>
+                    <a href="/analytics" class={currentPath === '/analytics' ? 'active' : ''}>
                         <div>
                             <Fragment set:html={analyticsIcon} />
                             <span>Analytics</span>
                         </div>
-                   </a>
+                    </a>
                 </div>
-
                 
-                <div id = "team-group" class = "nav-group">
-                    <label for = "team-group">TEAM</label>
-
-                    <a href = "/">
+                <div id="team-group" class="nav-group">
+                    <label for="team-group">TEAM</label>
+                    <a href="/payrolls" class={currentPath === '/payrolls' ? 'active' : ''}>
                         <div>
                             <Fragment set:html={payrollIcon} />
                             <span>Payroll</span>
                         </div>
                     </a>
-                   
                 </div>
             </div>
         </div>
         
-        <div id = "sidebar-down" class = "nav-group">
-            <a href =  "/Login" class={currentPath === '/Analytics' ? 'active' : ''}>
+        <div id="sidebar-down" class="nav-group">
+            <button id="logout-btn" class="logout-btn">
                 <div>
                     <Fragment set:html={logoutLogo} />
                     <span>Logout</span>
                 </div>
-            </a>
+            </button>
         </div>
     </div>
 </nav>
 
-<style> 
+<script>
+    document.addEventListener('astro:page-load', () => {
+        const logoutBtn = document.getElementById('logout-btn');
+        const API_BASE_URL = 'http://127.0.0.1:8000';
 
-    label,#sidebar-down{
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+                const token = localStorage.getItem('auth_token');
+                
+                if (token) {
+                    try {
+                        await fetch(`${API_BASE_URL}/api/auth/logout/`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Token ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error logging out from server:', error);
+                    }
+                }
+                
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_data');
+                window.location.href = '/login';
+            });
+        }
+    });
+</script>
+
+<style> 
+    label, #sidebar-down {
         font-size: 13px;
     }
 
     #nav-safe-area {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-  }
-
-    #nav-links  :global(svg), #sidebar-down :global(svg){
-        width: 15px;
-        height: auto; 
+        display: flex;
+        flex-direction: column;
+        height: 100%;
     }
+
+    #nav-links :global(svg), #sidebar-down :global(svg) {
+        width: 15px;
+        height: auto;
+    }
+    
     #company-logo :global(svg) {
         width: 40px;
         height: auto;
     }
 
-    #main-navigation{
+    #main-navigation {
         background-color: var(--primary-navyblue);
-        width: 230px;
+        width: 260px;
         height: 100vh;
+        transition: width 0.3s ease;
+        overflow: hidden;   
     }
 
     #logo-area{
@@ -111,52 +141,92 @@ const currentPath = Astro.url.pathname;
         align-items: center;
         gap: 3px; 
         padding: 30px 0px;
-        border-bottom: 2px solid var(--white);
+        border-bottom: 1px solid var(--dark-grey);
         font-weight: bold;
-        
     }
 
-    #nav-links{
+    #nav-links {
         color: var(--white); 
         font-family: var(--general-text-font);
         font-size: 15px;
     }
 
-    #nav-links div,  #sidebar-down div{
+    #nav-links a div,  #sidebar-down .logout-btn div {
         padding: 10px 15px;
     }
 
-    .nav-group div:hover{
-        background-color: var(--primary-orange);
+    .nav-group {
+        padding: 15px;
+        margin: 0px;
     }
 
+    .nav-group label {
+        color: var(--normal-grey);
+    }
 
-    a{
+    a {
         text-decoration: none;
-        color: var(--white); 
+        color: var(--white);
     }
 
-    #sidebar-down{
+    .logout-btn {
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        cursor: pointer;
+        text-align: left;
+    }
+
+    #sidebar-down {
         margin-top: auto;
-        border-top: 2px solid var(--white);
+        border-top: 1px solid var(--dark-grey);
         padding: 20px 10px;
     }
 
-
-    .nav-group div{
+    .nav-group div {
         display: flex;
         flex-direction: row;
         align-items: center;
         justify-content: flex-start; 
         gap: 15px;
-        border-radius: 8px;
+        border-radius: 16px;
         color: var(--white); 
         margin: 8px 0px;
         font-family: var(--general-text-font);
         background-color: var(--light-navyblue);
         box-shadow: var(--default-shadow);
+        transition: background-color 0.2s;
+    }
 
-     }
+    .logout-btn:hover div {
+        background-color: var(--primary-orange);
+    }
 
-    
+    a.active div {
+        background-color: var(--primary-orange);
+    }
+
+    :global(body.sidebar-collapsed) #nav-safe-area span,
+    :global(body.sidebar-collapsed) #nav-safe-area label,
+    :global(body.sidebar-collapsed) #nav-safe-area h1 {
+        display: none;
+    }
+
+    :global(body.sidebar-collapsed) .nav-group {
+        padding: 0;
+    }
+
+    :global(body.sidebar-collapsed) .nav-group a div,
+    :global(body.sidebar-collapsed) #sidebar-down .logout-btn div {
+        justify-content: center;
+        padding: 10px;
+        margin: 4px 0px; 
+    }
+
+    :global(body.sidebar-collapsed) #logo-area {
+        justify-content: center;
+        padding: 30px 0;
+    }
 </style>

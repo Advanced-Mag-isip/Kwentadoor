@@ -9,11 +9,17 @@ from payroll.models import (
 )
 from .dtr_client import DTRClient
 
+
+def _to_decimal(value, default=0):
+    try:
+        return Decimal(str(value or default)).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP
+        )
+    except Exception:
+        return Decimal(str(default))
+
+
 def sync_workers():
-    """
-    Pull all active workers from DTR and upsert into local Worker table.
-    Called manually or before every payroll run.
-    """
     client = DTRClient()
     dtr_workers = client.get_workers()
 
@@ -28,10 +34,10 @@ def sync_workers():
                 'department': w.get('department') or '',
                 'position': w.get('position') or '',
                 'payment_type': w.get('paymentType', 'hourly'),
-                'hourly_rate': Decimal(str(w.get('hourlyRate') or 0)),
-                'daily_salary': Decimal(str(w.get('dailySalary') or 0)),
-                'monthly_salary': Decimal(str(w.get('monthlySalary') or 0)),
-                'overtime_hourly_rate': Decimal(str(w.get('overtimeHourlyRate') or 0)),
+                'hourly_rate': _to_decimal(w.get('hourlyRate')),
+                'daily_salary': _to_decimal(w.get('dailySalary')),
+                'monthly_salary': _to_decimal(w.get('monthlySalary')),
+                'overtime_hourly_rate': _to_decimal(w.get('overtimeHourlyRate')),
                 'payment_method': w.get('paymentMethod', 'cash'),
                 'is_active': True,
             }
@@ -41,17 +47,44 @@ def sync_workers():
     return synced
 
 
+def update_worker_rates(worker, data):
+    """
+    Updates worker rates in DTR first, then syncs local Worker table.
+    data keys: hourly_rate, daily_salary, monthly_salary,
+               overtime_hourly_rate, payment_type
+    """
+    client = DTRClient()
+
+    # Map Django field names to DTR field names
+    dtr_data = {}
+    if 'hourly_rate' in data:
+        dtr_data['hourlyRate'] = float(data['hourly_rate'])
+    if 'daily_salary' in data:
+        dtr_data['dailySalary'] = float(data['daily_salary'])
+    if 'monthly_salary' in data:
+        dtr_data['monthlySalary'] = float(data['monthly_salary'])
+    if 'overtime_hourly_rate' in data:
+        dtr_data['overtimeHourlyRate'] = float(data['overtime_hourly_rate'])
+    if 'payment_type' in data:
+        dtr_data['paymentType'] = data['payment_type']
+
+    # Write to DTR first
+    client.update_worker_rates(worker.dtr_id, dtr_data)
+
+    # Then update local Worker table to stay in sync
+    for field, value in data.items():
+        setattr(worker, field, value)
+    worker.save()
+
+    return worker
+
+
+
 def sync_timesheets(period_start, period_end):
-    """
-    Pull timesheet data from DTR for a date range and store as
-    TimesheetSync records. This is the 'Sync Timesheets' step —
-    raw hours only, no pay calculation yet.
-    """
     client = DTRClient()
     response = client.get_timesheet(period_start, period_end)
     shifts = response.get('data', [])
 
-    # Clear existing syncs for this period to avoid duplicates on re-sync
     TimesheetSync.objects.filter(
         period_start=period_start,
         period_end=period_end
@@ -62,13 +95,13 @@ def sync_timesheets(period_start, period_end):
         try:
             worker = Worker.objects.get(dtr_id=row['workerId'])
         except Worker.DoesNotExist:
-            # Worker not synced yet — skip
             continue
 
         sync = TimesheetSync.objects.create(
             worker=worker,
             period_start=period_start,
             period_end=period_end,
+            dtr_shift_id=row.get('shiftId'),
             date=row['date'],
             morning_time_in=row.get('morningTimeIn'),
             morning_time_out=row.get('morningTimeOut'),
@@ -84,97 +117,45 @@ def sync_timesheets(period_start, period_end):
             holiday_type=row.get('holidayType'),
             holiday_name=row.get('holidayName'),
             face_verified=row.get('faceVerified', False),
+            is_paid_in_dtr=row.get('isPaid', False),
+            paid_at_in_dtr=row.get('paidAt'),
         )
         created_syncs.append(sync)
 
     return created_syncs
 
 
-def _to_decimal(value, default=0):
-    """Safely convert any value to Decimal."""
-    try:
-        return Decimal(str(value or default)).quantize(
-            Decimal('0.01'), rounding=ROUND_HALF_UP
-        )
-    except Exception:
-        return Decimal(str(default))
-
-
-def _calculate_gross(worker, total_working_hours, total_overtime_hours, total_days_worked):
-    """
-    Calculate gross pay based on payment type.
-
-    Hourly:  gross = (regular_hours x hourly_rate) + (overtime_hours x overtime_rate)
-    Monthly: gross = monthly_salary (fixed) + overtime premium if any
-    """
-    regular_hours = total_working_hours - total_overtime_hours
-
-    if worker.payment_type == 'hourly':
-        hourly_rate = _to_decimal(worker.hourly_rate)
-
-        # Fall back to daily_salary / 8 if hourly_rate is 0
-        if hourly_rate == 0 and worker.daily_salary > 0:
-            hourly_rate = _to_decimal(worker.daily_salary) / 8
-
-        overtime_rate = _to_decimal(worker.overtime_hourly_rate)
-
-        # If no overtime rate set, default to 1.25x hourly rate
-        if overtime_rate == 0:
-            overtime_rate = hourly_rate * Decimal('1.25')
-
-        gross = (regular_hours * hourly_rate) + (total_overtime_hours * overtime_rate)
-
-    else:
-        # Monthly — fixed salary + overtime premium
-        monthly_salary = _to_decimal(worker.monthly_salary)
-        overtime_rate = _to_decimal(worker.overtime_hourly_rate)
-
-        if overtime_rate == 0:
-            # Derive hourly from monthly: monthly / 22 working days / 8 hours
-            overtime_rate = (monthly_salary / 22 / 8) * Decimal('1.25')
-
-        overtime_premium = total_overtime_hours * overtime_rate
-        gross = monthly_salary + overtime_premium
-
-    return gross.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-
 def build_payroll_run(period_start, period_end, generated_by):
     """
-    Read synced TimesheetSync records for the period and create a
-    draft PayrollRun with one PayrollEntry per worker.
-    Does NOT approve or log to expenses yet.
+    Gets gross pay from DTR's own salaryCalculator for each worker.
+    Only includes unpaid shifts.
     """
+    client = DTRClient()
+
+    # Only workers with unpaid shifts in this period
     syncs = TimesheetSync.objects.filter(
         period_start=period_start,
-        period_end=period_end
+        period_end=period_end,
+        is_paid_in_dtr=False,
     ).select_related('worker')
 
     if not syncs.exists():
         raise ValueError(
-            f"No timesheet data found for {period_start} to {period_end}. "
-            "Please sync timesheets first."
+            f"No unpaid timesheet data found for {period_start} to "
+            f"{period_end}. Please sync timesheets first, or all shifts "
+            "are already paid."
         )
 
-    # Group syncs by worker
-    worker_data = {}
-    for sync in syncs:
-        wid = sync.worker.dtr_id
-        if wid not in worker_data:
-            worker_data[wid] = {
-                'worker': sync.worker,
-                'total_working_hours': Decimal('0'),
-                'total_overtime_hours': Decimal('0'),
-                'total_days_worked': 0,
-            }
+    # Get unique workers with unpaid shifts
+    workers_with_shifts = set(sync.worker.dtr_id for sync in syncs)
 
-        worker_data[wid]['total_working_hours'] += _to_decimal(sync.total_hours)
-        worker_data[wid]['total_overtime_hours'] += _to_decimal(sync.overtime_hours)
+    # Delete existing draft for same period
+    PayrollRun.objects.filter(
+        period_start=period_start,
+        period_end=period_end,
+        status='draft'
+    ).delete()
 
-        if sync.total_hours and sync.total_hours > 0:
-            worker_data[wid]['total_days_worked'] += 1
-
-    # Create draft PayrollRun
     payroll_run = PayrollRun.objects.create(
         period_start=period_start,
         period_end=period_end,
@@ -185,28 +166,41 @@ def build_payroll_run(period_start, period_end, generated_by):
     entries = []
     total_gross = Decimal('0')
 
-    for wid, data in worker_data.items():
-        worker = data['worker']
-        total_working_hours = data['total_working_hours']
-        total_overtime_hours = data['total_overtime_hours']
-        total_days_worked = data['total_days_worked']
+    for dtr_id in workers_with_shifts:
+        worker = Worker.objects.get(dtr_id=dtr_id)
 
-        gross = _calculate_gross(
-            worker,
-            total_working_hours,
-            total_overtime_hours,
-            total_days_worked
-        )
+        try:
+            # Use DTR's own salary calculator — no duplicate logic
+            salary_data = client.get_salary(
+                dtr_id=worker.dtr_id,
+                start_date=period_start,
+                end_date=period_end,
+            )
+        except Exception as e:
+            print(f"Warning: Could not get salary for "
+                  f"{worker.full_name}: {e}")
+            continue
+
+        gross = _to_decimal(salary_data.get('grossPay', 0))
+
+        if gross == 0:
+            continue
 
         entry = PayrollEntry.objects.create(
             payroll_run=payroll_run,
             worker=worker,
-            total_working_hours=total_working_hours,
-            total_overtime_hours=total_overtime_hours,
-            total_days_worked=total_days_worked,
+            total_working_hours=_to_decimal(
+                salary_data.get('totalRegularHours', 0)
+            ),
+            total_overtime_hours=_to_decimal(
+                salary_data.get('totalOvertimeHours', 0)
+            ),
+            total_days_worked=salary_data.get('daysWorked', 0),
             payment_type=worker.payment_type,
-            hourly_rate=worker.hourly_rate,
-            overtime_hourly_rate=worker.overtime_hourly_rate,
+            hourly_rate=_to_decimal(salary_data.get('hourlyRate', 0)),
+            overtime_hourly_rate=_to_decimal(
+                salary_data.get('overtimeRate', 0)
+            ),
             monthly_salary=worker.monthly_salary,
             gross_pay=gross,
             total_additions=Decimal('0'),
@@ -216,7 +210,6 @@ def build_payroll_run(period_start, period_end, generated_by):
         entries.append(entry)
         total_gross += gross
 
-    # Update run totals
     payroll_run.total_gross_pay = total_gross
     payroll_run.total_net_pay = total_gross
     payroll_run.save()
@@ -225,11 +218,6 @@ def build_payroll_run(period_start, period_end, generated_by):
 
 
 def recalculate_entry(entry):
-    """
-    Called after an adjustment is added or removed.
-    Recalculates total_additions, total_deductions, and net_pay
-    for a single PayrollEntry.
-    """
     adjustments = entry.adjustments.all()
 
     total_additions = sum(
@@ -249,7 +237,6 @@ def recalculate_entry(entry):
 
     entry.save()
 
-    # Update run totals
     run = entry.payroll_run
     all_entries = run.entries.all()
     run.total_gross_pay = sum(e.gross_pay for e in all_entries)
@@ -259,22 +246,80 @@ def recalculate_entry(entry):
 
     return entry
 
-
 def approve_payroll_run(payroll_run, source_wallet=None):
     """
-    Finalizes the payroll run.
-    Sets status to approved and records the timestamp.
-    The expenses logging happens separately in the expenses app.
+    Finalizes payroll, creates transaction entries, and writes back to DTR.
     """
+    # Approve the run
     payroll_run.status = 'approved'
     payroll_run.approved_at = timezone.now()
-
     if source_wallet:
         payroll_run.source_wallet = source_wallet
-
     payroll_run.save()
+
+    # Create Transaction records
+    try:
+        from expenses.models import Transaction, Wallet
+        
+        # Get or create a "Salaries & Allowances" wallet
+        salary_wallet, _ = Wallet.objects.get_or_create(
+            name='Salaries & Allowances',
+            defaults={'description': 'Payroll expenses'}
+        )
+        
+        transactions_created = 0
+        for entry in payroll_run.entries.all():
+            if entry.logged_to_expenses:
+                continue
+                
+            Transaction.objects.create(
+                transaction_type='spend funds',
+                category='salaries',
+                transaction_date=payroll_run.period_end,
+                amount=entry.net_pay,
+                counterparty=entry.worker.full_name,
+                note=f"Payroll - {entry.worker.full_name} ({payroll_run.period_start} to {payroll_run.period_end})",
+                wallet=salary_wallet,
+                user=payroll_run.generated_by,
+            )
+            transactions_created += 1
+        
+        payroll_run.notes = (payroll_run.notes or '') + f"\nTransactions created: {transactions_created} on {timezone.now().strftime('%Y-%m-%d %H:%M')}"
+        payroll_run.save()
+        
+    except Exception as e:
+        print(f"Could not log to expenses: {e}")
+        payroll_run.notes = (payroll_run.notes or '') + f"\nTransaction creation error: {e}"
+        payroll_run.save()
 
     # Mark all entries as logged
     payroll_run.entries.update(logged_to_expenses=True)
+
+    # Get all unpaid shift IDs for this period
+    shift_ids = list(
+        TimesheetSync.objects.filter(
+            period_start=payroll_run.period_start,
+            period_end=payroll_run.period_end,
+            is_paid_in_dtr=False,
+        ).exclude(dtr_shift_id__isnull=True)
+        .values_list('dtr_shift_id', flat=True)
+    )
+
+    # Write back to DTR
+    if shift_ids:
+        try:
+            client = DTRClient()
+            client.mark_paid(shift_ids)
+
+            TimesheetSync.objects.filter(
+                dtr_shift_id__in=shift_ids
+            ).update(
+                is_paid_in_dtr=True,
+                paid_at_in_dtr=timezone.now()
+            )
+
+            print(f"Marked {len(shift_ids)} shifts as paid in DTR")
+        except Exception as e:
+            print(f"Could not write back to DTR: {e}")
 
     return payroll_run

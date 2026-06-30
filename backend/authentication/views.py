@@ -24,7 +24,6 @@ class RegisterView(generics.CreateAPIView):
         user = serializer.save()
         token, _ = Token.objects.get_or_create(user=user)
         
-        # Log the registration
         AuditLog.objects.create(
             user=user,
             action='CREATE',
@@ -46,13 +45,14 @@ class LoginView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data
+        user = serializer.validated_data['user']
         token, _ = Token.objects.get_or_create(user=user)
-        
-        # Log the login
+
         AuditLog.objects.create(
             user=user,
             action='LOGIN',
+            model_name='User',
+            object_id=str(user.id),
             description="User logged in successfully.",
             ip_address=get_client_ip(request)
         )
@@ -67,10 +67,11 @@ class LogoutView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         try:
-            # Log the logout before deleting the token
             AuditLog.objects.create(
                 user=request.user,
                 action='LOGOUT',
+                model_name='User',
+                object_id=str(request.user.id),
                 description="User logged out successfully.",
                 ip_address=get_client_ip(request)
             )
@@ -85,5 +86,4 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
 
     def get_object(self):
-        # Always return the current authenticated user instance
         return self.request.user

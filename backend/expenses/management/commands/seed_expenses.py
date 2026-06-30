@@ -20,11 +20,20 @@ class Command(BaseCommand):
             user.set_password("admin")
             user.save()
 
+        wallet_defs = [
+            {"name": "Petty Cash", "description": "Daily operational cash kept on hand for small business expenses and immediate purchases."},
+            {"name": "Emergency Cash", "description": "Reserved cash set aside for unexpected expenses or urgent financial situations."},
+            {"name": "GCash", "description": "Primary digital wallet used for mobile payments, online purchases, and fund transfers."},
+            {"name": "Maya Wallet", "description": "Secondary e-wallet dedicated to online shopping, subscriptions, and digital services."},
+            {"name": "UnionBank Savings", "description": "Main savings account used for storing long-term funds and personal savings."},
+            {"name": "BDO Checkings", "description": "Primary checking account used for recurring bills, supplier payments, and everyday banking transactions."},
+        ]
+
         wallets = []
-        for name in ["Personal", "Business", "Savings"]:
+        for w in wallet_defs:
             wallet, _ = Wallet.objects.get_or_create(
-                name=name,
-                defaults={"description": f"{name} wallet"},
+                name=w["name"],
+                defaults={"description": w["description"]},
             )
             wallets.append(wallet)
 
@@ -49,7 +58,7 @@ class Command(BaseCommand):
 
         today = timezone.now().date()
 
-        for i in range(200):
+        for i in range(5):
             days_ago = random.randint(0, 365)
             tx_date = today - timedelta(days=days_ago)
 

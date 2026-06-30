@@ -1,0 +1,1455 @@
+---
+import Layout from '../layouts/Layout.astro';
+import WalletCard from "../components/WalletCard.astro";
+import DashboardIncomeVsOutgoing from "../Charts/DashboardIncomeVsOutgoing.astro";
+import DashboardExpensesByCategory from "../Charts/DashboardExpensesByCategory.astro";
+import DashboardIncomingByWallet from "../Charts/DashboardIncomingByWallet.astro";
+import IconBalanceShow from '../assets/funds-visible-icon.svg?raw'; 
+import IconCash from '../assets/cash-icon.svg?raw'; 
+import IconCashUp from '../assets/cash-up-icon.svg?raw'; 
+import IconCashDown from '../assets/cash-down-arrow.svg?raw'; 
+import IconTransaction from '../assets/metrics-bidirectional-arrow.svg?raw'; 
+import IconAddFunds from '../assets/add-funds-icon.svg?raw'; 
+import IconSpendFunds from '../assets/spend-funds-icon.svg?raw';
+import IconMoveFunds from '../assets/move-funds-icon.svg?raw';
+import IconChevronDown from '../assets/chevron-down.svg?raw';
+import IconWallet from '../assets/wallet-icon.svg?raw';
+import IconPeso from '../assets/philippine-peso.svg?raw';
+import IconAttachment from '../assets/paperclip.svg?raw';
+
+const wallets = [
+    {
+        id: 1,
+        name: "Petty Cash",
+        description: "Daily operational cash kept on hand for small business expenses and immediate purchases. This wallet is used for quick transactions that do not require bank transfers or digital payments. Regular monitoring helps ensure accurate cash reconciliation.",
+        amount: 1250.00,
+        type: "cash",
+        created_at: "2026-06-01T08:00:00Z",
+        updated_at: "2026-06-25T14:30:00Z"
+    },
+    {
+        id: 2,
+        name: "Emergency Cash",
+        description: "Reserved cash set aside for unexpected expenses or urgent financial situations. These funds should only be used when absolutely necessary to avoid disrupting regular operations. Maintaining this reserve provides additional financial security.",
+        amount: 5000.00,
+        type: "cash",
+        created_at: "2026-06-01T08:00:00Z",
+        updated_at: "2026-06-20T09:15:00Z"
+    },
+    {
+        id: 3,
+        name: "GCash",
+        description: "Primary digital wallet used for mobile payments, online purchases, and fund transfers. It offers a convenient way to send and receive money instantly. Transactions are synchronized regularly to keep balances up to date.",
+        amount: 2845.50,
+        type: "e-wallet",
+        created_at: "2026-05-10T12:00:00Z",
+        updated_at: "2026-06-27T17:45:00Z"
+    },
+    {
+        id: 4,
+        name: "Maya Wallet",
+        description: "Secondary e-wallet dedicated to online shopping, subscriptions, and digital services. Keeping it separate from the primary wallet makes budgeting and expense tracking easier. It also serves as a backup payment option when needed.",
+        amount: 9120.00,
+        type: "e-wallet",
+        created_at: "2026-05-15T12:00:00Z",
+        updated_at: "2026-06-26T11:20:00Z"
+    },
+    {
+        id: 5,
+        name: "UnionBank Savings",
+        description: "Main savings account used for storing long-term funds and personal savings. Interest earned helps grow the balance over time while keeping funds readily accessible. Large deposits and planned withdrawals are typically managed through this account.",
+        amount: 38750.81,
+        type: "bank",
+        created_at: "2026-04-01T09:00:00Z",
+        updated_at: "2026-06-28T10:30:00Z"
+    },
+    {
+        id: 6,
+        name: "BDO Checkings",
+        description: "Primary checking account used for recurring bills, supplier payments, and everyday banking transactions. It supports higher transaction volumes and provides easy access through checks and online banking. Regular activity ensures smooth financial operations.",
+        amount: 112450.25,
+        type: "bank",
+        created_at: "2026-03-01T09:00:00Z",
+        updated_at: "2026-06-29T08:15:00Z"
+    }
+];
+
+const totalBalanceCalculated = wallets.reduce(
+    (sum, wallet) => sum + wallet.amount,
+    0
+);
+
+const walletPartitions = wallets.map(wallet => ({
+    ...wallet,
+    percentage: (wallet.amount / totalBalanceCalculated) * 100
+}));
+
+const totalBalance = `₱${totalBalanceCalculated.toLocaleString("en-PH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+})}`;
+
+const partitionColors = [
+    "#F5C842",
+    "#4B7FE8",
+    "#2EC4A0",
+    "#E86D8A",
+    "#8D6BE8",
+    "#FF914D",
+    "#64C864",
+    "#5DC1D6"
+];
+
+---
+
+<Layout>
+    <div class="dashboard-page">
+        <div class="dashboard-inner">
+            <div class="top-section">
+                <div class="balancecard">
+                    <button
+                        id="show-balance"
+                        type="button"
+                        aria-label="Hide balance"
+                        aria-pressed="false"
+                        class="absolute z-10 top-6 right-5 w-12 h-12 flex justify-center items-center rounded-2xl bg-white/20 cursor-pointer"
+                        set:html={IconBalanceShow}>
+                    </button>
+                    <div class="balancecard-heading">
+                        <p>TOTAL BALANCE</p>
+                    </div>
+                    <div
+                        id="balance-amount"
+                        class="balancecard-amount truncate"
+                        data-balance={totalBalance}
+                    >
+                        {totalBalance}
+                    </div>
+                    <div class="balancecard-partitions">
+                        {
+                            walletPartitions.map((wallet, index) => (
+                                <div
+                                    class="partition-wrapper"
+                                    style={`flex:${wallet.percentage}`}
+                                >
+                                    <span
+                                        class="seg"
+                                        style={`background:${partitionColors[index % partitionColors.length]}`}
+                                    ></span>
+
+                                    <div class="partition-tooltip">
+                                        <strong>{wallet.name}</strong><br />
+                                        ₱{wallet.amount.toLocaleString("en-PH", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        })}
+                                        <br />
+                                        {wallet.percentage.toFixed(1)}%
+                                    </div>
+                                </div>
+                            ))
+                        }
+                    </div>
+                    <div class="balancecard-action-buttons">
+                        <button class="card-button" data-modal="add-funds-modal"><span set:html={IconAddFunds}></span>Add Funds</button>
+                        <button class="card-button" data-modal="spend-funds-modal"><span set:html={IconSpendFunds}></span>Spend Funds</button>
+                        <button class="card-button" data-modal="move-funds-modal"><span set:html={IconMoveFunds}></span>Move Funds</button>
+                    </div>
+                </div>
+
+                <div class="wallets-section">
+                    <div class="wallets-header">
+                        <span>Wallets</span>
+                        <a href="/wallets">See All</a>
+                    </div>
+                    <div class="wallets-scrollable">
+                        <div class="wallets-group">
+                            {
+                                wallets.map((wallet) => (
+                                    <div class="dashboard-wallet-item">
+                                        <WalletCard
+                                            name={wallet.name}
+                                            amount={`₱${wallet.amount.toLocaleString("en-PH", {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2
+                                            })}`}
+                                            type={wallet.type as "cash" | "e-wallet" | "bank"}
+                                        />
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-container">
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">INCOMING FUNDS THIS MONTH</span>
+                        <span class="metric-value" id="dash-incoming-value">---</span>
+                    </div>
+                    <div class="metric-icon-wrapper">
+                        <Fragment set:html={IconCashUp} />
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">OUTGOING FUNDS THIS MONTH</span>
+                        <span class="metric-value" id="dash-outgoing-value">---</span>
+                    </div>
+                    <div class="metric-icon-wrapper">
+                        <Fragment set:html={IconCashDown} />
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">TOTAL PROFIT THIS MONTH</span>
+                        <span class="metric-value" id="dash-profit-value">---</span>
+                    </div>
+                    <div class="metric-icon-wrapper">
+                        <Fragment set:html={IconCash} />
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">TRANSACTIONS THIS MONTH</span>
+                        <span class="metric-value" id="dash-transactions-value">---</span>
+                    </div>
+                    <div class="metric-icon-wrapper">
+                        <Fragment set:html={IconTransaction} />
+                    </div>
+                </div>
+            </div>
+
+            <div class="graph-section">
+                <div class="graph-card">
+                    <span class="graph-label orange">TOTAL INCOMING VS OUTGOING THIS MONTH</span>
+                    <div class="graph-content"><DashboardIncomeVsOutgoing /></div>
+                </div>
+                <div class="graph-card">
+                    <span class="graph-label orange">INCOMING FUNDS BY WALLET SOURCE</span>
+                    <div class="graph-content"><DashboardIncomingByWallet /></div>
+                </div>
+                <div class="graph-card">
+                    <span class="graph-label orange">OUTGOING FUNDS BY EXPENSE CATEGORY</span>
+                    <div class="graph-content"><DashboardExpensesByCategory /></div>
+                </div>
+            </div>
+
+            <div class="transaction-history">
+                <div class="transaction-headings blue">
+                    <div class="transaction-top-row">
+                        <div>
+                            <p>RECENT TRANSACTIONS</p>
+                            <p>Showing results for </p>
+                        </div>
+                        <div class="filtergroup">
+                            <button class="filter-chip active" data-filter="all">All</button>
+                            <button class="filter-chip" data-filter="added">Added Funds</button>
+                            <button class="filter-chip" data-filter="spent">Spent Funds</button>
+                        </div>
+                    </div>
+                    <div class="transactionlabels">
+                        <p>AMOUNT</p>
+                        <p>WALLET</p>
+                        <p>CATEGORY</p>
+                        <p>NOTE</p>
+                        <p>USER</p>
+                        <p>DATE</p>
+                    </div>
+                </div>
+                <div class="transaction-history-scrollable">
+                    <div class="transaction-history-slots">
+                        <div class="transactionrow">
+                            <p>P1021</p>
+                            <p>GCash</p>
+                            <p>Food and waht</p>
+                            <p>--</p>
+                            <p>User 1</p>
+                            <p>Jun 26, 2026</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <!-- Add Funds Modal -->
+    <div id="add-funds-modal" class="modal-overlay" aria-hidden="true">
+        <div class="modal modal--navy" role="dialog" aria-modal="true" aria-labelledby="add-funds-title">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <span class="modal-header-icon"><Fragment set:html={IconCashDown} /></span>
+                    <h2 id="add-funds-title">Add Funds</h2>
+                </div>
+                <button class="modal-close" aria-label="Close modal">✕</button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- Fund Amount -->
+                <div class="form-group">
+                    <label for="fund-amount">FUND AMOUNT</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-icon"><Fragment set:html={IconPeso} /></span>
+                        <input id="fund-amount" name="amount" type="number" min="0" step="1" placeholder="Enter Amount" />
+                    </div>
+                </div>
+
+                <!-- Destination Wallet -->
+                <div class="form-group">
+                    <label for="fund-wallet">DESTINATION WALLET</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-icon"><Fragment set:html={IconWallet} /></span>
+                        <select id="fund-wallet" name="wallet">
+                            <option value="" disabled selected>Select Wallet</option>
+                            {
+                                wallets.map((wallet) => (
+                                    <option value={wallet.id}>
+                                        {wallet.name}
+                                    </option>
+                                ))
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Advanced Toggle -->
+                <div class="advanced-toggle-wrapper">
+                    <button type="button" class="advanced-toggle" id="advanced-toggle-add">
+                        Advanced <span class="advanced-arrow" set:html={IconChevronDown}></span>
+                    </button>
+                    <div class="advanced-divider"></div>
+                </div>
+
+                <!-- Advanced Fields (hidden by default) -->
+                <div class="advanced-fields" id="advanced-fields-add">
+
+                    <!-- Note -->
+                    <div class="form-group">
+                        <label for="fund-note">NOTE</label>
+                        <textarea id="fund-note" name="note" rows="3" placeholder="Add a note about this transaction..."></textarea>
+                    </div>
+
+                    <!-- Date + Attachment side by side -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fund-date">DATE</label>
+                            <div class="input-icon-wrapper">
+                                <input id="fund-date" name="date" type="date" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="fund-attachment">ATTACHMENT</label>
+                            <div class="input-icon-wrapper">
+                                <input id="fund-attachment" name="attachment" type="text" placeholder="Select files" readonly />
+                                <span class="input-icon-right"><Fragment set:html={IconAttachment} /></span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="modal-footer modal-footer--stack">
+                <button type="button" class="btn-save-another">Save and Add Another</button>
+                <div class="modal-footer-row">
+                    <button type="button" class="btn-secondary">Cancel</button>
+                    <button type="button" class="btn-primary btn-primary--navy">Add Fund</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Move Funds Modal -->
+    <div id="move-funds-modal" class="modal-overlay" aria-hidden="true">
+        <div class="modal modal--grey" role="dialog" aria-modal="true" aria-labelledby="move-funds-title">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <span class="modal-header-icon"><Fragment set:html={IconMoveFunds} /></span>
+                    <h2 id="move-funds-title">Move Funds</h2>
+                </div>
+                <button class="modal-close" aria-label="Close modal">✕</button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- Fund Amount -->
+                <div class="form-group">
+                    <label for="move-amount">FUND AMOUNT</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-icon"><Fragment set:html={IconPeso} /></span>
+                        <input id="move-amount" name="amount" type="number" min="0" step="1" placeholder="Enter Amount" />
+                    </div>
+                </div>
+
+                <!-- Source + Destination Wallet side by side -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="move-source">SOURCE WALLET</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon"><Fragment set:html={IconWallet} /></span>
+                            <select id="move-source" name="source_wallet">
+                                <option value="" disabled selected>Select Wallet</option>
+                                {wallets.map((wallet) => (
+                                    <option value={wallet.id}>{wallet.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="move-destination">DESTINATION WALLET</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon"><Fragment set:html={IconWallet} /></span>
+                            <select id="move-destination" name="destination_wallet">
+                                <option value="" disabled selected>Select Wallet</option>
+                                {wallets.map((wallet) => (
+                                    <option value={wallet.id}>{wallet.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Toggle -->
+                <div class="advanced-toggle-wrapper">
+                    <button type="button" class="advanced-toggle" id="advanced-toggle-move">
+                        Advanced <span class="advanced-arrow" set:html={IconChevronDown}></span>
+                    </button>
+                    <div class="advanced-divider"></div>
+                </div>
+
+                <!-- Advanced Fields -->
+                <div class="advanced-fields" id="advanced-fields-move">
+                    <div class="form-group">
+                        <label for="move-note">NOTE</label>
+                        <textarea id="move-note" name="note" rows="3" placeholder="Add a note about this transaction..."></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="move-date">DATE</label>
+                            <div class="input-icon-wrapper">
+                                <input id="move-date" name="date" type="date" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="move-attachment">ATTACHMENT</label>
+                            <div class="input-icon-wrapper">
+                                <input id="move-attachment" name="attachment" type="text" placeholder="Select files" readonly />
+                                <span class="input-icon-right"><Fragment set:html={IconAttachment} /></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer modal-footer--stack">
+                <button type="button" class="btn-save-another btn-save-another--grey">Save and Add Another</button>
+                <div class="modal-footer-row">
+                    <button type="button" class="btn-secondary">Cancel</button>
+                    <button type="button" class="btn-primary--move">Move Fund</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</Layout>
+
+<script>
+  import "../scripts/dashboard-metrics.js";
+</script>
+
+<script is:inline>
+    document.addEventListener("astro:page-load", () => {
+        const toggle = document.getElementById("show-balance");
+        const balance = document.getElementById("balance-amount");
+
+        if (!toggle || !balance) return;
+
+        let isVisible = true;
+
+        function renderBalance() {
+            const actualBalance = balance.dataset.balance ?? "";
+            balance.style.opacity = "0";
+            balance.style.transform = "translateY(6px)";
+
+            if (isVisible) {
+                balance.textContent = actualBalance;
+                balance.classList.remove("balance-hidden");
+
+                toggle.setAttribute("aria-label", "Hide balance");
+                toggle.setAttribute("aria-pressed", "false");
+            } else {
+                balance.textContent = "₱ ••••••••••";
+                balance.classList.add("balance-hidden");
+
+                toggle.setAttribute("aria-label", "Show balance");
+                toggle.setAttribute("aria-pressed", "true");
+            }
+            requestAnimationFrame(() => {
+                balance.style.opacity = "1";
+                balance.style.transform = "translateY(0)";
+            });
+        }
+
+        toggle.addEventListener("click", () => {
+            isVisible = !isVisible;
+            renderBalance();
+        });
+
+        renderBalance();
+
+        // Temporary transaction filter UI
+        const chips = document.querySelectorAll(".filter-chip");
+        const transactionLabel = document.querySelector(
+            ".transaction-top-row div p:nth-child(2)"
+        );
+
+        chips.forEach((chip) => {
+            chip.addEventListener("click", () => {
+                chips.forEach((c) => c.classList.remove("active"));
+                chip.classList.add("active");
+
+                const filter = chip.dataset.filter;
+
+                if (!transactionLabel) return;
+
+                switch (filter) {
+                    case "added":
+                        transactionLabel.textContent =
+                            "Showing results for Added Funds";
+                        break;
+                    case "spent":
+                        transactionLabel.textContent =
+                            "Showing results for Spent Funds";
+                        break;
+                    default:
+                        transactionLabel.textContent =
+                            "Showing results for All Transactions";
+                }
+            });
+        });
+
+        // Universal modal system
+        document.querySelectorAll('[data-modal]').forEach(trigger => {
+            trigger.addEventListener('click', () => {
+                const modal = document.getElementById(trigger.dataset.modal);
+                if (!modal) return;
+                modal.classList.add('open');
+                modal.setAttribute('aria-hidden', 'false');
+            });
+        });
+
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal(modal);
+            });
+            modal.querySelector('.modal-close')?.addEventListener('click', () => closeModal(modal));
+            modal.querySelector('.btn-secondary')?.addEventListener('click', () => closeModal(modal));
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            document.querySelectorAll('.modal-overlay.open').forEach(closeModal);
+        });
+
+        function closeModal(modal) {
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        document.querySelectorAll('.advanced-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.id.replace('advanced-toggle', 'advanced-fields');
+                const fields = document.getElementById(targetId);
+                if (!fields) return;
+
+                const isOpen = fields.classList.toggle('open');
+                btn.classList.toggle('open', isOpen);
+            });
+        });
+    });
+</script>
+
+<style>
+    .dashboard-page {
+        display: flex;
+        justify-content: center;
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    .dashboard-inner {
+        width: 100%;
+        max-width: 1600px;
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        gap: var(--space-md);
+        zoom: clamp(0.6, calc(100vw / 1600), 1);
+    }
+
+    .top-section {
+        display: grid;
+        grid-template-columns: 780px 1fr;
+        grid-template-rows: auto;
+        gap: var(--space-md);
+        min-width: 0;
+    }
+
+    .balancecard {
+        position: relative;
+        background: var(--orange-gradient);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: var(--space-md);
+        box-shadow: var(--default-shadow);
+        min-width: 0;
+        transition: transform .25s ease, box-shadow .25s ease;
+    }
+
+    .balancecard:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 18px 36px rgba(0,0,0,.16);
+    }
+
+    #show-balance {
+        transition:
+            transform .2s ease,
+            background-color .2s ease;
+    }
+
+    #show-balance:hover {
+        transform: rotate(12deg) scale(1.08);
+        background: rgba(255,255,255,.3);
+    }
+
+    #show-balance:active {
+        transform: scale(.94);
+    }
+
+    .balancecard-amount {
+        font-family: var(--display-headings-font);
+        font-size: var(--display-headings-text);
+        font-weight: 700;
+        transition: opacity .25s ease,transform .25s ease;
+    }
+
+    .balancecard-action-buttons {
+        display: flex;
+        gap: var(--space-sm);
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .balancecard-partitions {
+        display: flex;
+        gap: 4px;
+        height: 12px;
+        overflow: visible;
+        width: 100%;
+    }
+    .partition-wrapper {
+        position: relative;
+        display: flex;
+        min-width: 6px;
+    }
+
+    .seg {
+        width: 100%;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: transform .15s ease;
+    }
+
+    .seg:hover {
+        transform: scaleY(1.25);
+    }
+    .partition-tooltip {
+        position: absolute;
+        bottom: 22px;
+        left: 50%;
+        transform: translateX(-50%) translateY(6px);
+        background: white;
+        color: var(--primary-navyblue);
+        padding: 10px 12px;
+        border-radius: var(--radius-md);
+        font-size: 0.8rem;
+        white-space: nowrap;
+        box-shadow: var(--default-shadow);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .15s ease, transform .15s ease;
+        z-index: 100;
+    }
+
+    .partition-wrapper:hover .partition-tooltip {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    .card-button {
+        flex: 1;
+        min-width: 120px;
+        max-width: 150px;
+        padding: var(--space-sm);
+        border: 2px solid #ffffff;
+        border-radius: var(--radius-md);
+        background-color: color-mix(in srgb, var(--primary-orange) 50%, transparent);
+        color: #ffffff;
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: bold;
+        box-shadow: var(--default-shadow);
+        transition: transform .15s ease, background-color .15s ease, box-shadow .15s ease;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .card-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0,0,0,.15);
+    }
+
+    .card-button:active {
+        transform: scale(.97);
+    }
+
+    .wallets-section {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .wallets-header {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--space-md) 0;
+    }
+
+    .wallets-header a {
+        cursor: pointer;
+        color: var(--primary-orange);
+        transition:
+            color .15s ease,
+            transform .15s ease;
+    }
+
+    .wallets-header a:hover {
+        color: #ffb15a;
+        transform: translateX(-3px);
+    }
+
+    .wallets-scrollable {
+        flex: 1;
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
+    }
+
+    .wallets-group {
+        display: flex;
+        gap: var(--space-md);
+        align-items: flex-end;
+        width: max-content;
+        padding: 10px;
+    }
+
+    .metric-container {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--space-md);
+        min-width: 0;
+    }
+
+    .metric-card {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        height: 125px;
+        padding: var(--space-md);
+        border-radius: var(--radius-lg);
+        box-sizing: border-box;
+        background-color: var(--white);
+        box-shadow: var(--default-shadow);
+        min-width: 0;
+        transition: transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0,0,0,.12);
+    }
+
+    .metric-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-width: 0;
+    }
+
+    .metric-label {
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        color: var(--primary-navyblue);
+    }
+
+    .metric-value {
+        font-size: var(--display-headings-text);
+        font-family: var(--display-headings-font);
+        color: var(--primary-navyblue);
+        font-weight: bold;
+        margin-top: var(--space-sm);
+    }
+
+    .metric-icon-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
+        width: 45px;
+        height: 45px;
+        background-color: var(--light-grey);
+        border-radius: var(--radius-sm);
+    }
+
+    .metric-icon-wrapper :global(svg) {
+        width: 24px;
+        height: auto;
+    }
+
+    .graph-section {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-md);
+        min-width: 0;
+    }
+
+    .graph-card {
+        display: flex;
+        flex-direction: column;
+        height: 320px;
+        padding: var(--space-md);
+        border-radius: var(--radius-lg);
+        box-sizing: border-box;
+        background-color: var(--white);
+        box-shadow: var(--default-shadow);
+        min-width: 0;
+        transition:transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .graph-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0,0,0,.12);
+    }
+
+    .graph-content {
+        flex: 1;
+        min-height: 0;
+    }
+
+    .graph-label {
+        box-sizing: border-box;
+        display: block;
+        padding: var(--space-md);
+        margin: calc(-1 * var(--space-md)) calc(-1 * var(--space-md)) var(--space-md);
+        border-radius: calc(var(--radius-lg) - 2px) calc(var(--radius-lg) - 2px) 0 0;
+        color: var(--white);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+    }
+
+    .transaction-history {
+        background-color: var(--white);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--default-shadow);
+        min-width: 0;
+    }
+
+    .transaction-headings {
+        padding: var(--space-md);
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .transaction-top-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+    }
+
+    .filtergroup {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .filter-chip {
+        border: 2px solid #ffffff;
+        border-radius: var(--radius-pill);
+        padding: 6px var(--space-md);
+        font-size: var(--paragraph-text);
+        cursor: pointer;
+
+        background: transparent;
+        color: white;
+
+        transition:
+            background-color 150ms ease,
+            color 150ms ease,
+            border-color 150ms ease;
+    }
+
+    .filter-chip:hover {
+        background: rgba(255,255,255,.15);
+    }
+
+    .filter-chip.active {
+        background: var(--primary-orange);
+        border-color: var(--primary-orange);
+        color: white;
+    }
+
+    .transactionlabels {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr 1fr;
+        padding: 0 var(--space-lg);
+    }
+
+    .transaction-history-scrollable {
+        min-height: 200px;
+        max-height: 500px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+    }
+
+    .transactionrow {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr 1fr;
+        align-items: center;
+        padding: var(--space-md) var(--space-lg);
+        border-bottom: 1px solid var(--light-grey);
+        transition: background-color .15s ease, transform .15s ease;
+    }
+
+    .balance-hidden {
+        letter-spacing: 0.15em;
+        user-select: none;
+    }
+
+    .dashboard-wallet-item {
+        width: 250px;
+        flex-shrink: 0;
+    }   
+
+    /* Modals */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.open {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .modal {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        width: 100%;
+        max-width: 480px;
+        margin: var(--space-md);
+        box-shadow: 0 20px 48px rgba(0, 0, 0, 0.25);
+        transform: translateY(12px);
+        transition: transform 0.2s ease;
+        overflow: hidden;
+    }
+
+    .modal-overlay.open .modal {
+        transform: translateY(0);
+    }
+
+    /* Header */
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-md) var(--space-lg);
+        color: #fff;
+    }
+
+    /* Navy variant */
+    .modal--navy .modal-header {
+        background: var(--primary-navyblue);
+    }
+
+    /* Orange variant */
+    .modal--orange .modal-header {
+        background: var(--orange-gradient);
+    }
+
+    /* Grey variant */
+    .modal--grey .modal-header {
+        background: #3d4a5c;
+    }
+
+    .btn-save-another--grey {
+        background: #3d4a5c;
+    }
+
+    .btn-primary--move {
+        padding: 12px;
+        background: #3d4a5c;
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-primary--move:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+    .modal-header-left {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .modal-header-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        opacity: 0.9;
+    }
+
+    .modal-header-icon :global(svg) {
+        width: 20px;
+        height: 20px;
+    }
+
+    .modal-header h2 {
+        font-family: var(--display-headings-font);
+        font-size: 1.15rem;
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .modal-close {
+        background: rgba(255, 255, 255, 0.15);
+        border: none;
+        color: #fff;
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s ease;
+        flex-shrink: 0;
+    }
+
+    .modal-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Body */
+    .modal-body {
+        padding: var(--space-lg);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group label {
+        font-family: var(--general-text-font);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: var(--primary-navyblue);
+    }
+
+    /* Input with icon wrapper */
+    .input-icon-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 14px;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+        opacity: 0.45;
+    }
+
+    .input-icon :global(svg) {
+        width: 18px;
+        height: 18px;
+    }
+
+    .input-icon-right {
+        position: absolute;
+        right: 14px;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+        opacity: 0.4;
+    }
+
+    .input-icon-right :global(svg) {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Spinner buttons (amount field) */
+    .input-spinner {
+        position: absolute;
+        right: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    .spinner-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--primary-navyblue);
+        font-size: 0.75rem;
+        line-height: 1;
+        padding: 1px 4px;
+        opacity: 0.5;
+        transition: opacity 0.1s;
+    }
+
+    .spinner-btn:hover {
+        opacity: 1;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1.5px solid #e0e4ed;
+        border-radius: 999px; /* pill shape like the design */
+        padding: 12px var(--space-md);
+        padding-left: 42px; /* space for left icon */
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        color: var(--primary-navyblue);
+        background: #f3f5f9;
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        resize: none;
+        appearance: none;
+        -webkit-appearance: none;
+    }
+
+    /* textarea and date don't need pill shape */
+    .form-group textarea,
+    .form-group input[type="date"] {
+        border-radius: var(--radius-md);
+    }
+
+    /* textarea has no left icon */
+    .form-group textarea {
+        padding-left: var(--space-md);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        border-color: var(--primary-navyblue);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-navyblue) 12%, transparent);
+        background: #fff;
+    }
+
+    /* Orange focus for Spend Funds modal later */
+    .modal--orange .form-group input:focus,
+    .modal--orange .form-group select:focus,
+    .modal--orange .form-group textarea:focus {
+        border-color: var(--primary-orange);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-orange) 15%, transparent);
+    }
+
+    /* Advanced toggle */
+    .advanced-toggle-wrapper {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .advanced-toggle {
+        background: none;
+        border: none;
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 700;
+        color: var(--primary-navyblue);
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+        transition: opacity 0.15s ease;
+    }
+
+    .advanced-toggle:hover {
+        opacity: 0.7;
+    }
+
+    .advanced-arrow {
+        display: inline-block;
+        transition: transform 0.2s ease;
+        font-size: 1rem;
+    }
+
+    .advanced-toggle.open .advanced-arrow {
+        transform: rotate(180deg);
+    }
+
+    .advanced-divider {
+        flex: 1;
+        height: 1.5px;
+        background: #e0e4ed;
+        border-radius: 999px;
+    }
+
+    /* Advanced fields — hidden by default */
+    .advanced-fields {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        transition: max-height 0.3s ease, opacity 0.25s ease;
+    }
+
+    .advanced-fields.open {
+        max-height: 400px;
+        opacity: 1;
+    }
+
+    /* Side by side date + attachment */
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-md);
+    }
+
+    /* Footer */
+    .modal-footer {
+        padding: var(--space-md) var(--space-lg);
+        border-top: 1px solid #e0e4ed;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .modal-footer-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-sm);
+    }
+
+    .btn-save-another {
+        width: 100%;
+        padding: 13px;
+        background: var(--primary-navyblue);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-save-another:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        padding: 12px;
+        background: transparent;
+        color: var(--primary-navyblue);
+        border: 1.5px solid #e0e4ed;
+        border-radius: var(--radius-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+        background: #f3f5f9;
+    }
+
+    /* Primary button — navy for Add Funds */
+    .btn-primary--navy {
+        padding: 12px;
+        background: var(--primary-orange);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-primary--navy:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
+    /* MEDIA QUERIES */
+    @media (max-width: 1500px) {
+        .top-section {
+            grid-template-columns: 1fr;
+        }
+
+        .metric-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .graph-section {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 640px) {
+
+        .balancecard {
+            padding: var(--space-sm);
+            gap: var(--space-sm);
+            border-radius: var(--radius-md);
+        }
+
+        .balancecard-heading p {
+            font-size: 0.65rem;
+        }
+
+        .balancecard-amount {
+            font-size: 1.6rem;
+        }
+
+        .card-button {
+            font-size: 0.7rem;
+            padding: 6px 8px;
+            min-width: 90px;
+        }
+
+        .metric-container {
+            grid-template-columns: 1fr;
+        }
+
+        .metric-card {
+            height: 90px;
+            padding: var(--space-sm);
+        }
+
+        .metric-label {
+            font-size: 0.65rem;
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            margin-top: 4px;
+        }
+
+        .metric-icon-wrapper {
+            width: 34px;
+            height: 34px;
+        }
+
+        .metric-icon-wrapper :global(svg) {
+            width: 18px;
+        }
+
+        .graph-card {
+            height: 240px;
+            padding: var(--space-sm);
+        }
+
+        .graph-label {
+            font-size: 0.65rem;
+            padding: var(--space-sm);
+            margin: calc(-1 * var(--space-sm)) calc(-1 * var(--space-sm)) var(--space-sm);
+        }
+
+        .dashboard-wallet-item {
+            width: 190px;
+        }
+
+        .transactionlabels,
+        .transactionrow {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .transactionrow:hover {
+            background: #fafafa;
+            transform: translateX(4px);
+        }
+
+        .transactionlabels p:nth-child(n+4),
+        .transactionrow p:nth-child(n+4) {
+            display: none;
+        }
+
+        .balancecard-action-buttons {
+            justify-content: center;
+        }
+    }
+</style>

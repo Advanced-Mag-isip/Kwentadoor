@@ -22,14 +22,16 @@ import '../styles/global.css';
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         
-        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
         <ClientRouter />
     </head>
     <body>
         <Sidebar />
         <main>
             <Navbar />
+            <div id="mobile-backdrop"></div>
+            
             <div class="slot-wrapper">
                 <slot />
             </div>
@@ -43,6 +45,7 @@ import '../styles/global.css';
         display: flex;
         flex-direction: row;
         height: 100vh;	
+        overflow: hidden;
     }
 
     main {
@@ -52,9 +55,97 @@ import '../styles/global.css';
     }
 
     .slot-wrapper {
+        padding: var(--space-lg) var(--space-lg);
         flex: 1;
         overflow-y: auto;
-        padding: 2rem;
-        background-color: var(--temporary-background-color);
+        background-image: repeating-linear-gradient(
+			-45deg,
+			transparent,
+			transparent 10px,
+			#e2e8f0 10px,
+			#e2e8f0 11px
+		);
     }
+    
+    body.sidebar-collapsed :global(#main-navigation) {
+        width: 68px;
+        overflow: hidden;
+    }
+
+    @media (max-width: 768px) {
+        :global(#main-navigation) {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            height: 100vh;
+            z-index: 100;
+            transition: left 0.3s ease;
+            width: 250px !important;
+        }
+
+        body.sidebar-open :global(#main-navigation) {
+            left: 0;
+        }
+
+        .slot-wrapper {
+            padding: 5px;
+        }
+
+        #mobile-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 90;
+        }
+
+        body.sidebar-open #mobile-backdrop {
+            display: block;
+        }
+    }
+
 </style>
+
+<script>
+  function applySidebarState() {
+    if (window.innerWidth > 768) {
+        const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+        document.body.classList.toggle('sidebar-collapsed', isCollapsed);
+    } else {
+        document.body.classList.remove('sidebar-collapsed');
+    }
+  }
+
+  applySidebarState();
+  document.addEventListener('astro:after-swap', applySidebarState);
+  
+  document.addEventListener('astro:page-load', () => {
+    const btn = document.getElementById('sidebar-toggle');
+    const backdrop = document.getElementById('mobile-backdrop');
+
+    if (btn) {
+      btn.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+            document.body.classList.toggle('sidebar-open');
+        } else {
+            const collapsed = document.body.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebar-collapsed', String(collapsed));
+        }
+      });
+    }
+
+    if (backdrop) {
+        backdrop.addEventListener('click', () => {
+            document.body.classList.remove('sidebar-open');
+        });
+    }
+  });
+  window.addEventListener('resize', () => {
+      if (window.innerWidth > 768) {
+          document.body.classList.remove('sidebar-open');
+          applySidebarState();
+      } else {
+          document.body.classList.remove('sidebar-collapsed');
+      }
+  });
+</script>

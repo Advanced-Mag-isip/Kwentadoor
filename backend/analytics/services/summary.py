@@ -1,4 +1,5 @@
-from django.db.models import Sum, Avg, Q, Count
+from django.db.models import Sum, Avg, Q
+from expenses.models import Attachment
 
 
 PAYROLL_CATEGORIES = ["salaries"]
@@ -110,9 +111,7 @@ def _period_expenses(queryset, year, month_start, month_end):
 
     expense_qs = qs.filter(transaction_type="spend funds")
     total_expense_count = expense_qs.count()
-    exp_with_rcpt = expense_qs.annotate(
-        rcpt_count=Count("attachments")
-    ).filter(rcpt_count__gt=0).count()
+    exp_with_rcpt = Attachment.objects.filter(transaction__in=expense_qs).values("transaction").distinct().count()
     missing = total_expense_count - exp_with_rcpt
 
     return {

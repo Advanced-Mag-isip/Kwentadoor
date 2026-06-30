@@ -23,6 +23,7 @@ class PayrollAdjustmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = PayrollAdjustment
         fields = '__all__'
+        read_only_fields = ['payroll_entry']
 
 
 class PayrollEntrySerializer(serializers.ModelSerializer):
