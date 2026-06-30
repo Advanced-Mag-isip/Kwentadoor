@@ -1,6 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import WalletCard from "../components/WalletCard.astro";
+import DashboardIncomeVsOutgoing from "../Charts/DashboardIncomeVsOutgoing.astro";
+import DashboardExpensesByCategory from "../Charts/DashboardExpensesByCategory.astro";
+import DashboardIncomingByWallet from "../Charts/DashboardIncomingByWallet.astro";
 import IconBalanceShow from '../assets/funds-visible-icon.svg?raw'; 
 import IconCash from '../assets/cash-icon.svg?raw'; 
 import IconCashUp from '../assets/cash-up-icon.svg?raw'; 
@@ -184,7 +187,7 @@ const partitionColors = [
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">INCOMING FUNDS THIS MONTH</span>
-                        <span class="metric-value">---</span>
+                        <span class="metric-value" id="dash-incoming-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
                         <Fragment set:html={IconCashUp} />
@@ -193,7 +196,7 @@ const partitionColors = [
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">OUTGOING FUNDS THIS MONTH</span>
-                        <span class="metric-value">---</span>
+                        <span class="metric-value" id="dash-outgoing-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
                         <Fragment set:html={IconCashDown} />
@@ -202,7 +205,7 @@ const partitionColors = [
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">TOTAL PROFIT THIS MONTH</span>
-                        <span class="metric-value">---</span>
+                        <span class="metric-value" id="dash-profit-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
                         <Fragment set:html={IconCash} />
@@ -211,7 +214,7 @@ const partitionColors = [
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">TRANSACTIONS THIS MONTH</span>
-                        <span class="metric-value">---</span>
+                        <span class="metric-value" id="dash-transactions-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
                         <Fragment set:html={IconTransaction} />
@@ -222,15 +225,15 @@ const partitionColors = [
             <div class="graph-section">
                 <div class="graph-card">
                     <span class="graph-label orange">TOTAL INCOMING VS OUTGOING THIS MONTH</span>
-                    <div class="graph-content">INSERT CHART</div>
+                    <div class="graph-content"><DashboardIncomeVsOutgoing /></div>
                 </div>
                 <div class="graph-card">
                     <span class="graph-label orange">INCOMING FUNDS BY WALLET SOURCE</span>
-                    <div class="graph-content">INSERT CHART</div>
+                    <div class="graph-content"><DashboardIncomingByWallet /></div>
                 </div>
                 <div class="graph-card">
                     <span class="graph-label orange">OUTGOING FUNDS BY EXPENSE CATEGORY</span>
-                    <div class="graph-content">INSERT CHART</div>
+                    <div class="graph-content"><DashboardExpensesByCategory /></div>
                 </div>
             </div>
 
@@ -452,6 +455,10 @@ const partitionColors = [
     </div>
 </Layout>
 
+<script>
+  import "../scripts/dashboard-metrics.js";
+</script>
+
 <script is:inline>
     document.addEventListener("astro:page-load", () => {
         const toggle = document.getElementById("show-balance");
@@ -491,6 +498,7 @@ const partitionColors = [
         });
 
         renderBalance();
+
         // Temporary transaction filter UI
         const chips = document.querySelectorAll(".filter-chip");
         const transactionLabel = document.querySelector(
@@ -511,18 +519,17 @@ const partitionColors = [
                         transactionLabel.textContent =
                             "Showing results for Added Funds";
                         break;
-
                     case "spent":
                         transactionLabel.textContent =
                             "Showing results for Spent Funds";
                         break;
-
                     default:
                         transactionLabel.textContent =
                             "Showing results for All Transactions";
                 }
             });
         });
+
         // Universal modal system
         document.querySelectorAll('[data-modal]').forEach(trigger => {
             trigger.addEventListener('click', () => {
@@ -534,17 +541,13 @@ const partitionColors = [
         });
 
         document.querySelectorAll('.modal-overlay').forEach(modal => {
-            // Close on backdrop click
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) closeModal(modal);
             });
-
-            // X button and Cancel button inside each modal
             modal.querySelector('.modal-close')?.addEventListener('click', () => closeModal(modal));
             modal.querySelector('.btn-secondary')?.addEventListener('click', () => closeModal(modal));
         });
 
-        // Escape key closes whichever modal is open
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return;
             document.querySelectorAll('.modal-overlay.open').forEach(closeModal);

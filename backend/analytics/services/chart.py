@@ -234,6 +234,15 @@ def get_funding_runaway_projection(queryset, year, period="yearly", month=None):
     }
 
 
+def get_incoming_by_wallet(queryset, year, month):
+    qs = queryset.filter(
+        transaction_type="add funds",
+        transaction_date__year=year,
+        transaction_date__month=month,
+    ).values("wallet__name").annotate(amount=Sum("amount")).order_by("-amount")
+    return {item["wallet__name"]: round(float(item["amount"]), 2) for item in qs}
+
+
 def _cat_label(cat_id):
     from expenses.constants import EXPENSE_CATEGORIES_DATA
     for c in EXPENSE_CATEGORIES_DATA:

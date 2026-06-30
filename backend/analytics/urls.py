@@ -7,6 +7,8 @@ from .views.chart import (
     ExpensesByCategoryView,
     PayrollVsOtherExpensesView,
     IncomeUtilizationView,
+    IncomingByWalletView,
+    MonthlyMetricsView,
 )
 
 urlpatterns = [
@@ -18,4 +20,6 @@ urlpatterns = [
     path("charts/expenses-by-category/", ExpensesByCategoryView.as_view(), name="expenses-by-category"),
     path("charts/payroll-vs-other/", PayrollVsOtherExpensesView.as_view(), name="payroll-vs-other"),
     path("charts/income-utilization/", IncomeUtilizationView.as_view(), name="income-utilization"),
+    path("charts/incoming-by-wallet/", IncomingByWalletView.as_view(), name="incoming-by-wallet"),
+    path("charts/monthly-metrics/", MonthlyMetricsView.as_view(), name="monthly-metrics"),
 ]
