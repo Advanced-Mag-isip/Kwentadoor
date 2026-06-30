@@ -140,6 +140,21 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
   </script>
 
 <style>
+
+  #main-container{
+        padding: var(--space-lg) var(--space-lg);
+        flex: 1;
+        overflow-y: auto;
+        background-image: repeating-linear-gradient(
+			-45deg,
+			transparent,
+			transparent 10px,
+			#e2e8f0 10px,
+			#e2e8f0 11px
+		);
+
+    z-index: -1;
+    }
   #main-container {
     display: flex;
     flex-direction: row;
@@ -212,6 +227,7 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
+    opacity: 100%;
   }
 
   .form-wrapper {
@@ -223,6 +239,8 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
     box-shadow: var(--default-shadow);
     display: flex;
     flex-direction: column;
+      opacity: 100%;
+    background-color: var(--white);
   }
 
   #login-header {
