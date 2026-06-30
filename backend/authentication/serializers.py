@@ -2,7 +2,6 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 
-# Dynamically fetches the custom user model (expenses.User) defined in settings
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
@@ -42,5 +41,7 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, data):
         user = authenticate(username=data.get('username'), password=data.get('password'))
         if user and user.is_active:
-            return user
-        raise serializers.ValidationError("Invalid credentials or inactive account.")
+            data['user'] = user
+            return data
+            
+        raise serializers.ValidationError({"non_field_errors": ["Invalid credentials or inactive account."]})
