@@ -1,5 +1,17 @@
 ---
 import IconSidebar from "../assets/dashboard-icon.svg?raw"
+const username = "Admin User";
+function getInitials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+const initials = getInitials(username);
 ---
 
 <div id="navbar">
@@ -7,7 +19,10 @@ import IconSidebar from "../assets/dashboard-icon.svg?raw"
         <button id="sidebar-toggle" class="bg-[var(--primary-navyblue)] p-2 rounded-xl [&>svg]:stroke-white" set:html={IconSidebar} />
     </div>
     <div class="right-group">
-        <a href="/">Users</a>
+        <div class="user-pill">
+            <span class="user-avatar">{initials}</span>
+            <span class="user-name">{username}</span>
+        </div>
     </div>
 </div>
 
@@ -28,5 +43,37 @@ import IconSidebar from "../assets/dashboard-icon.svg?raw"
     .right-group{
         display: flex;
         gap: 20px;
+        align-items: center;
+    }
+
+    .user-pill {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background-color: #E37B3A;
+        border: 3px solid #ffffff;
+        border-radius: 9999px;
+        padding: 4px 24px 4px 4px;
+    }
+
+    .user-avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background-color: #8C4A2E;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 12px;
+    }
+
+    .user-name {
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 16px;
+        white-space: nowrap;
     }
 </style>
