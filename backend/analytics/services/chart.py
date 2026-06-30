@@ -203,6 +203,7 @@ def get_funding_runaway_projection(queryset, year, period="yearly", month=None):
             start_m = 1
             start_y = int(year)
 
+    avg = float(avg)
     if balance > 0 and avg > 0:
         runways = balance / avg
         remaining = balance

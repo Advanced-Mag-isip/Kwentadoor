@@ -24,7 +24,7 @@ const currentPath = Astro.url.pathname;
             <div id="nav-links">
                 <div id="navigation-group" class="nav-group">
                     <label for="navigation-group">NAVIGATION</label>
-                    <a href="/dashboard" class={currentPath === '/dashboard' ? 'active' : ''}>
+                    <a href="/dashboard" data-astro-reload class={currentPath === '/dashboard' ? 'active' : ''}>
                         <div>
                             <Fragment set:html={homeIcon} />
                             <span>Dashboard</span>
@@ -34,7 +34,7 @@ const currentPath = Astro.url.pathname;
 
                 <div id="financials-group" class="nav-group">
                     <label for="financials-group">FINANCIALS</label>
-                    <a href="/wallets" class={currentPath === '/wallets' ? 'active' : ''}>
+                    <a href="/wallets" data-astro-reload class={currentPath === '/wallets' ? 'active' : ''}>
                         <div>
                             <Fragment set:html={walletIcon} />
                             <span>Wallets</span>
@@ -101,6 +101,21 @@ const currentPath = Astro.url.pathname;
             });
         }
     });
+
+document.addEventListener("astro:page-load", () => {
+    const dashboardLink = document.querySelector('a[href="/dashboard"]');
+    const walletsLink = document.querySelector('a[href="/wallets"]');
+
+    dashboardLink?.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.location.href = "/dashboard";
+    });
+
+    walletsLink?.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.location.href = "/wallets";
+    });
+});
 </script>
 
 <style> 

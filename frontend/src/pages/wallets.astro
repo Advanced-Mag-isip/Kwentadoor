@@ -1549,81 +1549,154 @@ try {
     });
 </script>
 <script is:inline>
-    var API_BASE = "http://127.0.0.1:8000/api/expenses";
+var API_BASE = "http://127.0.0.1:8000/api/expenses";
 
-    function apiFetch(path, options) {
-      return fetch(API_BASE + path, {
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+function apiFetch(path, options) {
+    return fetch(API_BASE + path, {
+        headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json"
+        },
         ...options,
-      }).then(function (r) {
-        if (!r.ok) return r.json().then(function (e) { throw new Error(JSON.stringify(e)); });
+    }).then(function (r) {
+        if (!r.ok)
+            return r.json().then(function (e) {
+                throw new Error(JSON.stringify(e));
+            });
         return r.json();
-      });
+    });
+}
+
+window.__currentTransactionFilter = "all";
+
+window.__loadRecentTransactions = function (filter) {
+
+    filter = filter || window.__currentTransactionFilter || "all";
+    window.__currentTransactionFilter = filter;
+
+    var url = "/transactions/?limit=20";
+
+    if (filter !== "all") {
+        url += "&transaction_type=" +
+            (filter === "added" ? "add funds" : "spend funds");
     }
 
-    window.__loadRecentTransactions = function (filter) {
-      var url = "/transactions/?limit=20";
-      if (filter && filter !== "all") {
-        url += "&transaction_type=" + (filter === "added" ? "add funds" : "spend funds");
-      }
-      apiFetch(url).then(function (data) {
+    apiFetch(url).then(function (data) {
+
         var list = data.results || data;
-        var container = document.querySelector(".transaction-history-slots");
+        var container = document.getElementById("recent-transactions");
+
         if (!container) return;
-        if (list.length === 0) {
-          container.innerHTML = '<div class="transactionrow"><p colspan="6" style="text-align:center;opacity:0.5">No transactions yet</p></div>';
-          return;
+
+        if (!list.length) {
+            container.innerHTML =
+                '<div class="transactionrow">' +
+                '<p style="grid-column:1/-1;text-align:center;opacity:.5">' +
+                'No transactions yet' +
+                '</p>' +
+                '</div>';
+            return;
         }
+
         container.innerHTML = list.map(function (t) {
-          var amt = Number(t.amount).toLocaleString("en-PH", { minimumFractionDigits: 2 });
-          var date = new Date(t.transaction_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-          var note = t.note || "--";
-          var uname = t.user_name || "User 1";
-          var wname = t.wallet_name || "";
-          var cat = t.BIR_label || t.category || "";
-          var isAdd = t.transaction_type === "add funds";
-          var isSpend = t.transaction_type === "spend funds";
-          var color = isAdd ? "#2ecc71" : (isSpend ? "#e74c3c" : "#f39c12");
-          var sign = isAdd ? "+" : (isSpend ? "-" : "~");
-          return '<div class="transactionrow">'
-            + '<p style="color:' + color + ';font-weight:600">' + sign + '\u20B1' + amt + '</p>'
-            + '<p>' + wname + '</p>'
-            + '<p>' + cat + '</p>'
-            + '<p>' + note + '</p>'
-            + '<p>' + uname + '</p>'
-            + '<p>' + date + '</p>'
-            + '</div>';
+
+            var amt = Number(t.amount).toLocaleString("en-PH", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            var date = new Date(t.transaction_date)
+                .toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric"
+                });
+
+            var note = t.note || "--";
+            var uname = t.user_name || "User 1";
+            var wname = t.wallet_name || "";
+            var cat = t.BIR_label || t.category || "";
+
+            var isAdd = t.transaction_type === "add funds";
+            var isSpend = t.transaction_type === "spend funds";
+
+            var color = isAdd
+                ? "#2ecc71"
+                : isSpend
+                ? "#e74c3c"
+                : "#f39c12";
+
+            var sign = isAdd
+                ? "+"
+                : isSpend
+                ? "-"
+                : "~";
+
+            return `
+                <div class="transactionrow">
+                    <p style="color:${color};font-weight:600">${sign}₱${amt}</p>
+                    <p>${wname}</p>
+                    <p>${cat}</p>
+                    <p>${note}</p>
+                    <p>${uname}</p>
+                    <p>${date}</p>
+                </div>
+            `;
         }).join("");
-      }).catch(function () {});
-    };
 
-    function initWalletPage() {
-        var chips = document.querySelectorAll(".filter-chip");
-        var transactionLabel = document.querySelector(".transaction-top-row div p:nth-child(2)");
+    }).catch(console.error);
+};
 
-        chips.forEach(function (chip) {
-            chip.addEventListener("click", function () {
-                chips.forEach(function (c) { c.classList.remove("active"); });
-                chip.classList.add("active");
-                var filter = chip.dataset.filter;
-                if (!transactionLabel) return;
+function initWalletPage() {
+
+    var chips = document.querySelectorAll(".filter-chip");
+    var transactionLabel = document.querySelector(".transaction-top-row div p:nth-child(2)");
+
+    chips.forEach(function (chip) {
+
+        chip.onclick = function () {
+
+            chips.forEach(function (c) {
+                c.classList.remove("active");
+            });
+
+            chip.classList.add("active");
+
+            var filter = chip.dataset.filter;
+
+            window.__currentTransactionFilter = filter;
+
+            if (transactionLabel) {
+
                 switch (filter) {
                     case "added":
-                        transactionLabel.textContent = "Showing results for Added Funds";
+                        transactionLabel.textContent =
+                            "Showing results for Added Funds";
                         break;
-                    case "spent":
-                        transactionLabel.textContent = "Showing results for Spent Funds";
-                        break;
-                    default:
-                        transactionLabel.textContent = "Showing results for All Transactions";
-                }
-                if (window.__loadRecentTransactions) window.__loadRecentTransactions(filter);
-            });
-        });
 
+                    case "spent":
+                        transactionLabel.textContent =
+                            "Showing results for Spent Funds";
+                        break;
+
+                    default:
+                        transactionLabel.textContent =
+                            "Showing results for All Transactions";
+                }
+            }
+
+            window.__loadRecentTransactions(filter);
+        };
+
+    });
+
+    // Load only once.
+    if (!document.getElementById("recent-transactions")?.dataset.loaded) {
+        document.getElementById("recent-transactions").dataset.loaded = "true";
         window.__loadRecentTransactions();
     }
+}
 
-    initWalletPage();
-    document.addEventListener("astro:page-load", initWalletPage);
+initWalletPage();
+document.addEventListener("astro:page-load", initWalletPage);
 </script>
