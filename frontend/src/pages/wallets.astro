@@ -17,6 +17,8 @@ import IconWallet from '../assets/wallet-icon.svg?raw';
 import IconPeso from '../assets/philippine-peso.svg?raw';
 import IconAttachment from '../assets/paperclip.svg?raw';
 import AddExpenseModal from "../components/AddFundsModal.astro"; 
+import IconCounterParty from '../assets/users-icon.svg?raw';    
+
 const WALLET_TYPE_MAP = {
   "Petty Cash": "cash",
   "Emergency Cash": "cash",
@@ -27,15 +29,9 @@ const WALLET_TYPE_MAP = {
 };
 
 const walletType = {
-  cash: {
-    icon: IconCash,
-  },
-  bank: {
-    icon: IconBank,
-  },
-  "e-wallet": {
-    icon: IconEWallet,
-  },
+  cash: { icon: IconCash },
+  bank: { icon: IconBank },
+  "e-wallet": { icon: IconEWallet },
 };
 
 let wallets = [];
@@ -147,7 +143,7 @@ try {
 
                 <div class="balancecard-action-buttons">
                     <button class="card-button" data-modal="add-funds-modal"><span set:html={IconAddFunds}></span>Add Funds</button>
-                    <button class="card-button" id = 'spend-funds-button'><span set:html={IconSpendFunds}></span>Spend Funds</button>
+                    <button class="card-button" data-modal="spend-funds-modal"><span set:html={IconSpendFunds}></span>Spend Funds</button>
                     <button class="card-button" data-modal="move-funds-modal"><span set:html={IconMoveFunds}></span>Move Funds</button>
                 </div>
             </div>
@@ -189,7 +185,7 @@ try {
                     <div class="transaction-top-row">
                         <div>
                             <p>RECENT TRANSACTIONS</p>
-                            <p>Showing results for </p>
+                            <p id="transaction-filter-label">Showing results for All Transactions</p>
                         </div>
                         <div class="filtergroup">
                             <button class="filter-chip active" data-filter="all">All</button>
@@ -207,7 +203,7 @@ try {
                     </div>
                 </div>
                 <div class="transaction-history-scrollable">
-                    <div class="transaction-history-slots">
+                    <div class="transaction-history-slots" id="recent-transactions">
                         {transactions.length === 0 ? (
                             <div class="transactionrow">
                                 <p colspan="6" style="text-align:center;opacity:0.5">No transactions yet</p>
@@ -285,12 +281,13 @@ try {
             <div class="modal-footer modal-footer--stack">
                 <div class="modal-footer-row">
                     <button type="button" class="btn-secondary">Cancel</button>
-                    <button type="button" class="btn-primary--navy">Create Wallet</button>
+                    <button type="button" class="btn-primary--navy" id="add-wallet-submit">Create Wallet</button>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Add Funds Modal -->
+
+    <!-- Add Funds Modal (UPDATED with category field) -->
     <div id="add-funds-modal" class="modal-overlay" aria-hidden="true">
         <div class="modal modal--navy" role="dialog" aria-modal="true" aria-labelledby="add-funds-title">
             <div class="modal-header">
@@ -312,20 +309,12 @@ try {
                     </div>
                 </div>
 
-                <!-- Destination Wallet -->
+                <!-- Category Dropdown (NEW) -->
                 <div class="form-group">
-                    <label for="fund-wallet">DESTINATION WALLET</label>
+                    <label for="fund-category">CATEGORY</label>
                     <div class="input-icon-wrapper">
-                        <span class="input-icon"><Fragment set:html={IconWallet} /></span>
-                        <select id="fund-wallet" name="wallet">
-                            <option value="" disabled selected>Select Wallet</option>
-                            {
-                                wallets.map((wallet) => (
-                                    <option value={wallet.id}>
-                                        {wallet.name}
-                                    </option>
-                                ))
-                            }
+                        <select id="fund-category" name="category">
+                            <option value="">Select a category</option>
                         </select>
                     </div>
                 </div>
@@ -338,16 +327,12 @@ try {
                     <div class="advanced-divider"></div>
                 </div>
 
-                <!-- Advanced Fields (hidden by default) -->
+                <!-- Advanced Fields -->
                 <div class="advanced-fields" id="advanced-fields-add">
-
-                    <!-- Note -->
                     <div class="form-group">
                         <label for="fund-note">NOTE</label>
                         <textarea id="fund-note" name="note" rows="3" placeholder="Add a note about this transaction..."></textarea>
                     </div>
-
-                    <!-- Date + Attachment side by side -->
                     <div class="form-row">
                         <div class="form-group">
                             <label for="fund-date">DATE</label>
@@ -363,20 +348,102 @@ try {
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
 
             <div class="modal-footer modal-footer--stack">
-                <button type="button" class="btn-save-another">Save and Add Another</button>
+                <button type="button" class="btn-save-another" id="add-funds-save-another">Save and Add Another</button>
                 <div class="modal-footer-row">
                     <button type="button" class="btn-secondary">Cancel</button>
-                    <button type="button" class="btn-primary btn-primary--navy">Add Fund</button>
+                    <button type="button" class="btn-primary btn-primary--navy" id="add-funds-submit">Add Fund</button>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Move Funds Modal -->
+
+    <!-- Spend Funds Modal -->
+    <div id="spend-funds-modal" class="modal-overlay" aria-hidden="true">
+        <div class="modal modal--navy" role="dialog" aria-modal="true" aria-labelledby="spend-funds-title">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <span class="modal-header-icon"><Fragment set:html={IconSpendFunds} /></span>
+                    <h2 id="spend-funds-title">Spend Funds</h2>
+                </div>
+                <button class="modal-close" aria-label="Close modal">✕</button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- Amount -->
+                <div class="form-group">
+                    <label for="spend-amount">AMOUNT</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-icon"><Fragment set:html={IconPeso} /></span>
+                        <input id="spend-amount" name="amount" type="number" min="0" step="1" placeholder="Enter Amount" />
+                    </div>
+                </div>
+
+                <!-- Category Dropdown -->
+                <div class="form-group">
+                    <label for="spend-category">CATEGORY</label>
+                    <div class="input-icon-wrapper">
+                        <select id="spend-category" name="category">
+                            <option value="">Select a category</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Advanced Toggle -->
+                <div class="advanced-toggle-wrapper">
+                    <button type="button" class="advanced-toggle" id="advanced-toggle-spend">
+                        Advanced <span class="advanced-arrow" set:html={IconChevronDown}></span>
+                    </button>
+                    <div class="advanced-divider"></div>
+                </div>
+
+                <!-- Advanced Fields -->
+                <div class="advanced-fields" id="advanced-fields-spend">
+                    <div class="form-group">
+                        <label for="spend-note">NOTE</label>
+                        <textarea id="spend-note" name="note" rows="3" placeholder="Add a note about this transaction..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="spend-counterparty">COUNTER PARTY</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon"><Fragment set:html={IconCounterParty} /></span>
+                            <input id="spend-counterparty" name="counterparty" type="text" placeholder="Enter counter party name..." />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="spend-date">DATE</label>
+                            <div class="input-icon-wrapper">
+                                <input id="spend-date" name="date" type="date" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="spend-attachment">ATTACHMENT</label>
+                            <div class="input-icon-wrapper">
+                                <input id="spend-attachment" name="attachment" type="text" placeholder="Select files" readonly />
+                                <span class="input-icon-right"><Fragment set:html={IconAttachment} /></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer modal-footer--stack">
+                <button type="button" class="btn-save-another" id="spend-funds-save-another">Save and Spend Another</button>
+                <div class="modal-footer-row">
+                    <button type="button" class="btn-secondary">Cancel</button>
+                    <button type="button" class="btn-primary btn-primary--navy" id="spend-funds-submit">Spend Fund</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="move-funds-modal" class="modal-overlay" aria-hidden="true">
         <div class="modal modal--grey" role="dialog" aria-modal="true" aria-labelledby="move-funds-title">
             <div class="modal-header">
@@ -398,31 +465,17 @@ try {
                     </div>
                 </div>
 
-                <!-- Source + Destination Wallet side by side -->
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="move-source">SOURCE WALLET</label>
-                        <div class="input-icon-wrapper">
-                            <span class="input-icon"><Fragment set:html={IconWallet} /></span>
-                            <select id="move-source" name="source_wallet">
-                                <option value="" disabled selected>Select Wallet</option>
-                                {wallets.map((wallet) => (
-                                    <option value={wallet.id}>{wallet.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="move-destination">DESTINATION WALLET</label>
-                        <div class="input-icon-wrapper">
-                            <span class="input-icon"><Fragment set:html={IconWallet} /></span>
-                            <select id="move-destination" name="destination_wallet">
-                                <option value="" disabled selected>Select Wallet</option>
-                                {wallets.map((wallet) => (
-                                    <option value={wallet.id}>{wallet.name}</option>
-                                ))}
-                            </select>
-                        </div>
+                <!-- Destination only -->
+                <div class="form-group">
+                    <label for="move-destination">DESTINATION WALLET</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-icon"><Fragment set:html={IconWallet} /></span>
+                        <select id="move-destination" name="destination_wallet">
+                            <option value="" disabled selected>Select Wallet</option>
+                            {wallets.map((wallet) => (
+                                <option value={wallet.id}>{wallet.name}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 
@@ -460,14 +513,15 @@ try {
             </div>
 
             <div class="modal-footer modal-footer--stack">
-                <button type="button" class="btn-save-another btn-save-another--grey">Save and Add Another</button>
+                <button type="button" class="btn-save-another btn-save-another--grey" id="move-funds-save-another">Save and Add Another</button>
                 <div class="modal-footer-row">
                     <button type="button" class="btn-secondary">Cancel</button>
-                    <button type="button" class="btn-primary--move">Move Fund</button>
+                    <button type="button" class="btn-primary--move" id="move-funds-submit">Move Fund</button>
                 </div>
             </div>
         </div>
     </div>
+
     <!-- Edit Wallet Modal -->
     <div id="edit-wallet-modal" class="modal-overlay" aria-hidden="true">
         <div class="modal modal--orange" role="dialog" aria-modal="true" aria-labelledby="edit-wallet-title">
@@ -512,7 +566,7 @@ try {
             <div class="modal-footer modal-footer--stack">
                 <div class="modal-footer-row">
                     <button type="button" class="btn-secondary">Cancel</button>
-                    <button type="button" class="btn-primary--navy">Save Changes</button>
+                    <button type="button" class="btn-primary--navy" id="edit-wallet-submit">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -546,7 +600,7 @@ try {
             <div class="modal-footer modal-footer--stack">
                 <div class="modal-footer-row">
                     <button type="button" class="btn-secondary">Cancel</button>
-                    <button type="button" class="btn-primary--danger">Delete Wallet</button>
+                    <button type="button" class="btn-primary--danger" id="delete-wallet-submit">Delete Wallet</button>
                 </div>
             </div>
         </div>
@@ -554,22 +608,8 @@ try {
 </Layout>
 
 <AddExpenseModal />
-<script>
-  document.addEventListener('astro:page-load', () => {
-    const openBtn = document.getElementById('spend-funds-button');
-    const modalOutside = document.getElementById('addExpenseModal');
 
-    // Make sure both elements exist before attaching the click event!
-    if (openBtn && modalOutside) {
-      openBtn.addEventListener('click', () => {
-        modalOutside.showModal(); 
-      });
-    }
-  });
-</script>    
-
-
-<style>
+<style is:global>
     .page-inner {
         --balancecard-width: 680px;
         --heading-text: 1.75rem;
@@ -885,10 +925,6 @@ try {
 
     .wallet-item.active .card-body {
         background-image: var(--orange-gradient) !important;
-    }
-
-    .wallet-item.active {
-        /* active state handled by card background */
     }
 
     /* Modals */
@@ -1310,6 +1346,28 @@ try {
         border-color: #f0b8b3;
     }
 
+    .btn-primary--move {
+        padding: 12px;
+        background: #3d4a5c;
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-primary--move:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+    .btn-save-another--grey {
+        background: #3d4a5c;
+    }
+
     /* ---------- Responsive ---------- */
     @media (max-width: 1400px) {
         .page-inner {
@@ -1421,8 +1479,6 @@ try {
     }
 </style>
 
- 
-
 <script define:vars={{ IconCash, IconBank, IconEWallet }}>
     function closeModal(modal) {
         modal.classList.remove('open');
@@ -1434,6 +1490,26 @@ try {
         document.querySelectorAll('.modal-overlay.open').forEach(closeModal);
     });
 
+    // Shared API helpers
+    const API_BASE = "http://127.0.0.1:8000/api/expenses";
+    function apiFetch(path, options) {
+        return fetch(API_BASE + path, {
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json"
+            },
+            ...options,
+        }).then(r => {
+            if (!r.ok) return r.json().then(e => { throw new Error(JSON.stringify(e)); });
+            return r.json();
+        });
+    }
+
+    function reloadPage() {
+        window.location.reload();
+    }
+
+    // --- Wallet selection ---
     document.addEventListener("astro:page-load", () => {
         const walletIcons = {
             cash: IconCash,
@@ -1441,13 +1517,35 @@ try {
             "e-wallet": IconEWallet
         };
 
+        window.apiFetch = apiFetch;
+
+        window.categories = [];
+        apiFetch('/categories/').then(data => {
+            const list = data.results || data;
+            window.categories = list;
+            // Populate both category dropdowns
+            const selectSpend = document.getElementById('spend-category');
+            const selectFund = document.getElementById('fund-category');
+            const selects = [selectSpend, selectFund].filter(Boolean);
+            selects.forEach(select => {
+                if (!select) return;
+                select.innerHTML = '<option value="">Select a category</option>';
+                list.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat.id || cat.name;
+                    opt.textContent = cat.name || cat.label || cat;
+                    select.appendChild(opt);
+                });
+            });
+        }).catch(console.error);
+
         const walletItems = document.querySelectorAll(".wallet-item");
         const walletName = document.getElementById("wallet-name");
         const walletDescription = document.getElementById("wallet-description");
         const walletAmount = document.getElementById("balance-amount");
         const walletIcon = document.getElementById("wallet-icon");
 
-        let currentWallet = {
+        window.currentWallet = {
             id: walletItems[0]?.dataset.id ?? null,
             name: walletItems[0]?.dataset.name ?? "",
             description: walletItems[0]?.dataset.description ?? "",
@@ -1455,10 +1553,26 @@ try {
             type: walletItems[0]?.dataset.type ?? "cash"
         };
 
-        
+        if (walletItems.length) {
+            const first = walletItems[0];
+            first.classList.add('active');
+            const body = first.querySelector('.card-body');
+            if (body) body.style.backgroundImage = "var(--orange-gradient)";
+            const shell = first.querySelector('.card-shell');
+            if (shell) shell.style.backgroundColor = "var(--primary-orange-dark)";
+            walletIcon.innerHTML = walletIcons[first.dataset.type];
+            window.currentWallet = {
+                id: first.dataset.id,
+                name: first.dataset.name,
+                description: first.dataset.description,
+                amount: first.dataset.amount,
+                type: first.dataset.type
+            };
+        }
 
         walletItems.forEach(item => {
             item.addEventListener("click", () => {
+                // Reset all
                 walletItems.forEach(w => {
                     w.classList.remove("active");
                     const body = w.querySelector(".card-body");
@@ -1467,15 +1581,16 @@ try {
                     if (shell) shell.style.backgroundColor = "var(--primary-navyblue)";
                 });
 
+                // Activate clicked
                 item.classList.add("active");
                 const activeBody = item.querySelector(".card-body");
                 if (activeBody) activeBody.style.backgroundImage = "var(--orange-gradient)";
                 const activeShell = item.querySelector(".card-shell");
                 if (activeShell) activeShell.style.backgroundColor = "var(--primary-orange-dark)";
 
+                // Update balance card
                 walletName.textContent = item.dataset.name;
                 walletDescription.textContent = item.dataset.description;
-
                 const amount = Number(item.dataset.amount);
                 walletAmount.textContent = "₱" + amount.toLocaleString("en-PH", {
                     minimumFractionDigits: 2,
@@ -1484,7 +1599,8 @@ try {
                 walletAmount.dataset.balance = amount;
                 walletIcon.innerHTML = walletIcons[item.dataset.type];
 
-                currentWallet = {
+                // Update current wallet
+                window.currentWallet = {
                     id: item.dataset.id,
                     name: item.dataset.name,
                     description: item.dataset.description,
@@ -1494,33 +1610,41 @@ try {
             });
         });
 
-        // Modal system
+        // --- Modal opening with data prefill ---
         document.querySelectorAll('[data-modal]').forEach(trigger => {
             trigger.addEventListener('click', () => {
                 const modal = document.getElementById(trigger.dataset.modal);
                 if (!modal) return;
 
+                // Prefill edit modal
                 if (modal.id === 'edit-wallet-modal') {
                     const nameInput = document.getElementById('edit-wallet-name-input');
                     const typeInput = document.getElementById('edit-wallet-type-input');
                     const descInput = document.getElementById('edit-wallet-description-input');
-
-                    if (nameInput) nameInput.value = currentWallet.name;
-                    if (typeInput) typeInput.value = currentWallet.type;
-                    if (descInput) descInput.value = currentWallet.description;
+                    if (nameInput) nameInput.value = window.currentWallet.name || '';
+                    if (typeInput) typeInput.value = window.currentWallet.type || 'cash';
+                    if (descInput) descInput.value = window.currentWallet.description || '';
                 }
 
+                // Prefill delete modal
                 if (modal.id === 'delete-wallet-modal') {
                     const nameEl = document.getElementById('delete-wallet-name');
                     const amountEl = document.getElementById('delete-wallet-amount');
-
-                    if (nameEl) nameEl.textContent = currentWallet.name;
+                    if (nameEl) nameEl.textContent = window.currentWallet.name || 'Wallet';
                     if (amountEl) {
-                        const amount = Number(currentWallet.amount);
-                        amountEl.textContent = "₱" + amount.toLocaleString("en-PH", {
+                        const amt = Number(window.currentWallet.amount) || 0;
+                        amountEl.textContent = "₱" + amt.toLocaleString("en-PH", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2
                         });
+                    }
+                }
+
+                if (modal.id === 'move-funds-modal') {
+                    const fromEl = document.getElementById('move-from-wallet');
+                    if (fromEl) {
+                        fromEl.textContent = window.currentWallet.name || 'Wallet';
+                        fromEl.dataset.walletId = window.currentWallet.id || '';
                     }
                 }
 
@@ -1529,14 +1653,18 @@ try {
             });
         });
 
+        // Close modal handlers
         document.querySelectorAll('.modal-overlay').forEach(modal => {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) closeModal(modal);
             });
             modal.querySelector('.modal-close')?.addEventListener('click', () => closeModal(modal));
-            modal.querySelector('.btn-secondary')?.addEventListener('click', () => closeModal(modal));
+            modal.querySelectorAll('.btn-secondary').forEach(btn => {
+                btn.addEventListener('click', () => closeModal(modal));
+            });
         });
 
+        // Advanced toggle
         document.querySelectorAll('.advanced-toggle').forEach(btn => {
             btn.addEventListener('click', () => {
                 const targetId = btn.id.replace('advanced-toggle', 'advanced-fields');
@@ -1546,31 +1674,223 @@ try {
                 btn.classList.toggle('open', isOpen);
             });
         });
+
+        // ---- SUBMIT HANDLERS ----
+
+        // Add Wallet
+        document.getElementById('add-wallet-submit')?.addEventListener('click', async () => {
+            const name = document.getElementById('wallet-name-input')?.value.trim();
+            const type = document.getElementById('wallet-type-input')?.value;
+            const description = document.getElementById('wallet-description-input')?.value.trim();
+            if (!name) { alert('Wallet name is required.'); return; }
+            if (!type) { alert('Please select a wallet type.'); return; }
+
+            try {
+                await apiFetch('/wallets/', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, type, description, balance: 0 })
+                });
+                reloadPage();
+            } catch (e) {
+                alert('Failed to create wallet: ' + e.message);
+            }
+        });
+
+        // Edit Wallet
+        document.getElementById('edit-wallet-submit')?.addEventListener('click', async () => {
+            const id = window.currentWallet.id;
+            if (!id) { alert('No wallet selected.'); return; }
+            const name = document.getElementById('edit-wallet-name-input')?.value.trim();
+            const type = document.getElementById('edit-wallet-type-input')?.value;
+            const description = document.getElementById('edit-wallet-description-input')?.value.trim();
+            if (!name) { alert('Wallet name is required.'); return; }
+            if (!type) { alert('Please select a wallet type.'); return; }
+
+            try {
+                await apiFetch(`/wallets/${id}/`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ name, type, description })
+                });
+                reloadPage();
+            } catch (e) {
+                alert('Failed to update wallet: ' + e.message);
+            }
+        });
+
+        // Delete Wallet
+        document.getElementById('delete-wallet-submit')?.addEventListener('click', async () => {
+            const id = window.currentWallet.id;
+            if (!id) { alert('No wallet selected.'); return; }
+            if (!confirm(`Are you sure you want to delete "${window.currentWallet.name}"?`)) return;
+
+            try {
+                await apiFetch(`/wallets/${id}/`, {
+                    method: 'DELETE'
+                });
+                reloadPage();
+            } catch (e) {
+                alert('Failed to delete wallet: ' + e.message);
+            }
+        });
+
+        document.getElementById('add-funds-submit')?.addEventListener('click', () => submitAddFunds(false));
+        document.getElementById('add-funds-save-another')?.addEventListener('click', () => submitAddFunds(true));
+
+        async function submitAddFunds(keepOpen) {
+            const walletId = window.currentWallet.id;
+            if (!walletId) { alert('No wallet selected.'); return; }
+            const amountInput = document.getElementById('fund-amount');
+            const categorySelect = document.getElementById('fund-category');
+            const noteInput = document.getElementById('fund-note');
+            const dateInput = document.getElementById('fund-date');
+
+            const amount = parseFloat(amountInput?.value);
+            if (isNaN(amount) || amount <= 0) { alert('Amount must be greater than 0.'); return; }
+
+            try {
+                await apiFetch('/transactions/', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        wallet: walletId,
+                        amount: amount,
+                        transaction_type: 'add funds',
+                        category: categorySelect?.value || '',
+                        note: noteInput?.value || '',
+                        transaction_date: dateInput?.value || null,
+                    })
+                });
+
+                if (keepOpen) {
+                    amountInput.value = '';
+                    categorySelect.value = '';
+                    noteInput.value = '';
+                    dateInput.value = '';
+                } else {
+                    closeModal(document.getElementById('add-funds-modal'));
+                }
+                reloadPage();
+            } catch (e) {
+                alert('Failed to add funds: ' + e.message);
+            }
+        }
+
+        document.getElementById('spend-funds-submit')?.addEventListener('click', () => submitSpendFunds(false));
+        document.getElementById('spend-funds-save-another')?.addEventListener('click', () => submitSpendFunds(true));
+
+        async function submitSpendFunds(keepOpen) {
+            const walletId = window.currentWallet.id;
+            if (!walletId) { alert('No wallet selected.'); return; }
+            const amountInput = document.getElementById('spend-amount');
+            const categorySelect = document.getElementById('spend-category');
+            const noteInput = document.getElementById('spend-note');
+            const counterpartyInput = document.getElementById('spend-counterparty');
+            const dateInput = document.getElementById('spend-date');
+
+            const amount = parseFloat(amountInput?.value);
+            if (isNaN(amount) || amount <= 0) { alert('Amount must be greater than 0.'); return; }
+            const currentBalance = parseFloat(window.currentWallet.amount) || 0;
+            if (amount > currentBalance) {
+                alert(`Insufficient balance. Available: ₱${currentBalance.toFixed(2)}`);
+                return;
+            }
+
+            try {
+                await apiFetch('/transactions/', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        wallet: walletId,
+                        amount: amount,
+                        transaction_type: 'spend funds',
+                        category: categorySelect?.value || '',
+                        note: noteInput?.value || '',
+                        counterparty: counterpartyInput?.value || '',
+                        transaction_date: dateInput?.value || null,
+                    })
+                });
+
+                if (keepOpen) {
+                    amountInput.value = '';
+                    categorySelect.value = '';
+                    noteInput.value = '';
+                    counterpartyInput.value = '';
+                    dateInput.value = '';
+                } else {
+                    closeModal(document.getElementById('spend-funds-modal'));
+                }
+                reloadPage();
+            } catch (e) {
+                alert('Failed to spend funds: ' + e.message);
+            }
+        }
+
+        document.getElementById('move-funds-submit')?.addEventListener('click', () => submitMoveFunds(false));
+        document.getElementById('move-funds-save-another')?.addEventListener('click', () => submitMoveFunds(true));
+
+        async function submitMoveFunds(keepOpen) {
+            const sourceId = window.currentWallet.id;
+            const dest = document.getElementById('move-destination');
+            const amountInput = document.getElementById('move-amount');
+            const noteInput = document.getElementById('move-note');
+            const dateInput = document.getElementById('move-date');
+
+            if (!sourceId) { alert('No source wallet selected.'); return; }
+            const destId = dest?.value;
+            if (!destId) { alert('Please select a destination wallet.'); return; }
+            if (sourceId === destId) { alert('Source and destination must be different.'); return; }
+
+            const amount = parseFloat(amountInput?.value);
+            if (isNaN(amount) || amount <= 0) { alert('Amount must be greater than 0.'); return; }
+
+            const currentBalance = parseFloat(window.currentWallet.amount) || 0;
+            if (amount > currentBalance) {
+                alert(`Insufficient balance. Available: ₱${currentBalance.toFixed(2)}`);
+                return;
+            }
+
+            try {
+                await apiFetch('/transactions/', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        wallet: sourceId,
+                        amount: amount,
+                        transaction_type: 'spend funds',
+                        note: noteInput?.value || `Transfer to ${dest.options[dest.selectedIndex].text}`,
+                        transaction_date: dateInput?.value || null,
+                    })
+                });
+
+                await apiFetch('/transactions/', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        wallet: destId,
+                        amount: amount,
+                        transaction_type: 'add funds',
+                        note: noteInput?.value || `Transfer from ${window.currentWallet.name}`,
+                        transaction_date: dateInput?.value || null,
+                    })
+                });
+
+                if (keepOpen) {
+                    amountInput.value = '';
+                    noteInput.value = '';
+                    dateInput.value = '';
+                    dest.value = '';
+                } else {
+                    closeModal(document.getElementById('move-funds-modal'));
+                }
+                reloadPage();
+            } catch (e) {
+                alert('Failed to move funds: ' + e.message);
+            }
+        }
     });
 </script>
-<script is:inline>
-var API_BASE = "http://127.0.0.1:8000/api/expenses";
 
-function apiFetch(path, options) {
-    return fetch(API_BASE + path, {
-        headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json"
-        },
-        ...options,
-    }).then(function (r) {
-        if (!r.ok)
-            return r.json().then(function (e) {
-                throw new Error(JSON.stringify(e));
-            });
-        return r.json();
-    });
-}
+<script is:inline>
 
 window.__currentTransactionFilter = "all";
 
 window.__loadRecentTransactions = function (filter) {
-
     filter = filter || window.__currentTransactionFilter || "all";
     window.__currentTransactionFilter = filter;
 
@@ -1581,8 +1901,7 @@ window.__loadRecentTransactions = function (filter) {
             (filter === "added" ? "add funds" : "spend funds");
     }
 
-    apiFetch(url).then(function (data) {
-
+    window.apiFetch(url).then(function (data) {
         var list = data.results || data;
         var container = document.getElementById("recent-transactions");
 
@@ -1599,7 +1918,6 @@ window.__loadRecentTransactions = function (filter) {
         }
 
         container.innerHTML = list.map(function (t) {
-
             var amt = Number(t.amount).toLocaleString("en-PH", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
@@ -1643,60 +1961,64 @@ window.__loadRecentTransactions = function (filter) {
                 </div>
             `;
         }).join("");
-
     }).catch(console.error);
 };
 
 function initWalletPage() {
-
     var chips = document.querySelectorAll(".filter-chip");
-    var transactionLabel = document.querySelector(".transaction-top-row div p:nth-child(2)");
+    var label = document.getElementById("transaction-filter-label");
+    var activeChip = document.querySelector(".filter-chip.active");
+    if (activeChip) {
+        var initialFilter = activeChip.dataset.filter;
+        if (label) {
+            switch (initialFilter) {
+                case "added":
+                    label.textContent = "Showing results for Added Funds";
+                    break;
+                case "spent":
+                    label.textContent = "Showing results for Spent Funds";
+                    break;
+                default:
+                    label.textContent = "Showing results for All Transactions";
+            }
+        }
+        window.__loadRecentTransactions(initialFilter);
+    } else {
+        if (label) label.textContent = "Showing results for All Transactions";
+        window.__loadRecentTransactions("all");
+    }
 
     chips.forEach(function (chip) {
-
         chip.onclick = function () {
-
             chips.forEach(function (c) {
                 c.classList.remove("active");
             });
-
             chip.classList.add("active");
 
             var filter = chip.dataset.filter;
-
             window.__currentTransactionFilter = filter;
 
-            if (transactionLabel) {
-
+            if (label) {
                 switch (filter) {
                     case "added":
-                        transactionLabel.textContent =
-                            "Showing results for Added Funds";
+                        label.textContent = "Showing results for Added Funds";
                         break;
-
                     case "spent":
-                        transactionLabel.textContent =
-                            "Showing results for Spent Funds";
+                        label.textContent = "Showing results for Spent Funds";
                         break;
-
                     default:
-                        transactionLabel.textContent =
-                            "Showing results for All Transactions";
+                        label.textContent = "Showing results for All Transactions";
                 }
             }
 
             window.__loadRecentTransactions(filter);
         };
-
     });
-
-    // Load only once.
-    if (!document.getElementById("recent-transactions")?.dataset.loaded) {
-        document.getElementById("recent-transactions").dataset.loaded = "true";
-        window.__loadRecentTransactions();
-    }
 }
 
-initWalletPage();
-document.addEventListener("astro:page-load", initWalletPage);
+if (document.readyState === 'complete') {
+    initWalletPage();
+} else {
+    document.addEventListener('astro:page-load', initWalletPage);
+}
 </script>
