@@ -21,14 +21,43 @@ class Wallet(models.Model):
 
     def __str__(self):
         return self.name
-    
+
     @property
     def balance(self):
-        """Dynamically calculates the wallet balance based on related transactions."""
         additions = self.transactions.filter(transaction_type='add funds').aggregate(models.Sum('amount'))['amount__sum'] or 0
         deductions = self.transactions.filter(transaction_type='spend funds').aggregate(models.Sum('amount'))['amount__sum'] or 0
-        return additions - deductions
-    
+        transfers_in = WalletTransfer.objects.filter(to_wallet=self).aggregate(models.Sum('amount'))['amount__sum'] or 0
+        transfers_out = WalletTransfer.objects.filter(from_wallet=self).aggregate(models.Sum('amount'))['amount__sum'] or 0
+        return additions - deductions + transfers_in - transfers_out
+
+class WalletTransfer(models.Model):
+    from_wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="transfers_out")
+    to_wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="transfers_in")
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    transaction = models.ForeignKey("Transaction", on_delete=models.PROTECT, related_name="wallet_transfer_link", null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "wallet_transfers"
+
+    def __str__(self):
+        return f"{self.from_wallet} -> {self.to_wallet}: {self.amount}"
+
+class Spend(models.Model):
+    wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="spends")
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    category = models.CharField(max_length=100, choices=CATEGORY_CHOICES)
+    transaction = models.ForeignKey("Transaction", on_delete=models.PROTECT, related_name="spend_link", null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "spends"
+
+    def __str__(self):
+        return f"{self.wallet}: {self.amount} ({self.category})"
+
 class Transaction(models.Model):
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE_CHOICES)
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="transactions")
@@ -38,6 +67,8 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     counterparty = models.CharField(max_length=255, blank=True)
     note = models.TextField(blank=True)
+    wallet_transfer = models.ForeignKey(WalletTransfer, on_delete=models.SET_NULL, null=True, blank=True, related_name="transaction_ref")
+    spend = models.ForeignKey(Spend, on_delete=models.SET_NULL, null=True, blank=True, related_name="transaction_ref")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Wallet, Transaction, Attachment, Log
+from .models import User, Wallet, Transaction, Attachment, Log, WalletTransfer, Spend
 from .constants import BIR_MAPPING
 
 class WalletSerializer(serializers.ModelSerializer):
@@ -14,10 +14,22 @@ class AttachmentSerializer(serializers.ModelSerializer):
         model = Attachment
         fields = '__all__'
 
+class WalletTransferSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WalletTransfer
+        fields = '__all__'
+
+class SpendSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Spend
+        fields = '__all__'
+
 class TransactionSerializer(serializers.ModelSerializer):
     attachments = AttachmentSerializer(many=True, read_only=True)
     BIR_label = serializers.SerializerMethodField()
-    
+    wallet_name = serializers.CharField(source='wallet.name', read_only=True)
+    user_name = serializers.CharField(source='user.username', read_only=True)
+
     class Meta:
         model = Transaction
         fields = '__all__'

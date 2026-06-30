@@ -37,10 +37,7 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
           <div class="select-wrapper">
             <span class="input-icon"><Fragment set:html = {IconTag}></Fragment></span>
             <select id="spend-category-input" name="category">
-              <option value="" disabled selected>Select Category</option>
-              <option value="food">Food & Beverage</option>
-              <option value="transport">Transportation</option>
-              <option value="utilities">Utilities</option>
+              <option value="" disabled selected>Loading categories...</option>
             </select>
           </div>
         </div>
@@ -50,9 +47,7 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
           <div class="select-wrapper">
             <span class="input-icon"><Fragment set:html = {IconWallet}></Fragment></span>
             <select id="source-wallet-input" name="wallet">
-              <option value="" disabled selected>Select Wallet</option>
-              <option value="cash">Cash</option>
-              <option value="bank">Bank Account</option>
+              <option value="" disabled selected>Loading wallets...</option>
             </select>
           </div>
         </div>
@@ -107,26 +102,106 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
 </dialog>
 
 <script>
+  async function _populateWalletSelect() {
+    const sel = document.getElementById('source-wallet-input');
+    if (!sel) return;
+    try {
+      const r = await fetch('http://127.0.0.1:8000/api/expenses/wallets/', {
+        headers: { Accept: 'application/json' },
+      });
+      if (!r.ok) throw new Error('Failed to fetch wallets');
+      const data = await r.json();
+      const list = data.results || data;
+      sel.innerHTML = '<option value="" disabled selected>Select Wallet</option>';
+      list.forEach(function (w) {
+        const opt = document.createElement('option');
+        opt.value = w.id;
+        opt.textContent = w.name;
+        sel.appendChild(opt);
+      });
+    } catch (e) {
+      sel.innerHTML = '<option value="" disabled selected>No wallets available</option>';
+    }
+  }
+
+  async function _populateCategorySelect() {
+    const sel = document.getElementById('spend-category-input');
+    if (!sel) return;
+    try {
+      const r = await fetch('http://127.0.0.1:8000/api/expenses/categories/', {
+        headers: { Accept: 'application/json' },
+      });
+      if (!r.ok) throw new Error('Failed to fetch categories');
+      const data = await r.json();
+      sel.innerHTML = '<option value="" disabled selected>Select Category</option>';
+      data.forEach(function (c) {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.label;
+        sel.appendChild(opt);
+      });
+    } catch (e) {
+      sel.innerHTML = '<option value="" disabled selected>No categories available</option>';
+    }
+  }
 
   document.addEventListener('astro:page-load', () => {
     const modal = document.getElementById('addExpenseModal');
     const closeIcon = document.getElementById('close-modal-icon');
     const cancelBtn = document.getElementById('cancel-modal-btn');
+    const submitBtn = modal ? modal.querySelector('.btn-navy') : null;
+    const saveAnotherBtn = modal ? modal.querySelector('.btn-orange') : null;
 
-    if (modal && closeIcon) {
-      closeIcon.addEventListener('click', () => {
-        modal.close();
-      });
+    function closeDialog() {
+      if (modal) modal.close();
     }
 
-    if (modal && cancelBtn) {
-      cancelBtn.addEventListener('click', () => {
-        modal.close();
-      });
+    if (closeIcon) closeIcon.addEventListener('click', closeDialog);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeDialog);
+
+    _populateWalletSelect();
+    _populateCategorySelect();
+
+    async function submitSpend(keepOpen) {
+      const wallet = document.getElementById('source-wallet-input');
+      const amount = document.getElementById('fund-amount-input');
+      const category = document.getElementById('spend-category-input');
+      const note = document.getElementById('note-input');
+      const counterparty = document.getElementById('counter-party-input');
+      const dateInput = document.getElementById('date-input');
+
+      if (!wallet || !amount || !category) return;
+
+      const btn = keepOpen ? saveAnotherBtn : submitBtn;
+      const originalText = btn ? btn.textContent : '';
+      if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
+
+      try {
+        await window.__spendFunds({
+          wallet: wallet.value,
+          amount: amount.value,
+          category: category.value,
+          note: note ? note.value : '',
+          counterparty: counterparty ? counterparty.value : '',
+          transaction_date: dateInput ? dateInput.value : '',
+        });
+        if (btn) { btn.textContent = originalText; btn.disabled = false; }
+        if (keepOpen) {
+          if (amount) amount.value = '';
+        } else {
+          closeDialog();
+        }
+        if (window.__loadWalletBalance) window.__loadWalletBalance();
+        if (window.__loadRecentTransactions) window.__loadRecentTransactions();
+      } catch (e) {
+        if (btn) { btn.textContent = originalText; btn.disabled = false; }
+        alert('Spend funds failed: ' + (e.message || 'Unknown error'));
+      }
     }
+
+    if (submitBtn) submitBtn.addEventListener('click', () => submitSpend(false));
+    if (saveAnotherBtn) saveAnotherBtn.addEventListener('click', () => submitSpend(true));
   });
-
-  
 </script>
 
 
