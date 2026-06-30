@@ -64,7 +64,6 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
             />
           </div>
 
-          
           <button type="submit" id="submit-btn" >
             <span>Login</span>
           </button>
@@ -75,6 +74,10 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
   </main>
 
   <script>
+    if (localStorage.getItem('auth_token')) {
+        window.location.replace('/dashboard');
+    }
+
     const API_BASE_URL = 'http://127.0.0.1:8000';
     const form = document.getElementById('login-form');
     const errorMessage = document.getElementById('error-message');
@@ -112,7 +115,7 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
         if (response.ok) {
           localStorage.setItem('auth_token', data.token);
           localStorage.setItem('user_data', JSON.stringify(data.user));
-          window.location.href = '/'; 
+          window.location.href = '/dashboard';
         } else {
           let errorText = 'Invalid username or password. Please try again.';
           if (data.non_field_errors && data.non_field_errors.length > 0) {
@@ -235,7 +238,7 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
     height: 531px;
     max-width: 400px; 
     padding: 20px;
-    border-radius: 25px; 
+    border-radius: 25px;
     box-shadow: var(--default-shadow);
     display: flex;
     flex-direction: column;

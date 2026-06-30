@@ -1,44 +1,25 @@
 ---
 // src/pages/index.astro
-import Layout from '../layouts/Layout.astro';
-import Modal from '../components/AddFundsModal.astro';
 ---
-
-<Layout>
-  <div style="padding: 40px;">
-    <h1>Dashboard</h1>
-    
-    <!-- 1. The Trigger Button -->
-    <button id="open-expense-modal" class="primary-btn">
-      Add New Expense
-    </button>
-
-    <!-- 2. The Modal Component -->
-    <Modal>
-	</Modal>
-      
-  </div>
-</Layout>
-
-<style>
-  .primary-btn {
-    background-color: var(--primary-orange);
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-family: var(--headings-font);
-    font-weight: bold;
-  }
-</style>
-
-<!-- Add this at the bottom of src/pages/index.astro -->
-<script>
-  const openBtn = document.getElementById('open-expense-modal');
-  const modalOutside = document.getElementById('addExpenseModal');
-
-  openBtn.addEventListener('click', () => {
-    modalOutside.showModal(); 
-  });
-</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting | Kwentadoor</title>
+    <link rel="icon" type="image/svg+xml" href="/src/assets/Trabahadoor-logo-white.svg" />
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                window.location.replace('/dashboard');
+            } else {
+                window.location.replace('/login');
+            }
+        });
+    </script>
+</head>
+<body style="background-color: #f3f5f9; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Roboto', sans-serif; color: #1a2530;">
+    <p style="font-weight: 500; font-size: 1.2rem;">Redirecting...</p>
+</body>
+</html>
