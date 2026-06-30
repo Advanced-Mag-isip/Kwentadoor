@@ -254,6 +254,7 @@ const partitionColors = [
                         <p>DATE</p>
                     </div>
                 </div>
+
                 <div class="transaction-history-scrollable">
                     <div class="transaction-history-slots" id="recent-transactions">
                         {transactions.length === 0 ? (
@@ -279,6 +280,7 @@ const partitionColors = [
                         )}
                     </div>
                 </div>
+
             </div>
 
         </div>
@@ -473,9 +475,12 @@ const partitionColors = [
     }
 
     document.addEventListener("astro:page-load", async () => {
+        console.log("page load");
 
         const openBtn = document.getElementById("spend-funds-button");
         const modalOutside = document.getElementById("addExpenseModal");
+        console.log(openBtn);
+        console.log(modal);
 
         openBtn?.addEventListener("click", () => {
             modalOutside?.showModal();
@@ -729,6 +734,18 @@ const partitionColors = [
 
         document.querySelector("#move-funds-modal .btn-save-another")
             ?.addEventListener("click", () => submitMoveFunds(true));
+    });
+
+
+    const spendBtn = document.getElementById("spend-funds-button");
+    const spendModal = document.getElementById("addExpenseModal");
+
+    console.log(spendBtn);
+    console.log(spendModal);
+
+    spendBtn?.addEventListener("click", () => {
+        console.log("clicked");
+        spendModal.showModal();
     });
 </script>
 

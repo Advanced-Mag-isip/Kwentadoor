@@ -113,10 +113,11 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
       const data = await r.json();
       const list = data.results || data;
       sel.innerHTML = '<option value="" disabled selected>Select Wallet</option>';
-      list.forEach(function (w) {
+      list.forEach((w) => {
         const opt = document.createElement('option');
         opt.value = w.id;
         opt.textContent = w.name;
+        opt.dataset.balance = w.balance;
         sel.appendChild(opt);
       });
     } catch (e) {
@@ -134,7 +135,7 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
       if (!r.ok) throw new Error('Failed to fetch categories');
       const data = await r.json();
       sel.innerHTML = '<option value="" disabled selected>Select Category</option>';
-      data.forEach(function (c) {
+      data.forEach((c) => {
         const opt = document.createElement('option');
         opt.value = c.id;
         opt.textContent = c.label;
@@ -174,7 +175,26 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
 
       const btn = keepOpen ? saveAnotherBtn : submitBtn;
       const originalText = btn ? btn.textContent : '';
-      if (btn) { btn.textContent = 'Saving...'; btn.disabled = true; }
+
+      const selectedOption = wallet.options[wallet.selectedIndex];
+      const walletBalance = parseFloat(selectedOption?.dataset?.balance || "0");
+      const spendAmount = parseFloat(amount.value || "0");
+
+      if (isNaN(spendAmount) || spendAmount <= 0) {
+        alert("Please enter a valid amount.");
+        return;
+      }
+
+      if (spendAmount > walletBalance) {
+        alert(`Insufficient funds. Available balance is ₱${walletBalance.toFixed(2)}`);
+
+        return;
+      }
+
+      if (btn) {
+        btn.textContent = 'Saving...';
+        btn.disabled = true;
+      }
 
       try {
         await window.__spendFunds({
@@ -185,16 +205,27 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
           counterparty: counterparty ? counterparty.value : '',
           transaction_date: dateInput ? dateInput.value : '',
         });
-        if (btn) { btn.textContent = originalText; btn.disabled = false; }
+        if (btn) {
+          btn.textContent = originalText;
+          btn.disabled = false;
+        }
         if (keepOpen) {
-          if (amount) amount.value = '';
+          amount.value = '';
+          if (note) note.value = '';
+          if (counterparty) counterparty.value = '';
+          category.selectedIndex = 0;
+          wallet.selectedIndex = 0;
         } else {
           closeDialog();
+          window.location.reload();
         }
         if (window.__loadWalletBalance) window.__loadWalletBalance();
         if (window.__loadRecentTransactions) window.__loadRecentTransactions();
       } catch (e) {
-        if (btn) { btn.textContent = originalText; btn.disabled = false; }
+        if (btn) {
+          btn.textContent = originalText;
+          btn.disabled = false;
+        }
         alert('Spend funds failed: ' + (e.message || 'Unknown error'));
       }
     }
