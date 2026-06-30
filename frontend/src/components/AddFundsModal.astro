@@ -107,24 +107,26 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
 </dialog>
 
 <script>
-  const modal = document.getElementById('addExpenseModal');
-  const closeIcon = document.getElementById('close-modal-icon');
-  const cancelBtn = document.getElementById('cancel-modal-btn');
 
-  // Only attach listener if the open button exists on the current page
+  document.addEventListener('astro:page-load', () => {
+    const modal = document.getElementById('addExpenseModal');
+    const closeIcon = document.getElementById('close-modal-icon');
+    const cancelBtn = document.getElementById('cancel-modal-btn');
 
-  // Only attach listeners if the modal and close buttons exist
-  if (modal && closeIcon) {
-    closeIcon.addEventListener('click', () => {
-      modal.close();
-    });
-  }
+    if (modal && closeIcon) {
+      closeIcon.addEventListener('click', () => {
+        modal.close();
+      });
+    }
 
-  if (modal && cancelBtn) {
-    cancelBtn.addEventListener('click', () => {
-      modal.close();
-    });
-  }
+    if (modal && cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        modal.close();
+      });
+    }
+  });
+
+  
 </script>
 
 

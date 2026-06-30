@@ -460,12 +460,17 @@ const partitionColors = [
 <script>
   import "../scripts/dashboard-metrics.js";
 
-  const openBtn = document.getElementById('spend-funds-button');
-  const modalOutside = document.getElementById('addExpenseModal');
+  document.addEventListener('astro:page-load', () => {
 
-  openBtn.addEventListener('click', () => {
+    const openBtn = document.getElementById('spend-funds-button');
+    const modalOutside = document.getElementById('addExpenseModal');
+
+    openBtn.addEventListener('click', () => {
     modalOutside.showModal(); 
   });
+  
+  });
+ 
 </script>
 
 <script is:inline>
