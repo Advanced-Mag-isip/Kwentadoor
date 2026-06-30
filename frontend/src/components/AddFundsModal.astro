@@ -27,7 +27,7 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
         <label for="fund-amount-input">FUND AMOUNT</label>
         <div class="input-wrapper">
           <span class="input-icon font-peso"><Fragment set:html={IconPeso}></Fragment></span>
-          <input type="number" id="fund-amount-input" name="amount" placeholder="Enter Amount"/>
+          <input type="number" id="fund-amount-input" min="0.01" step="0.01" name="amount" placeholder="Enter Amount"/>
         </div>
       </div>
 

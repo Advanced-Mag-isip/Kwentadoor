@@ -489,6 +489,10 @@ const partitionColors = [
     });
 </script>
 
+<script define:vars={{ wallets }}>
+    window.wallets = wallets;
+</script>
+
 <script is:inline>
     async function reloadDashboard() {
         await new Promise(resolve => setTimeout(resolve, 200));
@@ -502,6 +506,13 @@ const partitionColors = [
         const dateInput = document.getElementById('fund-date');
 
         if (!wallet || !amount) return;
+
+        const fundAmount = Number(amount.value);
+
+        if (isNaN(fundAmount) || fundAmount <= 0) {
+            alert("Fund amount must be greater than 0.");
+            return;
+        }
 
         wallet.setAttribute('disabled', '');
         amount.setAttribute('disabled', '');
@@ -557,6 +568,37 @@ const partitionColors = [
         const dateInput = document.getElementById('move-date');
 
         if (!source || !dest || !amount) return;
+
+        const transferAmount = Number(amount.value);
+
+        if (isNaN(transferAmount) || transferAmount <= 0) {
+            alert("Transfer amount must be greater than 0.");
+            return;
+        }
+
+        const sourceWallet = window.wallets.find(
+            w => String(w.id) === String(source.value)
+        );
+
+        if (!sourceWallet) {
+            alert("Please select a valid source wallet.");
+            return;
+        }
+
+        if (transferAmount > Number(sourceWallet.amount)) {
+            alert(
+                `Insufficient funds.\nAvailable balance: ₱${Number(sourceWallet.amount).toLocaleString("en-PH", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+                })}`
+            );
+            return;
+        }
+
+        if (source.value === dest.value) {
+            alert("Source and destination wallets must be different.");
+            return;
+        }
 
         source.setAttribute('disabled', '');
         dest.setAttribute('disabled', '');
