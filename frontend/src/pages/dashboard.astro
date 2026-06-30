@@ -9,8 +9,10 @@ import IconTransaction from '../assets/metrics-bidirectional-arrow.svg?raw';
 import IconAddFunds from '../assets/add-funds-icon.svg?raw'; 
 import IconSpendFunds from '../assets/spend-funds-icon.svg?raw';
 import IconMoveFunds from '../assets/move-funds-icon.svg?raw';
-
-const totalBalance = "₱23,983,389.00"; // Tempoprary data
+import IconChevronDown from '../assets/chevron-down.svg?raw';
+import IconWallet from '../assets/wallet-icon.svg?raw';
+import IconPeso from '../assets/philippine-peso.svg?raw';
+import IconAttachment from '../assets/paperclip.svg?raw';
 
 const wallets = [
     {
@@ -53,7 +55,7 @@ const wallets = [
         id: 5,
         name: "UnionBank Savings",
         description: "Main savings account used for storing long-term funds and personal savings. Interest earned helps grow the balance over time while keeping funds readily accessible. Large deposits and planned withdrawals are typically managed through this account.",
-        amount: 38750.80,
+        amount: 38750.81,
         type: "bank",
         created_at: "2026-04-01T09:00:00Z",
         updated_at: "2026-06-28T10:30:00Z"
@@ -69,15 +71,20 @@ const wallets = [
     }
 ];
 
-const totalBalanceAmount = wallets.reduce(
+const totalBalanceCalculated = wallets.reduce(
     (sum, wallet) => sum + wallet.amount,
     0
 );
 
 const walletPartitions = wallets.map(wallet => ({
     ...wallet,
-    percentage: (wallet.amount / totalBalanceAmount) * 100
+    percentage: (wallet.amount / totalBalanceCalculated) * 100
 }));
+
+const totalBalance = `₱${totalBalanceCalculated.toLocaleString("en-PH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+})}`;
 
 const partitionColors = [
     "#F5C842",
@@ -141,9 +148,9 @@ const partitionColors = [
                         }
                     </div>
                     <div class="balancecard-action-buttons">
-                        <button class="card-button"><span set:html={IconAddFunds}></span>Add Funds</button>
-                        <button class="card-button"><span set:html={IconSpendFunds}></span>Spend Funds</button>
-                        <button class="card-button"><span set:html={IconMoveFunds}></span>Move Funds</button>
+                        <button class="card-button" data-modal="add-funds-modal"><span set:html={IconAddFunds}></span>Add Funds</button>
+                        <button class="card-button" data-modal="spend-funds-modal"><span set:html={IconSpendFunds}></span>Spend Funds</button>
+                        <button class="card-button" data-modal="move-funds-modal"><span set:html={IconMoveFunds}></span>Move Funds</button>
                     </div>
                 </div>
 
@@ -265,6 +272,184 @@ const partitionColors = [
 
         </div>
     </div>
+    <!-- Add Funds Modal -->
+    <div id="add-funds-modal" class="modal-overlay" aria-hidden="true">
+        <div class="modal modal--navy" role="dialog" aria-modal="true" aria-labelledby="add-funds-title">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <span class="modal-header-icon"><Fragment set:html={IconCashDown} /></span>
+                    <h2 id="add-funds-title">Add Funds</h2>
+                </div>
+                <button class="modal-close" aria-label="Close modal">✕</button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- Fund Amount -->
+                <div class="form-group">
+                    <label for="fund-amount">FUND AMOUNT</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-icon"><Fragment set:html={IconPeso} /></span>
+                        <input id="fund-amount" name="amount" type="number" min="0" step="1" placeholder="Enter Amount" />
+                    </div>
+                </div>
+
+                <!-- Destination Wallet -->
+                <div class="form-group">
+                    <label for="fund-wallet">DESTINATION WALLET</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-icon"><Fragment set:html={IconWallet} /></span>
+                        <select id="fund-wallet" name="wallet">
+                            <option value="" disabled selected>Select Wallet</option>
+                            {
+                                wallets.map((wallet) => (
+                                    <option value={wallet.id}>
+                                        {wallet.name}
+                                    </option>
+                                ))
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Advanced Toggle -->
+                <div class="advanced-toggle-wrapper">
+                    <button type="button" class="advanced-toggle" id="advanced-toggle-add">
+                        Advanced <span class="advanced-arrow" set:html={IconChevronDown}></span>
+                    </button>
+                    <div class="advanced-divider"></div>
+                </div>
+
+                <!-- Advanced Fields (hidden by default) -->
+                <div class="advanced-fields" id="advanced-fields-add">
+
+                    <!-- Note -->
+                    <div class="form-group">
+                        <label for="fund-note">NOTE</label>
+                        <textarea id="fund-note" name="note" rows="3" placeholder="Add a note about this transaction..."></textarea>
+                    </div>
+
+                    <!-- Date + Attachment side by side -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fund-date">DATE</label>
+                            <div class="input-icon-wrapper">
+                                <input id="fund-date" name="date" type="date" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="fund-attachment">ATTACHMENT</label>
+                            <div class="input-icon-wrapper">
+                                <input id="fund-attachment" name="attachment" type="text" placeholder="Select files" readonly />
+                                <span class="input-icon-right"><Fragment set:html={IconAttachment} /></span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="modal-footer modal-footer--stack">
+                <button type="button" class="btn-save-another">Save and Add Another</button>
+                <div class="modal-footer-row">
+                    <button type="button" class="btn-secondary">Cancel</button>
+                    <button type="button" class="btn-primary btn-primary--navy">Add Fund</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Move Funds Modal -->
+    <div id="move-funds-modal" class="modal-overlay" aria-hidden="true">
+        <div class="modal modal--grey" role="dialog" aria-modal="true" aria-labelledby="move-funds-title">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <span class="modal-header-icon"><Fragment set:html={IconMoveFunds} /></span>
+                    <h2 id="move-funds-title">Move Funds</h2>
+                </div>
+                <button class="modal-close" aria-label="Close modal">✕</button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- Fund Amount -->
+                <div class="form-group">
+                    <label for="move-amount">FUND AMOUNT</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-icon"><Fragment set:html={IconPeso} /></span>
+                        <input id="move-amount" name="amount" type="number" min="0" step="1" placeholder="Enter Amount" />
+                    </div>
+                </div>
+
+                <!-- Source + Destination Wallet side by side -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="move-source">SOURCE WALLET</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon"><Fragment set:html={IconWallet} /></span>
+                            <select id="move-source" name="source_wallet">
+                                <option value="" disabled selected>Select Wallet</option>
+                                {wallets.map((wallet) => (
+                                    <option value={wallet.id}>{wallet.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="move-destination">DESTINATION WALLET</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon"><Fragment set:html={IconWallet} /></span>
+                            <select id="move-destination" name="destination_wallet">
+                                <option value="" disabled selected>Select Wallet</option>
+                                {wallets.map((wallet) => (
+                                    <option value={wallet.id}>{wallet.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Toggle -->
+                <div class="advanced-toggle-wrapper">
+                    <button type="button" class="advanced-toggle" id="advanced-toggle-move">
+                        Advanced <span class="advanced-arrow" set:html={IconChevronDown}></span>
+                    </button>
+                    <div class="advanced-divider"></div>
+                </div>
+
+                <!-- Advanced Fields -->
+                <div class="advanced-fields" id="advanced-fields-move">
+                    <div class="form-group">
+                        <label for="move-note">NOTE</label>
+                        <textarea id="move-note" name="note" rows="3" placeholder="Add a note about this transaction..."></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="move-date">DATE</label>
+                            <div class="input-icon-wrapper">
+                                <input id="move-date" name="date" type="date" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="move-attachment">ATTACHMENT</label>
+                            <div class="input-icon-wrapper">
+                                <input id="move-attachment" name="attachment" type="text" placeholder="Select files" readonly />
+                                <span class="input-icon-right"><Fragment set:html={IconAttachment} /></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer modal-footer--stack">
+                <button type="button" class="btn-save-another btn-save-another--grey">Save and Add Another</button>
+                <div class="modal-footer-row">
+                    <button type="button" class="btn-secondary">Cancel</button>
+                    <button type="button" class="btn-primary--move">Move Fund</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </Layout>
 
 <script is:inline>
@@ -336,6 +521,48 @@ const partitionColors = [
                         transactionLabel.textContent =
                             "Showing results for All Transactions";
                 }
+            });
+        });
+        // Universal modal system
+        document.querySelectorAll('[data-modal]').forEach(trigger => {
+            trigger.addEventListener('click', () => {
+                const modal = document.getElementById(trigger.dataset.modal);
+                if (!modal) return;
+                modal.classList.add('open');
+                modal.setAttribute('aria-hidden', 'false');
+            });
+        });
+
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal(modal);
+            });
+
+            // X button and Cancel button inside each modal
+            modal.querySelector('.modal-close')?.addEventListener('click', () => closeModal(modal));
+            modal.querySelector('.btn-secondary')?.addEventListener('click', () => closeModal(modal));
+        });
+
+        // Escape key closes whichever modal is open
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            document.querySelectorAll('.modal-overlay.open').forEach(closeModal);
+        });
+
+        function closeModal(modal) {
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        document.querySelectorAll('.advanced-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.id.replace('advanced-toggle', 'advanced-fields');
+                const fields = document.getElementById(targetId);
+                if (!fields) return;
+
+                const isOpen = fields.classList.toggle('open');
+                btn.classList.toggle('open', isOpen);
             });
         });
     });
@@ -729,6 +956,400 @@ const partitionColors = [
         width: 250px;
         flex-shrink: 0;
     }   
+
+    /* Modals */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.open {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .modal {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        width: 100%;
+        max-width: 480px;
+        margin: var(--space-md);
+        box-shadow: 0 20px 48px rgba(0, 0, 0, 0.25);
+        transform: translateY(12px);
+        transition: transform 0.2s ease;
+        overflow: hidden;
+    }
+
+    .modal-overlay.open .modal {
+        transform: translateY(0);
+    }
+
+    /* Header */
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-md) var(--space-lg);
+        color: #fff;
+    }
+
+    /* Navy variant */
+    .modal--navy .modal-header {
+        background: var(--primary-navyblue);
+    }
+
+    /* Orange variant */
+    .modal--orange .modal-header {
+        background: var(--orange-gradient);
+    }
+
+    /* Grey variant */
+    .modal--grey .modal-header {
+        background: #3d4a5c;
+    }
+
+    .btn-save-another--grey {
+        background: #3d4a5c;
+    }
+
+    .btn-primary--move {
+        padding: 12px;
+        background: #3d4a5c;
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-primary--move:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+    .modal-header-left {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .modal-header-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        opacity: 0.9;
+    }
+
+    .modal-header-icon :global(svg) {
+        width: 20px;
+        height: 20px;
+    }
+
+    .modal-header h2 {
+        font-family: var(--display-headings-font);
+        font-size: 1.15rem;
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .modal-close {
+        background: rgba(255, 255, 255, 0.15);
+        border: none;
+        color: #fff;
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s ease;
+        flex-shrink: 0;
+    }
+
+    .modal-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Body */
+    .modal-body {
+        padding: var(--space-lg);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group label {
+        font-family: var(--general-text-font);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: var(--primary-navyblue);
+    }
+
+    /* Input with icon wrapper */
+    .input-icon-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 14px;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+        opacity: 0.45;
+    }
+
+    .input-icon :global(svg) {
+        width: 18px;
+        height: 18px;
+    }
+
+    .input-icon-right {
+        position: absolute;
+        right: 14px;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+        opacity: 0.4;
+    }
+
+    .input-icon-right :global(svg) {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Spinner buttons (amount field) */
+    .input-spinner {
+        position: absolute;
+        right: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    .spinner-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--primary-navyblue);
+        font-size: 0.75rem;
+        line-height: 1;
+        padding: 1px 4px;
+        opacity: 0.5;
+        transition: opacity 0.1s;
+    }
+
+    .spinner-btn:hover {
+        opacity: 1;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1.5px solid #e0e4ed;
+        border-radius: 999px; /* pill shape like the design */
+        padding: 12px var(--space-md);
+        padding-left: 42px; /* space for left icon */
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        color: var(--primary-navyblue);
+        background: #f3f5f9;
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        resize: none;
+        appearance: none;
+        -webkit-appearance: none;
+    }
+
+    /* textarea and date don't need pill shape */
+    .form-group textarea,
+    .form-group input[type="date"] {
+        border-radius: var(--radius-md);
+    }
+
+    /* textarea has no left icon */
+    .form-group textarea {
+        padding-left: var(--space-md);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        border-color: var(--primary-navyblue);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-navyblue) 12%, transparent);
+        background: #fff;
+    }
+
+    /* Orange focus for Spend Funds modal later */
+    .modal--orange .form-group input:focus,
+    .modal--orange .form-group select:focus,
+    .modal--orange .form-group textarea:focus {
+        border-color: var(--primary-orange);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-orange) 15%, transparent);
+    }
+
+    /* Advanced toggle */
+    .advanced-toggle-wrapper {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .advanced-toggle {
+        background: none;
+        border: none;
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 700;
+        color: var(--primary-navyblue);
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+        transition: opacity 0.15s ease;
+    }
+
+    .advanced-toggle:hover {
+        opacity: 0.7;
+    }
+
+    .advanced-arrow {
+        display: inline-block;
+        transition: transform 0.2s ease;
+        font-size: 1rem;
+    }
+
+    .advanced-toggle.open .advanced-arrow {
+        transform: rotate(180deg);
+    }
+
+    .advanced-divider {
+        flex: 1;
+        height: 1.5px;
+        background: #e0e4ed;
+        border-radius: 999px;
+    }
+
+    /* Advanced fields — hidden by default */
+    .advanced-fields {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        transition: max-height 0.3s ease, opacity 0.25s ease;
+    }
+
+    .advanced-fields.open {
+        max-height: 400px;
+        opacity: 1;
+    }
+
+    /* Side by side date + attachment */
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-md);
+    }
+
+    /* Footer */
+    .modal-footer {
+        padding: var(--space-md) var(--space-lg);
+        border-top: 1px solid #e0e4ed;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .modal-footer-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-sm);
+    }
+
+    .btn-save-another {
+        width: 100%;
+        padding: 13px;
+        background: var(--primary-navyblue);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-save-another:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        padding: 12px;
+        background: transparent;
+        color: var(--primary-navyblue);
+        border: 1.5px solid #e0e4ed;
+        border-radius: var(--radius-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+        background: #f3f5f9;
+    }
+
+    /* Primary button — navy for Add Funds */
+    .btn-primary--navy {
+        padding: 12px;
+        background: var(--primary-orange);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-primary--navy:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
 
     /* MEDIA QUERIES */
     @media (max-width: 1500px) {
