@@ -1,5 +1,67 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import IconPeso from '../assets/philippine-peso.svg?raw';
+import IconWallet from '../assets/wallet-icon.svg?raw';
+import IconAttachment from '../assets/paperclip.svg?raw';
+import IconChevronDown from '../assets/chevron-down.svg?raw';
+
+const wallets = [
+    {
+        id: 1,
+        name: "Petty Cash",
+        description: "Daily operational cash kept on hand for small business expenses and immediate purchases. This wallet is used for quick transactions that do not require bank transfers or digital payments. Regular monitoring helps ensure accurate cash reconciliation.",
+        amount: 1250.00,
+        type: "cash",
+        created_at: "2026-06-01T08:00:00Z",
+        updated_at: "2026-06-25T14:30:00Z"
+    },
+    {
+        id: 2,
+        name: "Emergency Cash",
+        description: "Reserved cash set aside for unexpected expenses or urgent financial situations. These funds should only be used when absolutely necessary to avoid disrupting regular operations. Maintaining this reserve provides additional financial security.",
+        amount: 5000.00,
+        type: "cash",
+        created_at: "2026-06-01T08:00:00Z",
+        updated_at: "2026-06-20T09:15:00Z"
+    },
+    {
+        id: 3,
+        name: "GCash",
+        description: "Primary digital wallet used for mobile payments, online purchases, and fund transfers. It offers a convenient way to send and receive money instantly. Transactions are synchronized regularly to keep balances up to date.",
+        amount: 2845.50,
+        type: "e-wallet",
+        created_at: "2026-05-10T12:00:00Z",
+        updated_at: "2026-06-27T17:45:00Z"
+    },
+    {
+        id: 4,
+        name: "Maya Wallet",
+        description: "Secondary e-wallet dedicated to online shopping, subscriptions, and digital services. Keeping it separate from the primary wallet makes budgeting and expense tracking easier. It also serves as a backup payment option when needed.",
+        amount: 9120.00,
+        type: "e-wallet",
+        created_at: "2026-05-15T12:00:00Z",
+        updated_at: "2026-06-26T11:20:00Z"
+    },
+    {
+        id: 5,
+        name: "UnionBank Savings",
+        description: "Main savings account used for storing long-term funds and personal savings. Interest earned helps grow the balance over time while keeping funds readily accessible. Large deposits and planned withdrawals are typically managed through this account.",
+        amount: 38750.81,
+        type: "bank",
+        created_at: "2026-04-01T09:00:00Z",
+        updated_at: "2026-06-28T10:30:00Z"
+    },
+    {
+        id: 6,
+        name: "BDO Checkings",
+        description: "Primary checking account used for recurring bills, supplier payments, and everyday banking transactions. It supports higher transaction volumes and provides easy access through checks and online banking. Regular activity ensures smooth financial operations.",
+        amount: 112450.25,
+        type: "bank",
+        created_at: "2026-03-01T09:00:00Z",
+        updated_at: "2026-06-29T08:15:00Z"
+    }
+];
+
 ---
 
 <Layout>
@@ -8,12 +70,30 @@ import Layout from '../layouts/Layout.astro';
 
             <div class="heading-section blue">
                 <div class="heading-top-row">
-                    <h2 class="heading-title">Showing Results For</h2>
+                    <h2 class="heading-title">
+                        Showing Results For 
+                        <span id="heading-period-label"></span>
+                    </h2>
                     <div class="date-filters">
-                        <div class="date-chip">Custom ▼</div>
-                        <div class="date-chip">27/05/2026</div>
-                        <span class="date-separator">to</span>
-                        <div class="date-chip">30/05/2026</div>
+                        <div class="period-dropdown" id="period-dropdown">
+                            <button type="button" class="period-trigger" id="period-trigger">
+                                <span id="period-trigger-label">Select Time</span>
+                                <span class="period-chevron"><Fragment set:html={IconChevronDown} /></span>
+                            </button>
+                            <div class="period-menu" id="period-menu">
+                                <button type="button" class="period-option active" data-period="week">Week</button>
+                                <button type="button" class="period-option" data-period="month">Month</button>
+                                <button type="button" class="period-option" data-period="quarter">Quarter</button>
+                                <button type="button" class="period-option" data-period="year">Year</button>
+                                <button type="button" class="period-option" data-period="custom">Custom</button>
+                            </div>
+                        </div>
+
+                        <div class="custom-date-fields" id="custom-date-fields">
+                            <input type="date" class="date-input" id="period-from" value="2026-05-27" />
+                            <span class="date-separator">to</span>
+                            <input type="date" class="date-input" id="period-to" value="2026-05-30" />
+                        </div>
                     </div>
                 </div>
                 <div class="heading-divider"></div>
@@ -56,35 +136,202 @@ import Layout from '../layouts/Layout.astro';
                         <p>SALARY RATE</p>
                         <p>REMAINING</p>
                         <p>STATUS</p>
+                        <p>ACTION</p>
                     </div>
                 </div>
                 <div class="transaction-history-scrollable">
                     <div class="transaction-history-slots">
-                        <div class="transactionrow" data-status="Paid">
+                        <div
+                            class="transactionrow"
+                            data-status="Paid"
+                            data-employee="Admin User"
+                            data-position="Admin Developer"
+                            data-rate="1999.99"
+                            data-remaining="0"
+                        >
                             <p>Admin User</p>
                             <p>Admin Developer</p>
                             <p>₱1,999.99/hr</p>
                             <p>₱00.00</p>
                             <p class="status-badge paid">Paid</p>
+                            <button class="pay-btn" data-modal="pay-employee-modal">Pay</button>
                         </div>
-                        <div class="transactionrow" data-status="Unpaid">
+                        <div
+                            class="transactionrow"
+                            data-status="Unpaid"
+                            data-employee="Juan Dela Cruz"
+                            data-position="Cashier"
+                            data-rate="80.00"
+                            data-remaining="3200.00"
+                        >
                             <p>Juan Dela Cruz</p>
                             <p>Cashier</p>
                             <p>₱80.00/hr</p>
                             <p>₱3,200.00</p>
                             <p class="status-badge unpaid">Unpaid</p>
+                            <button class="pay-btn" data-modal="pay-employee-modal">Pay</button>
                         </div>
-                        <div class="transactionrow" data-status="Paid">
+                        <div
+                            class="transactionrow"
+                            data-status="Paid"
+                            data-employee="Maria Santos"
+                            data-position="Supervisor"
+                            data-rate="120.00"
+                            data-remaining="0"
+                        >
                             <p>Maria Santos</p>
                             <p>Supervisor</p>
                             <p>₱120.00/hr</p>
                             <p>₱00.00</p>
                             <p class="status-badge paid">Paid</p>
+                            <button class="pay-btn" data-modal="pay-employee-modal">Pay</button>
                         </div>
                     </div>
                 </div>
             </div>
 
+        </div>
+    </div>
+    <!-- Pay Employee Modal -->
+    <div id="pay-employee-modal" class="modal-overlay" aria-hidden="true">
+        <div class="modal modal--orange" role="dialog" aria-modal="true" aria-labelledby="pay-employee-title">
+            <div class="modal-header">
+                <div class="modal-header-left">
+                    <span class="modal-header-icon"><Fragment set:html={IconPeso} /></span>
+                    <h2 id="pay-employee-title">Pay Employee</h2>
+                </div>
+                <button class="modal-close" aria-label="Close modal">✕</button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- Employee + Position -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>EMPLOYEE</label>
+                        <p class="readonly-value" id="pay-employee-name">—</p>
+                    </div>
+                    <div class="form-group">
+                        <label>POSITION</label>
+                        <p class="readonly-value" id="pay-employee-position">—</p>
+                    </div>
+                </div>
+
+                <!-- Payment total -->
+                <div class="form-group">
+                    <label>PAYMENT</label>
+                    <p class="payment-total" id="pay-employee-payment">₱0.00</p>
+                </div>
+
+                <!-- Period / Shifts / Rate -->
+                <div class="pay-meta-row">
+                    <div class="pay-meta-item">
+                        <label>PERIOD</label>
+                        <p id="pay-employee-period">—</p>
+                    </div>
+                    <div class="pay-meta-item">
+                        <label>SHIFTS</label>
+                        <p id="pay-employee-shifts">—</p>
+                    </div>
+                    <div class="pay-meta-item">
+                        <label>RATE</label>
+                        <p id="pay-employee-rate">—</p>
+                    </div>
+                </div>
+
+                <!-- Source Wallet -->
+                <div class="form-group">
+                    <label for="pay-source-wallet">SOURCE WALLET</label>
+                    <div class="input-icon-wrapper">
+                        <span class="input-icon"><Fragment set:html={IconWallet} /></span>
+                        <select id="pay-source-wallet" name="source_wallet">
+                            <option value="" disabled selected>Select Wallet</option>
+                            {
+                                wallets.map((wallet) => (
+                                    <option value={wallet.id}>
+                                        {wallet.name}
+                                    </option>
+                                ))
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Advanced Toggle -->
+                <div class="advanced-toggle-wrapper">
+                    <button type="button" class="advanced-toggle open" id="advanced-toggle-pay">
+                        Advanced <span class="advanced-arrow">▼</span>
+                    </button>
+                    <div class="advanced-divider"></div>
+                </div>
+
+                <!-- Advanced Fields (open by default, matches the screenshot) -->
+                <div class="advanced-fields open" id="advanced-fields-pay">
+
+                    <!-- Breakdown -->
+                    <div class="breakdown-box">
+                        <p class="breakdown-title">BREAKDOWN</p>
+
+                        <div class="breakdown-row">
+                            <label for="pay-gross">Gross Pay</label>
+                            <input id="pay-gross" name="gross_pay" type="text" readonly />
+                        </div>
+
+                        <div class="breakdown-row">
+                            <label for="pay-bonus">Bonus</label>
+                            <input id="pay-bonus" name="bonus" type="number" min="0" step="0.01" value="0.00" />
+                        </div>
+
+                        <div class="breakdown-row">
+                            <label for="pay-overtime">Overtime</label>
+                            <input id="pay-overtime" name="overtime" type="number" min="0" step="0.01" value="0.00" />
+                        </div>
+
+                        <p class="breakdown-subtitle">DEDUCTIONS</p>
+
+                        <div class="breakdown-row">
+                            <label for="pay-deduction">Deduction</label>
+                            <input id="pay-deduction" name="deduction" type="number" min="0" step="0.01" value="0.00" />
+                        </div>
+
+                        <div class="breakdown-netpay">
+                            <span>NET PAY</span>
+                            <span id="pay-netpay">₱0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Note -->
+                    <div class="form-group">
+                        <label for="pay-note">NOTE</label>
+                        <textarea id="pay-note" name="note" rows="3" placeholder="Add a note about this transaction..."></textarea>
+                    </div>
+
+                    <!-- Date + Attachment -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pay-date">DATE</label>
+                            <div class="input-icon-wrapper">
+                                <input id="pay-date" name="date" type="date" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="pay-attachment">ATTACHMENT</label>
+                            <div class="input-icon-wrapper">
+                                <input id="pay-attachment" name="attachment" type="text" placeholder="Select files" />
+                                <span class="input-icon-right"><Fragment set:html={IconAttachment} /></span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="modal-footer modal-footer--stack">
+                <div class="modal-footer-row">
+                    <button type="button" class="btn-secondary">Cancel</button>
+                    <button type="button" class="btn-primary--navy">Pay Employee</button>
+                </div>
+            </div>
         </div>
     </div>
 </Layout>
@@ -133,18 +380,125 @@ import Layout from '../layouts/Layout.astro';
         flex-wrap: wrap;
     }
 
-    .date-chip {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-md);
-        padding: var(--space-sm) var(--space-md);
-        font-family: var(--general-text-font);
-        font-size: var(--paragraph-text);
-    }
-
     .date-separator {
         font-family: var(--general-text-font);
         font-size: var(--paragraph-text);
         opacity: 0.7;
+    }
+
+    .period-dropdown {
+        position: relative;
+    }
+
+    .period-trigger {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        border-radius: var(--radius-md);
+        padding: var(--space-sm) var(--space-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        color: #ffffff;
+        cursor: pointer;
+        transition: background-color 150ms ease;
+    }
+
+    .period-trigger:hover {
+        background: rgba(255, 255, 255, 0.18);
+    }
+
+    .period-chevron {
+        display: flex;
+        align-items: center;
+        width: 14px;
+        height: 14px;
+        transition: transform 0.2s ease;
+    }
+
+    .period-chevron :global(svg) {
+        width: 14px;
+        height: 14px;
+        stroke: #ffffff;
+    }
+
+    .period-dropdown.open .period-chevron {
+        transform: rotate(180deg);
+    }
+
+    .period-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        background: var(--white);
+        border-radius: var(--radius-md);
+        box-shadow: var(--default-shadow);
+        padding: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 140px;
+        z-index: 50;
+
+        opacity: 0;
+        transform: translateY(-6px);
+        pointer-events: none;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .period-dropdown.open .period-menu {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: all;
+    }
+
+    .period-option {
+        background: none;
+        border: none;
+        text-align: left;
+        padding: 8px 10px;
+        border-radius: var(--radius-sm);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        color: var(--primary-navyblue);
+        cursor: pointer;
+        transition: background-color 150ms ease;
+    }
+
+    .period-option:hover {
+        background: #f3f5f9;
+    }
+
+    .period-option.active {
+        background: var(--primary-orange);
+        color: #ffffff;
+    }
+
+    .custom-date-fields {
+        display: none;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .custom-date-fields.visible {
+        display: flex;
+    }
+
+    .date-input {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        border-radius: var(--radius-md);
+        padding: var(--space-sm) var(--space-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        color: #ffffff;
+        outline: none;
+        color-scheme: dark;
+    }
+
+    .date-input:focus {
+        background: rgba(255, 255, 255, 0.18);
     }
 
     .heading-divider {
@@ -249,7 +603,7 @@ import Layout from '../layouts/Layout.astro';
 
     .payroll-labels {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr 1fr 1fr 120px;
         padding: 0 var(--space-lg);
         font-family: var(--general-text-font);
         font-size: var(--paragraph-text);
@@ -265,7 +619,7 @@ import Layout from '../layouts/Layout.astro';
 
     .transactionrow {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr 1fr 1fr 120px;
         align-items: center;
         padding: var(--space-md) var(--space-lg);
         border-bottom: 1px solid var(--light-grey);
@@ -275,7 +629,7 @@ import Layout from '../layouts/Layout.astro';
     }
 
     .status-badge {
-        display: inline-block;
+        display: flex;
         padding: 3px 10px;
         border-radius: var(--radius-pill);
         font-size: 0.8rem;
@@ -283,18 +637,461 @@ import Layout from '../layouts/Layout.astro';
     }
 
     .status-badge.paid {
-        background: rgba(46, 196, 160, 0.15);
-        color: #1a9e7a;
+        color: #00a10d;
     }
 
     .status-badge.unpaid {
-        background: rgba(232, 109, 138, 0.15);
-        color: #c0365a;
+        color: #721e34;
     }
 
     .transactionrow.hidden {
         display: none;
     }
+
+    .pay-btn {
+        border: none;
+        border-radius: var(--radius-md);
+        padding: 8px 16px;
+        background: var(--orange-gradient);
+        color: white;
+        font-family: var(--general-text-font);
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 150ms ease, opacity 150ms ease;
+    }
+
+    .pay-btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
+    .pay-btn:active {
+        transform: translateY(0);
+    
+    }
+
+    /* Modals */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        padding: 2rem var(--space-md);
+
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.open {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    .modal {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        width: 100%;
+        max-width: 480px;
+
+        max-height: 90vh;
+
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+
+        box-shadow: 0 20px 48px rgba(0, 0, 0, 0.25);
+        transform: translateY(12px);
+        transition: transform 0.2s ease;
+    }
+
+    .modal-overlay.open .modal {
+        transform: translateY(0);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-md) var(--space-lg);
+        color: #fff;
+        flex-shrink: 0;
+    }
+
+    .modal--orange .modal-header {
+        background: var(--orange-gradient);
+    }
+
+    .modal-header-left {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .modal-header-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        opacity: 0.9;
+        font-weight: 700;
+    }
+
+    .modal-header h2 {
+        font-family: var(--display-headings-font);
+        font-size: 1.15rem;
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .modal-close {
+        background: rgba(255, 255, 255, 0.15);
+        border: none;
+        color: #fff;
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s ease;
+        flex-shrink: 0;
+    }
+
+    .modal-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .modal-body {
+        padding: var(--space-lg);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group label {
+        font-family: var(--general-text-font);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: var(--primary-navyblue);
+    }
+
+    .readonly-value {
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 700;
+        color: var(--primary-orange);
+        margin: 0;
+    }
+
+    .payment-total {
+        font-family: var(--display-headings-font);
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-orange);
+        margin: 0;
+    }
+
+    .pay-meta-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: var(--space-md);
+        background: #f3f5f9;
+        border-radius: var(--radius-md);
+        padding: var(--space-md);
+    }
+
+    .pay-meta-item label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: var(--primary-navyblue);
+        letter-spacing: 0.05em;
+    }
+
+    .pay-meta-item p {
+        font-family: var(--general-text-font);
+        font-weight: 700;
+        color: var(--primary-orange);
+        margin: 4px 0 0;
+        font-size: 0.9rem;
+    }
+
+    .input-icon-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 14px;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+        opacity: 0.45;
+    }
+
+    .input-icon :global(svg) {
+        width: 18px;
+        height: 18px;
+    }
+
+    .input-icon-right {
+        position: absolute;
+        right: 14px;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+        opacity: 0.4;
+    }
+
+    .input-icon-right :global(svg) {
+        width: 18px;
+        height: 18px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1.5px solid #e0e4ed;
+        border-radius: 999px;
+        padding: 12px var(--space-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        color: var(--primary-navyblue);
+        background: #f3f5f9;
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        resize: none;
+        appearance: none;
+        -webkit-appearance: none;
+    }
+    
+    .input-icon-wrapper .input-icon ~ select,
+    .input-icon-wrapper .input-icon ~ input {
+        padding-left: 42px;
+    }
+
+    .form-group textarea,
+    .form-group input[type="date"] {
+        border-radius: var(--radius-md);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        border-color: var(--primary-orange);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-orange) 15%, transparent);
+        background: #fff;
+    }
+
+    .form-group input[readonly] {
+        background: #e8eaef;
+        color: #6b7280;
+        cursor: not-allowed;
+    }
+
+    .advanced-toggle-wrapper {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .advanced-toggle {
+        background: none;
+        border: none;
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 700;
+        color: var(--primary-navyblue);
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+        transition: opacity 0.15s ease;
+    }
+
+    .advanced-toggle:hover {
+        opacity: 0.7;
+    }
+
+    .advanced-arrow {
+        display: inline-block;
+        transition: transform 0.2s ease;
+        font-size: 0.7rem;
+    }
+
+    .advanced-toggle.open .advanced-arrow {
+        transform: rotate(180deg);
+    }
+
+    .advanced-divider {
+        flex: 1;
+        height: 1.5px;
+        background: #e0e4ed;
+        border-radius: 999px;
+    }
+
+    .advanced-fields {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        transition: max-height 0.3s ease, opacity 0.25s ease;
+    }
+
+    .advanced-fields.open {
+        max-height: none;
+        opacity: 1;
+        overflow: visible;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-md);
+    }
+
+    /* Breakdown box */
+    .breakdown-box {
+        border: 1.5px solid #e0e4ed;
+        border-radius: var(--radius-md);
+        padding: var(--space-md);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .breakdown-title,
+    .breakdown-subtitle {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: var(--primary-navyblue);
+        margin: 0;
+    }
+
+    .breakdown-subtitle {
+        margin-top: 6px;
+    }
+
+    .breakdown-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-md);
+    }
+
+    .breakdown-row label {
+        font-size: 0.85rem;
+        color: var(--primary-navyblue);
+        flex-shrink: 0;
+    }
+
+    .breakdown-row input {
+        max-width: 140px;
+        text-align: right;
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+    }
+
+    .breakdown-netpay {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fff1e6;
+        border-radius: var(--radius-sm);
+        padding: var(--space-sm) var(--space-md);
+        margin-top: 4px;
+        font-weight: 700;
+    }
+
+    .breakdown-netpay span:first-child {
+        font-size: 0.75rem;
+        color: var(--primary-navyblue);
+        letter-spacing: 0.04em;
+    }
+
+    .breakdown-netpay span:last-child {
+        color: var(--primary-orange);
+        font-size: 1.1rem;
+    }
+
+    .modal-footer {
+        padding: var(--space-md) var(--space-lg);
+        border-top: 1px solid #e0e4ed;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+        flex-shrink: 0;
+    }
+
+    .modal-footer-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-sm);
+    }
+
+    .btn-secondary {
+        padding: 12px;
+        background: transparent;
+        color: var(--primary-navyblue);
+        border: 1.5px solid #e0e4ed;
+        border-radius: var(--radius-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+        background: #f3f5f9;
+    }
+
+    .btn-primary--navy {
+        padding: 12px;
+        background: var(--primary-orange);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-md);
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-primary--navy:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
 
     @media (max-width: 1500px) {
         .overviews {
@@ -392,41 +1189,222 @@ import Layout from '../layouts/Layout.astro';
         .transactionrow {
             font-size: 0.75rem;
         }
-
-        .payroll-labels p:nth-child(n+4),
-        .transactionrow p:nth-child(n+4) {
-            display: none;
-        }
     }
 </style>
 
 <script>
-    const chips = document.querySelectorAll(".filter-chip");
-    const rows = document.querySelectorAll(".transactionrow");
-    const subLabel = document.querySelector(".table-heading-sub");
+    function closeModal(modal: HTMLElement) {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+    }
 
-    chips.forEach((chip) => {
-        chip.addEventListener("click", () => {
-            chips.forEach((c) => c.classList.remove("active"));
-            chip.classList.add("active");
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        document.querySelectorAll<HTMLElement>('.modal-overlay.open').forEach(closeModal);
+    });
 
-            const filter = chip.dataset.filter;
+    function formatPeso(amount: number) {
+        return "₱" + amount.toLocaleString("en-PH", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
 
-            if (subLabel) {
-                subLabel.textContent =
-                    filter === "all"
-                        ? "Showing all employees"
-                        : `Showing ${filter} employees`;
-            }
+    document.addEventListener("astro:page-load", () => {
 
-            rows.forEach((row) => {
-                const status = row.dataset.status;
-                if (filter === "all" || status === filter) {
-                    row.classList.remove("hidden");
+        const headingPeriodLabel = document.getElementById("heading-period-label") as HTMLElement;
+        const periodFrom = document.getElementById("period-from") as HTMLInputElement;
+        const periodTo = document.getElementById("period-to") as HTMLInputElement;
+
+        function updateOverviewHeading(period: string, label: string) {
+            if (!headingPeriodLabel) return;
+
+            if (period === "custom") {
+                if (periodFrom.value && periodTo.value) {
+                    const from = new Date(periodFrom.value).toLocaleDateString("en-PH", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                    });
+
+                    const to = new Date(periodTo.value).toLocaleDateString("en-PH", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                    });
+
+                    headingPeriodLabel.textContent = ` ${from} – ${to}`;
                 } else {
-                    row.classList.add("hidden");
+                    headingPeriodLabel.textContent = "Custom Range";
                 }
+            } else {
+                headingPeriodLabel.textContent = ` This ${label}`;
+            }
+        }
+
+        const chips = document.querySelectorAll<HTMLElement>(".filter-chip");
+        const rows = document.querySelectorAll<HTMLElement>(".transactionrow");
+        const subLabel = document.querySelector<HTMLElement>(".table-heading-sub");
+
+        chips.forEach((chip) => {
+            chip.addEventListener("click", () => {
+                chips.forEach((c) => c.classList.remove("active"));
+                chip.classList.add("active");
+
+                const filter = chip.dataset.filter;
+
+                if (subLabel) {
+                    subLabel.textContent =
+                        filter === "all"
+                            ? "Showing all employees"
+                            : `Showing ${filter} employees`;
+                }
+
+                rows.forEach((row) => {
+                    const status = row.dataset.status;
+                    if (filter === "all" || status === filter) {
+                        row.classList.remove("hidden");
+                    } else {
+                        row.classList.add("hidden");
+                    }
+                });
             });
         });
+
+        function recalcNetPay() {
+            const gross = parseFloat((document.getElementById('pay-gross') as HTMLInputElement)?.value.replace(/[₱,]/g, '') || '0');
+            const bonus = parseFloat((document.getElementById('pay-bonus') as HTMLInputElement)?.value || '0');
+            const overtime = parseFloat((document.getElementById('pay-overtime') as HTMLInputElement)?.value || '0');
+            const deduction = parseFloat((document.getElementById('pay-deduction') as HTMLInputElement)?.value || '0');
+
+            const net = gross + bonus + overtime - deduction;
+            const netEl = document.getElementById('pay-netpay');
+            if (netEl) netEl.textContent = formatPeso(net);
+        }
+
+        ['pay-bonus', 'pay-overtime', 'pay-deduction'].forEach((id) => {
+            document.getElementById(id)?.addEventListener('input', recalcNetPay);
+        });
+
+        document.querySelectorAll<HTMLElement>('[data-modal]').forEach((trigger) => {
+            trigger.addEventListener('click', () => {
+                const modal = document.getElementById(trigger.dataset.modal!);
+                if (!modal) return;
+
+                if (modal.id === 'pay-employee-modal') {
+                    const row = trigger.closest<HTMLElement>('.transactionrow');
+                    if (row) {
+                        const employee = row.dataset.employee || '';
+                        const position = row.dataset.position || '';
+                        const rate = parseFloat(row.dataset.rate || '0');
+                        const remaining = parseFloat(row.dataset.remaining || '0');
+
+                        const grossPay = remaining > 0 ? remaining : rate;
+                        const shifts = remaining > 0 ? Math.round(remaining / rate) : 0;
+
+                        const nameEl = document.getElementById('pay-employee-name');
+                        const posEl = document.getElementById('pay-employee-position');
+                        const paymentEl = document.getElementById('pay-employee-payment');
+                        const periodEl = document.getElementById('pay-employee-period');
+                        const shiftsEl = document.getElementById('pay-employee-shifts');
+                        const rateEl = document.getElementById('pay-employee-rate');
+                        const grossInput = document.getElementById('pay-gross') as HTMLInputElement;
+                        const bonusInput = document.getElementById('pay-bonus') as HTMLInputElement;
+                        const overtimeInput = document.getElementById('pay-overtime') as HTMLInputElement;
+                        const deductionInput = document.getElementById('pay-deduction') as HTMLInputElement;
+
+                        if (nameEl) nameEl.textContent = employee;
+                        if (posEl) posEl.textContent = position;
+                        if (paymentEl) paymentEl.textContent = formatPeso(grossPay);
+                        if (periodEl) periodEl.textContent = "27/05/2026 - 27/05/2026";
+                        if (shiftsEl) shiftsEl.textContent = String(shifts);
+                        if (rateEl) rateEl.textContent = formatPeso(rate);
+
+                        if (grossInput) grossInput.value = formatPeso(grossPay);
+                        if (bonusInput) bonusInput.value = "0.00";
+                        if (overtimeInput) overtimeInput.value = "0.00";
+                        if (deductionInput) deductionInput.value = "0.00";
+
+                        recalcNetPay();
+                    }
+                }
+
+                modal.classList.add('open');
+                modal.setAttribute('aria-hidden', 'false');
+            });
+        });
+
+        document.querySelectorAll<HTMLElement>('.modal-overlay').forEach((modal) => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal(modal);
+            });
+            modal.querySelector('.modal-close')?.addEventListener('click', () => closeModal(modal));
+            modal.querySelector('.btn-secondary')?.addEventListener('click', () => closeModal(modal));
+        });
+
+        document.querySelectorAll<HTMLElement>('.advanced-toggle').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.id.replace('advanced-toggle', 'advanced-fields');
+                const fields = document.getElementById(targetId);
+                if (!fields) return;
+                const isOpen = fields.classList.toggle('open');
+                btn.classList.toggle('open', isOpen);
+            });
+        });
+
+        // Period dropdown
+        const periodDropdown = document.getElementById('period-dropdown');
+        const periodTrigger = document.getElementById('period-trigger');
+        const periodTriggerLabel = document.getElementById('period-trigger-label');
+        const periodMenu = document.getElementById('period-menu');
+        const periodOptions = document.querySelectorAll<HTMLElement>('.period-option');
+        const customDateFields = document.getElementById('custom-date-fields');
+
+        periodTrigger?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            periodDropdown?.classList.toggle('open');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (periodDropdown && !periodDropdown.contains(e.target as Node)) {
+                periodDropdown.classList.remove('open');
+            }
+        });
+
+        periodOptions.forEach((option) => {
+            option.addEventListener('click', () => {
+                periodOptions.forEach((o) => o.classList.remove('active'));
+                option.classList.add('active');
+
+                const period = option.dataset.period || "";
+                const label = option.textContent?.trim() || "";
+
+                if (periodTriggerLabel) {
+                    periodTriggerLabel.textContent =
+                        period === "custom"
+                            ? "Custom"
+                            : ` This ${label}`;
+                }
+
+                updateOverviewHeading(period, label);
+
+                if (period === 'custom') {
+                    customDateFields?.classList.add('visible');
+                } else {
+                    customDateFields?.classList.remove('visible');
+                }
+
+                periodDropdown?.classList.remove('open');
+            });
+        });
+
+        periodFrom?.addEventListener("change", () => {
+            updateOverviewHeading("custom", "Custom");
+        });
+
+        periodTo?.addEventListener("change", () => {
+            updateOverviewHeading("custom", "Custom");
+        });
+
     });
 </script>
