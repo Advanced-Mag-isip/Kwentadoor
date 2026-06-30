@@ -16,7 +16,7 @@ import IconCashDown from '../assets/cash-down-arrow.svg?raw';
 import IconWallet from '../assets/wallet-icon.svg?raw';
 import IconPeso from '../assets/philippine-peso.svg?raw';
 import IconAttachment from '../assets/paperclip.svg?raw';
-
+import AddExpenseModal from "../components/AddFundsModal.astro"; 
 const walletType = {
   cash: {
     icon: IconCash,
@@ -151,7 +151,7 @@ const icon = walletType[selectedWallet.type as keyof typeof walletType].icon;
 
                 <div class="balancecard-action-buttons">
                     <button class="card-button" data-modal="add-funds-modal"><span set:html={IconAddFunds}></span>Add Funds</button>
-                    <button class="card-button"><span set:html={IconSpendFunds}></span>Spend Funds</button>
+                    <button class="card-button" id = 'spend-funds-button'><span set:html={IconSpendFunds}></span>Spend Funds</button>
                     <button class="card-button" data-modal="move-funds-modal"><span set:html={IconMoveFunds}></span>Move Funds</button>
                 </div>
             </div>
@@ -543,6 +543,22 @@ const icon = walletType[selectedWallet.type as keyof typeof walletType].icon;
         </div>
     </div>
 </Layout>
+
+<AddExpenseModal />
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const openBtn = document.getElementById('spend-funds-button');
+    const modalOutside = document.getElementById('addExpenseModal');
+
+    // Make sure both elements exist before attaching the click event!
+    if (openBtn && modalOutside) {
+      openBtn.addEventListener('click', () => {
+        modalOutside.showModal(); 
+      });
+    }
+  });
+</script>    
+
 
 <style>
     .page-inner {
@@ -1395,6 +1411,8 @@ const icon = walletType[selectedWallet.type as keyof typeof walletType].icon;
         }
     }
 </style>
+
+ 
 
 <script define:vars={{ IconCash, IconBank, IconEWallet }}>
     function closeModal(modal) {
