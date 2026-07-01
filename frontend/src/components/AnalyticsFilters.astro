@@ -312,6 +312,10 @@
 
         const applyBtn = document.getElementById('apply-filters');
         if (applyBtn) applyBtn.addEventListener('click', applyFilters);
+
+        togglePeriodValue();   
+        populatePeriodValue(); 
+        applyFilters();       
     }
 
     function _initPeriodTypeDropdown() {
