@@ -1,0 +1,276 @@
+---
+import companyLogo from '../assets/Trabahadoor-logo.svg?raw';
+
+interface Props {
+  id: number | string;
+  amount?: number | string | null;
+  wallet_name?: string | null;
+  category_label?: string | null;
+  transaction_type?: string | null;
+  note?: string | null;
+  user_name?: string | null;
+  transaction_date?: string | null;
+}
+
+const {
+  id,
+  amount,
+  wallet_name,
+  category_label,
+  transaction_type,
+  note,
+  user_name,
+  transaction_date,
+} = Astro.props as Props;
+
+const fallback = (val: unknown) =>
+  val === null || val === undefined || val === "" ? "--" : val;
+
+const typeLabel =
+  transaction_type === "add funds"
+    ? "Add Funds"
+    : transaction_type === "spend funds"
+    ? "Spend Funds"
+    : fallback(transaction_type);
+
+const amountLabel =
+  amount === null || amount === undefined || amount === ""
+    ? "--"
+    : `₱${Number(amount).toLocaleString("en-PH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+---
+
+<dialog id={`transaction-receipt-${id}`} class="receipt-modal">
+  <div class="receipt-card">
+    <button type="button" class="receipt-close" data-close-receipt aria-label="Close">✕</button>
+
+    <div class="receipt-header">
+        <div class="receipt-logo" set:html={companyLogo} />
+
+        <h1 class="receipt-brand">
+            <span class="receipt-brand-white">Kwenta</span><span class="receipt-brand-orange">Door</span>
+        </h1>
+    </div>
+
+    <div class="receipt-heading">
+      <p>Unofficial Transaction Receipt</p>
+      <p class="receipt-heading__sub">Auto-Generated</p>
+    </div>
+
+    <div class="receipt-divider" role="presentation"></div>
+
+    <div class="receipt-rows">
+      <div class="receipt-row">
+        <span class="receipt-label">Date</span>
+        <span class="receipt-value">{fallback(transaction_date)}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Transaction</span>
+        <span class="receipt-value">{typeLabel}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Amount</span>
+        <span class="receipt-value">{amountLabel}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Category</span>
+        <span class="receipt-value">{fallback(category_label)}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Wallet</span>
+        <span class="receipt-value">{fallback(wallet_name)}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Counter Party</span>
+        <span class="receipt-value">--</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Note</span>
+        <span class="receipt-value">{fallback(note)}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">User</span>
+        <span class="receipt-value">{fallback(user_name)}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Attachments</span>
+        <span class="receipt-value">--</span>
+      </div>
+    </div>
+
+    <div class="receipt-divider" role="presentation"></div>
+
+    <div class="receipt-actions">
+      <button type="button" class="receipt-btn receipt-btn--void" data-void-receipt>Report Void</button>
+      <button type="button" class="receipt-btn receipt-btn--download" data-download-receipt>Download Receipt</button>
+    </div>
+  </div>
+</dialog>
+
+<style>
+  .receipt-modal {
+    border: none;
+    padding: 0;
+    background: transparent;
+    max-width: 420px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    font-family: var(--display-headings-font, 'Montserrat', sans-serif);
+  }
+
+  .receipt-modal::backdrop {
+    background: rgba(13, 21, 33, 0.55);
+  }
+
+  .receipt-modal:not([open]) {
+    display: none;
+  }
+
+  /* ---------- Card ---------- */
+  .receipt-card {
+    --receipt-navy: var(--primary-navyblue, #16233c);
+    --receipt-orange: var(--primary-orange, #f2792e);
+    --receipt-red: var(--danger-red, #e6392c);
+    --receipt-teal: var(--accent-teal, #2f9e94);
+    --receipt-grey: #d7dbe0;
+    --receipt-line: #dcdfe4;
+
+    box-sizing: border-box;
+    position: relative;
+    background: #fff;
+    padding: 30px 26px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    border-radius: 22px;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.22);
+  }
+
+  .receipt-card * {
+    box-sizing: border-box;
+  }
+
+  .receipt-close {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    background: none;
+    border: none;
+    font-size: 1.05rem;
+    line-height: 1;
+    color: var(--receipt-navy);
+    cursor: pointer;
+    padding: 4px;
+  }
+  .receipt-close:hover {
+    opacity: 0.7;
+  }
+
+  /* ---------- Header / logo ---------- */
+  .receipt-header {
+    display: flex;
+    justify-content: center;
+    padding-top: 4px;
+  }
+  .receipt-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .receipt-logo :global(svg) {
+    height: 30px;
+    width: auto;
+    display: block;
+  }
+
+  .receipt-heading {
+    text-align: center;
+    color: var(--receipt-navy);
+  }
+  .receipt-heading p {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1.35;
+  }
+  .receipt-heading__sub {
+    font-weight: 600;
+  }
+
+  /* ---------- Dashed dividers ---------- */
+  .receipt-divider {
+    border-top: 2px dashed var(--receipt-line);
+    width: 100%;
+  }
+
+  /* ---------- Rows ---------- */
+  .receipt-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .receipt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .receipt-label {
+    flex: 0 0 auto;
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--receipt-navy);
+    white-space: nowrap;
+  }
+  .receipt-value {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: #1a1d21;
+    text-align: right;
+    word-break: break-word;
+  }
+
+  /* ---------- Actions ---------- */
+  .receipt-actions {
+    display: flex;
+    gap: 12px;
+    padding-top: 2px;
+  }
+  .receipt-btn {
+    flex: 1;
+    border: none;
+    border-radius: 999px;
+    padding: 13px 10px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #fff;
+    cursor: pointer;
+    transition: filter 0.15s ease;
+  }
+  .receipt-btn:hover {
+    filter: brightness(0.94);
+  }
+  .receipt-btn--void {
+    background: var(--receipt-red);
+  }
+  .receipt-btn--download {
+    background: var(--receipt-orange);
+  }
+
+  @media (max-width: 480px) {
+    .receipt-card {
+      padding: 26px 20px 22px;
+    }
+  }
+</style>

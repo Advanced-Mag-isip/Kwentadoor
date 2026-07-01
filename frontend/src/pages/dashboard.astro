@@ -331,20 +331,33 @@ const partitionColors = [
                 </div>
 
                 <!-- Destination Wallet -->
-                <div class="form-group">
-                    <label for="fund-wallet">DESTINATION WALLET</label>
-                    <div class="input-icon-wrapper">
-                        <span class="input-icon"><Fragment set:html={IconWallet} /></span>
-                        <select id="fund-wallet" name="wallet">
-                            <option value="" disabled selected>Select Wallet</option>
-                            {
-                                wallets.map((wallet) => (
-                                    <option value={wallet.id}>
-                                        {wallet.name}
-                                    </option>
-                                ))
-                            }
-                        </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fund-category">CATEGORY</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon"><Fragment set:html={IconCashDown} /></span>
+                            <select id="fund-category" name="category">
+                                <option value="" disabled selected>Select Category</option>
+                                <option>Generic</option>
+                                <option>Capital Injection</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fund-wallet">DESTINATION WALLET</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon"><Fragment set:html={IconWallet} /></span>
+                            <select id="fund-wallet" name="wallet">
+                                <option value="" disabled selected>Select Wallet</option>
+                                {
+                                    wallets.map((wallet) => (
+                                        <option value={wallet.id}>
+                                            {wallet.name}
+                                        </option>
+                                    ))
+                                }
+                            </select>
+                        </div>
                     </div>
                 </div>
 
