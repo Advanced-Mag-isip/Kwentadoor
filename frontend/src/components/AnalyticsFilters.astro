@@ -321,7 +321,7 @@
     document.addEventListener('astro:page-load', _initPeriodTypeDropdown);
 </script>
 
-<style>
+<style is:global>
     #filter-header {
         display: flex;
         flex-direction: row;
@@ -428,7 +428,7 @@
         border-radius: 6px;
         font-family: var(--general-text-font);
         font-size: 15px;
-        color: var(--primary-navyblue) !important;
+        color: var(--primary-navyblue);
         cursor: pointer;
         transition: background-color 150ms ease;
     }
