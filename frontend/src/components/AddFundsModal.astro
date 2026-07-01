@@ -18,7 +18,6 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
         <h2>Spend Funds</h2>
       </div>
 
-
     <button type="button" id="close-modal-icon" class="close-btn">✕</button>
     </div>
     
@@ -88,10 +87,10 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
       </details>
 
       <div class="modal-actions">
-        <button type="button" class="btn btn-orange">Save and Add Another</button>
+        <button type="button" id="spend-funds-save-another" class="btn btn-orange">Save and Spend Another</button>
         <div class="action-row">
             <button type="button" id="cancel-modal-btn" class="btn btn-outline w-100" style="flex: 1;">Cancel</button>
-            <button type="submit" class="btn btn-navy" style="flex: 1;">Add Fund</button>
+            <button type="button" id="spend-funds-submit" class="btn btn-navy" style="flex: 1;">Spend Funds</button>
         </div>
       </div>
       
@@ -119,6 +118,12 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
         opt.dataset.balance = w.balance;
         sel.appendChild(opt);
       });
+
+      const reopenWalletId = sessionStorage.getItem('kwentadoor:reopen-wallet');
+      if (reopenWalletId && Array.from(sel.options).some(opt => opt.value === String(reopenWalletId))) {
+        sel.value = reopenWalletId;
+        sessionStorage.removeItem('kwentadoor:reopen-wallet');
+      }
     } catch (e) {
       sel.innerHTML = '<option value="" disabled selected>No wallets available</option>';
     }
@@ -145,24 +150,26 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
     }
   }
 
-  function reloadForModal(modalId) {
-    if (modalId) {
-      sessionStorage.setItem('kwentadoor:reopen-modal', modalId);
-    }
-    window.location.reload();
-  }
-
   document.addEventListener('astro:page-load', () => {
     const modal = document.getElementById('addExpenseModal');
     const closeIcon = document.getElementById('close-modal-icon');
     const cancelBtn = document.getElementById('cancel-modal-btn');
-    const submitBtn = modal ? modal.querySelector('.btn-navy') : null;
-    const saveAnotherBtn = modal ? modal.querySelector('.btn-orange') : null;
+    const submitBtn = document.getElementById('spend-funds-submit');
+    const saveAnotherBtn = document.getElementById('spend-funds-save-another');
+
+    _populateWalletSelect();
+    _populateCategorySelect();
 
     const reopenModalId = sessionStorage.getItem('kwentadoor:reopen-modal');
     if (reopenModalId === 'addExpenseModal') {
       sessionStorage.removeItem('kwentadoor:reopen-modal');
-      if (modal) modal.showModal();
+      if (modal) {
+        const dateInput = document.getElementById('date-input');
+        if (dateInput && !dateInput.value) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+        }
+        modal.showModal();
+      }
     }
 
     function closeDialog() {
@@ -171,9 +178,6 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
 
     if (closeIcon) closeIcon.addEventListener('click', closeDialog);
     if (cancelBtn) cancelBtn.addEventListener('click', closeDialog);
-
-    _populateWalletSelect();
-    _populateCategorySelect();
 
     async function submitSpend(keepOpen) {
       const wallet = document.getElementById('source-wallet-input');
@@ -199,7 +203,6 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
 
       if (spendAmount > walletBalance) {
         alert(`Insufficient funds. Available balance is ₱${walletBalance.toFixed(2)}`);
-
         return;
       }
 
@@ -208,34 +211,40 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
         btn.disabled = true;
       }
 
+      if (keepOpen) {
+        sessionStorage.setItem('kwentadoor:reopen-modal', 'addExpenseModal');
+        if (wallet.value) {
+            sessionStorage.setItem('kwentadoor:reopen-wallet', wallet.value);
+        }
+      } else {
+        sessionStorage.removeItem('kwentadoor:reopen-modal');
+        sessionStorage.removeItem('kwentadoor:reopen-wallet');
+      }
+
       try {
-        await window.__spendFunds({
-          wallet: wallet.value,
-          amount: amount.value,
-          category: category.value,
-          note: note ? note.value : '',
-          counterparty: counterparty ? counterparty.value : '',
-          transaction_date: dateInput ? dateInput.value : '',
-        });
+        if (window.__spendFunds) {
+          await window.__spendFunds({
+            wallet: wallet.value,
+            amount: amount.value,
+            category: category.value,
+            note: note ? note.value : '',
+            counterparty: counterparty ? counterparty.value : '',
+            date: dateInput ? dateInput.value : '',
+          });
+        } else {
+          throw new Error("Global __spendFunds function is missing.");
+        }
+
         if (btn) {
           btn.textContent = originalText;
           btn.disabled = false;
         }
-        if (keepOpen) {
-          amount.value = '';
-          if (note) note.value = '';
-          if (counterparty) counterparty.value = '';
-          category.selectedIndex = 0;
-          wallet.selectedIndex = 0;
-          reloadForModal('addExpenseModal');
-          return;
+        if (!keepOpen) {
+            closeDialog();
         }
-
-        closeDialog();
-        window.location.reload();
-        if (window.__loadWalletBalance) window.__loadWalletBalance();
-        if (window.__loadRecentTransactions) window.__loadRecentTransactions();
       } catch (e) {
+        sessionStorage.removeItem('kwentadoor:reopen-modal');
+        sessionStorage.removeItem('kwentadoor:reopen-wallet');
         if (btn) {
           btn.textContent = originalText;
           btn.disabled = false;
@@ -292,7 +301,6 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
   .modal-dialog[open] {
     display: flex;
     flex-direction: column;
-    
   }
 
   .modal-dialog::backdrop {
@@ -434,7 +442,8 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
   }
 
   .input-wrapper input, .select-wrapper select {
-    padding-left: 40px; /* Space for icon */
+    padding-left: 40px;
+    /* Space for icon */
   }
 
   .input-icon {
@@ -479,7 +488,8 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
     border: 1.5px solid #e0e4ed;
     border-radius: 999px; /* pill shape like the design */
     padding: 19px 19px;
-    padding-left: 42px; /* space for left icon */
+    padding-left: 42px;
+    /* space for left icon */
     font-family: var(--general-text-font);
     font-size: var(--paragraph-text);
     color: var(--primary-navyblue);
