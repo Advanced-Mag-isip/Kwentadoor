@@ -26,10 +26,33 @@
                 <option value="month">Filter by Month</option>
             </select>
 
-            <select id="filter-year" class="filter filter-pill" name="year">
+            <div class="period-dropdown" id="year-dropdown">
+                <button type="button" class="period-trigger" id="year-trigger" aria-haspopup="listbox" aria-expanded="false">
+                    <span id="year-trigger-label">Select Year</span>
+                    <span class="period-chevron">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </span>
+                </button>
+                <div class="period-menu" id="year-menu" role="listbox"></div>
+            </div>
+            <select id="filter-year" class="filter filter-hidden-native" name="year" tabindex="-1" aria-hidden="true">
                 <option value="" disabled selected>Select Year</option>
             </select>
-            <select id="filter-period-value" class="filter filter-pill" name="period_value">
+
+            <div class="period-dropdown" id="period-value-dropdown">
+                <button type="button" class="period-trigger" id="period-value-trigger" aria-haspopup="listbox" aria-expanded="false">
+                    <span id="period-value-trigger-label"></span>
+                    <span class="period-chevron">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </span>
+                </button>
+                <div class="period-menu" id="period-value-menu" role="listbox"></div>
+            </div>
+            <select id="filter-period-value" class="filter filter-hidden-native" name="period_value" tabindex="-1" aria-hidden="true">
                 <option value="" disabled selected></option>
             </select>
         </form>
@@ -43,7 +66,6 @@
     const BASE = "http://127.0.0.1:8000/api/analytics";
 
     let _periodData = null;
-    let _analyticsFiltersBootstrapped = false;
 
     async function _fetchPeriods() {
         if (_periodData) return _periodData;
@@ -63,6 +85,65 @@
         return _periodData;
     }
 
+    function _closeAllDropdowns(except) {
+        document.querySelectorAll('.period-dropdown.open').forEach((d) => {
+            if (d !== except) {
+                d.classList.remove('open');
+                const t = d.querySelector('.period-trigger');
+                if (t) t.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+
+    function _initDropdownToggle(dropdownEl) {
+        if (!dropdownEl || dropdownEl.dataset.dropdownInitialized === 'true') return;
+        const trigger = dropdownEl.querySelector('.period-trigger');
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            _closeAllDropdowns(dropdownEl);
+            const isOpen = dropdownEl.classList.toggle('open');
+            trigger.setAttribute('aria-expanded', String(isOpen));
+        });
+        dropdownEl.dataset.dropdownInitialized = 'true';
+    }
+
+    if (!window.__filterDropdownGlobalClickBound) {
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.period-dropdown')) _closeAllDropdowns(null);
+        });
+        window.__filterDropdownGlobalClickBound = true;
+    }
+
+    function _renderDropdownFromSelect(selectEl, dropdownEl, labelEl) {
+        const menuEl = dropdownEl.querySelector('.period-menu');
+        menuEl.innerHTML = '';
+        [...selectEl.options].filter(o => !o.disabled).forEach((o) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'period-option' + (o.value === selectEl.value ? ' active' : '');
+            btn.setAttribute('role', 'option');
+            btn.setAttribute('aria-selected', o.value === selectEl.value ? 'true' : 'false');
+            btn.textContent = o.textContent;
+            btn.addEventListener('click', () => {
+                selectEl.value = o.value;
+                selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                menuEl.querySelectorAll('.period-option').forEach((c) => {
+                    c.classList.remove('active');
+                    c.setAttribute('aria-selected', 'false');
+                });
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+                labelEl.textContent = o.textContent;
+                dropdownEl.classList.remove('open');
+                dropdownEl.querySelector('.period-trigger').setAttribute('aria-expanded', 'false');
+            });
+            menuEl.appendChild(btn);
+        });
+        const selected = selectEl.options[selectEl.selectedIndex];
+        labelEl.textContent = selected ? selected.textContent : '';
+        _initDropdownToggle(dropdownEl);
+    }
+
     async function _initFilters() {
         const typeSel = document.getElementById('filter-period-type');
         const yearSel = document.getElementById('filter-year');
@@ -70,6 +151,11 @@
         const summaryText = document.getElementById('filter-summary-text');
         if (!typeSel || !yearSel || !valueSel || !summaryText) return;
         if (typeSel.dataset.analyticsFiltersInitialized === 'true') return;
+
+        const yearDropdown = document.getElementById('year-dropdown');
+        const yearLabel = document.getElementById('year-trigger-label');
+        const valueDropdown = document.getElementById('period-value-dropdown');
+        const valueLabel = document.getElementById('period-value-trigger-label');
 
         const data = await _fetchPeriods();
         const availYears = data.years;
@@ -83,6 +169,7 @@
             yearSel.appendChild(opt);
         }
         if (availYears.length > 0) yearSel.value = availYears[availYears.length - 1];
+        _renderDropdownFromSelect(yearSel, yearDropdown, yearLabel);
 
         function monthsForYear(y) {
             return availMonthsByYear[String(y)] || [];
@@ -99,33 +186,34 @@
             const type = typeSel.value;
             const y = parseInt(yearSel.value);
             valueSel.innerHTML = '<option value="" disabled selected></option>';
-            if (!type || !y || isNaN(y)) return;
-
-            if (type === 'year') {
-                const opt = document.createElement('option');
-                opt.value = y;
-                opt.textContent = y;
-                opt.selected = true;
-                valueSel.appendChild(opt);
-            } else if (type === 'quarter') {
-                const qs = quartersForYear(y);
-                for (const q of qs) {
+            if (type && y && !isNaN(y)) {
+                if (type === 'year') {
                     const opt = document.createElement('option');
-                    opt.value = 'Q' + q;
-                    opt.textContent = 'Q' + q;
+                    opt.value = y;
+                    opt.textContent = y;
+                    opt.selected = true;
                     valueSel.appendChild(opt);
+                } else if (type === 'quarter') {
+                    const qs = quartersForYear(y);
+                    for (const q of qs) {
+                        const opt = document.createElement('option');
+                        opt.value = 'Q' + q;
+                        opt.textContent = 'Q' + q;
+                        valueSel.appendChild(opt);
+                    }
+                    if (valueSel.options.length > 0) valueSel.selectedIndex = valueSel.options.length - 1;
+                } else {
+                    const ms = monthsForYear(y);
+                    for (const m of ms) {
+                        const opt = document.createElement('option');
+                        opt.value = m;
+                        opt.textContent = MONTHS[m - 1];
+                        valueSel.appendChild(opt);
+                    }
+                    if (valueSel.options.length > 0) valueSel.selectedIndex = valueSel.options.length - 1;
                 }
-                if (valueSel.options.length > 0) valueSel.selectedIndex = valueSel.options.length - 1;
-            } else {
-                const ms = monthsForYear(y);
-                for (const m of ms) {
-                    const opt = document.createElement('option');
-                    opt.value = m;
-                    opt.textContent = MONTHS[m - 1];
-                    valueSel.appendChild(opt);
-                }
-                if (valueSel.options.length > 0) valueSel.selectedIndex = valueSel.options.length - 1;
             }
+            _renderDropdownFromSelect(valueSel, valueDropdown, valueLabel);
         }
 
         function getFilters() {
@@ -167,7 +255,7 @@
         }
 
         function togglePeriodValue() {
-            valueSel.style.display = typeSel.value === 'year' ? 'none' : '';
+            if (valueDropdown) valueDropdown.style.display = typeSel.value === 'year' ? 'none' : '';
         }
 
         typeSel.addEventListener('change', populatePeriodValue);
@@ -200,22 +288,11 @@
         const triggerLabel = document.getElementById('period-type-trigger-label');
         const menu = document.getElementById('period-type-menu');
         if (!typeSel || !dropdown || !trigger || !menu) return;
-        if (dropdown.dataset.dropdownInitialized === 'true') return;
 
+        _initDropdownToggle(dropdown);
+
+        if (dropdown.dataset.optionsInitialized === 'true') return;
         const options = menu.querySelectorAll('.period-option');
-
-        trigger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isOpen = dropdown.classList.toggle('open');
-            trigger.setAttribute('aria-expanded', String(isOpen));
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!dropdown.contains(e.target)) {
-                dropdown.classList.remove('open');
-                trigger.setAttribute('aria-expanded', 'false');
-            }
-        });
 
         options.forEach((opt) => {
             opt.addEventListener('click', () => {
@@ -235,7 +312,7 @@
             });
         });
 
-        dropdown.dataset.dropdownInitialized = 'true';
+        dropdown.dataset.optionsInitialized = 'true';
     }
 
     _initFilters();
@@ -328,6 +405,8 @@
         flex-direction: column;
         gap: 2px;
         min-width: 140px;
+        max-height: 260px;
+        overflow-y: auto;
         z-index: 50;
         opacity: 0;
         transform: translateY(-6px);
@@ -375,38 +454,6 @@
         border: 0;
     }
 
-    .filter-pill {
-        appearance: none;
-        border: none;
-        outline: none;
-        min-width: 160px;
-        max-width: 300px;
-        padding: 12px 36px 12px 16px;
-        border-radius: var(--radius-md);
-        background-color: rgba(255, 255, 255, 0.15);
-        font-family: var(--general-text-font);
-        font-size: 16px;
-        color: var(--white);
-        cursor: pointer;
-        transition: background-color 150ms ease;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 14px center;
-    }
-
-    .filter-pill:hover {
-        background-color: rgba(255, 255, 255, 0.24);
-    }
-
-    .filter-pill:focus {
-        background-color: rgba(255, 255, 255, 0.28);
-    }
-
-    .filter-pill option {
-        color: var(--primary-navyblue);
-        background: var(--white);
-    }
-
     /* ---- Buttons ---- */
     .custom-button {
         appearance: none;
@@ -415,6 +462,7 @@
         border-radius: var(--radius-md);
         display: flex;
         align-items: center;
+        justify-content: center;
         border: 2px solid var(--white);
         font-family: var(--display-headings-font);
         font-weight: bold;
@@ -443,33 +491,43 @@
 
     @media (max-width: 700px) {
         #filter-header {
-            flex-direction: column;
-            align-items: flex-start;
             padding: var(--space-md);
-            font-size: 1.1rem;
+            font-size: 1.05rem;
+            gap: var(--space-sm);
         }
 
-        #filters, form {
+        #filters {
             width: 100%;
-            flex-direction: column;
-            align-items: stretch;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-sm);
         }
 
-        .period-trigger,
-        .filter-pill {
+        #filters form {
+            display: contents;
+        }
+
+        #period-value-dropdown {
+            grid-column: 1 / -1;
+        }
+
+        .period-trigger {
             width: 100%;
             justify-content: space-between;
+            padding: 10px 14px;
+            font-size: 14px;
+        }
+
+        .custom-button {
+            width: 100%;
+            padding: 10px 16px;
+            font-size: 14px;
         }
 
         .period-menu {
             left: 0;
             right: 0;
             min-width: unset;
-        }
-
-        .custom-button {
-            width: 100%;
-            justify-content: center;
         }
     }
 </style>
