@@ -7,8 +7,8 @@ class Worker(models.Model):
     Mirrors DTR employee data.
     Synced from DTR, not the source of truth.
     """
-    dtr_id = models.IntegerField(unique=True)           # DTR's Users.id (integer)
-    employee_id = models.CharField(max_length=50)       # DTR's employeeId string e.g. "EMP-001"
+    dtr_id = models.IntegerField(unique=True)           
+    employee_id = models.CharField(max_length=50)       
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     department = models.CharField(max_length=100, blank=True, null=True)
@@ -165,7 +165,7 @@ class PayrollEntry(models.Model):
     # Tracks if this entry has been logged to expenses app
     logged_to_expenses = models.BooleanField(default=False)
 
-    # ✅ ADD THIS FIELD
+    # ADD THIS FIELD
     payment_status = models.CharField(
         max_length=10,
         choices=PAYMENT_STATUS_CHOICES,
