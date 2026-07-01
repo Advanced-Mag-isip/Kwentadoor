@@ -27,6 +27,22 @@ const WALLET_TYPE_MAP = {
     "BDO Checkings": "bank",
 };
 
+function parseApiDate(value) {
+    if (!value) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const [year, month, day] = value.split("-").map(Number);
+        return new Date(year, month - 1, day);
+    }
+    return new Date(value);
+}
+
+function formatTransactionDate(value) {
+    const date = parseApiDate(value);
+    return date && !Number.isNaN(date.getTime())
+        ? date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        : "";
+}
+
 let wallets = [];
 try {
     const res = await fetch("http://127.0.0.1:8000/api/expenses/wallets/", {
@@ -54,7 +70,12 @@ try {
     });
     if (res.ok) {
         const data = await res.json();
-        const list = data.results || data;
+        const rawList = data.results || data;
+        const list = rawList.slice().sort((a, b) => {
+            const dateDiff = new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime();
+            if (dateDiff !== 0) return dateDiff;
+            return (b.id || 0) - (a.id || 0);
+        });
         transactions = list.map((t) => ({
             id: t.id,
             amount: t.amount,
@@ -274,7 +295,7 @@ const partitionColors = [
                                     <p>{t.category_label || t.category}</p>
                                     <p>{t.note}</p>
                                     <p>{t.user_name}</p>
-                                    <p>{new Date(t.transaction_date).toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric"})}</p>
+                                    <p>{formatTransactionDate(t.transaction_date)}</p>
                                 </div>;
                             })
                         )}
@@ -1147,7 +1168,7 @@ const partitionColors = [
         color: white;
     }
 
-    .transactionlabels {
+    :global(.transactionlabels) {
         display: grid;
         grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr 1fr;
         padding: 0 var(--space-lg);
@@ -1161,7 +1182,7 @@ const partitionColors = [
         scrollbar-width: thin;
     }
 
-    .transactionrow {
+    :global(.transactionrow) {
         display: grid;
         grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr 1fr;
         align-items: center;
@@ -1653,18 +1674,18 @@ const partitionColors = [
             width: 190px;
         }
 
-        .transactionlabels,
-        .transactionrow {
+        :global(.transactionlabels),
+        :global(.transactionrow) {
             grid-template-columns: 1fr 1fr 1fr;
         }
 
-        .transactionrow:hover {
+        :global(.transactionrow:hover) {
             background: #fafafa;
             transform: translateX(4px);
         }
 
-        .transactionlabels p:nth-child(n+4),
-        .transactionrow p:nth-child(n+4) {
+        :global(.transactionlabels p:nth-child(n+4)),
+        :global(.transactionrow p:nth-child(n+4)) {
             display: none;
         }
 

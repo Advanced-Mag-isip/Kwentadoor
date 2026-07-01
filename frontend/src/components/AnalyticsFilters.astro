@@ -26,6 +26,7 @@
     const BASE = "http://127.0.0.1:8000/api/analytics";
 
     let _periodData = null;
+    let _analyticsFiltersBootstrapped = false;
 
     async function _fetchPeriods() {
         if (_periodData) return _periodData;
@@ -51,6 +52,7 @@
         const valueSel = document.getElementById('filter-period-value');
         const summaryText = document.getElementById('filter-summary-text');
         if (!typeSel || !yearSel || !valueSel || !summaryText) return;
+        if (typeSel.dataset.analyticsFiltersInitialized === 'true') return;
 
         const data = await _fetchPeriods();
         const availYears = data.years;
@@ -141,6 +143,7 @@
 
         function applyFilters() {
             const f = getFilters();
+            if (!f) return;
             window.__chartFilters = f;
             updateSummary();
             document.dispatchEvent(new CustomEvent('chart-update', { detail: f }));
@@ -167,6 +170,10 @@
         populatePeriodValue();
         togglePeriodValue();
         applyFilters();
+        typeSel.dataset.analyticsFiltersInitialized = 'true';
+        if (!window.__chartFilters) {
+            window.__chartFilters = getFilters();
+        }
     }
 
     _initFilters();

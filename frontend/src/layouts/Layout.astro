@@ -65,6 +65,14 @@ import '../styles/global.css';
 			#e2e8f0 10px,
 			#e2e8f0 11px
 		);
+        transition: opacity 250ms ease, transform 250ms ease;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .slot-wrapper.page-transitioning {
+        opacity: 0;
+        transform: translateY(8px);
     }
     
     body.sidebar-collapsed :global(#main-navigation) {
@@ -118,6 +126,14 @@ import '../styles/global.css';
 
   applySidebarState();
   document.addEventListener('astro:after-swap', applySidebarState);
+  document.addEventListener('astro:before-swap', () => {
+    const wrapper = document.querySelector('.slot-wrapper');
+    if (wrapper) wrapper.classList.add('page-transitioning');
+  });
+  document.addEventListener('astro:after-swap', () => {
+    const wrapper = document.querySelector('.slot-wrapper');
+    if (wrapper) wrapper.classList.remove('page-transitioning');
+  });
   
   document.addEventListener('astro:page-load', () => {
     const btn = document.getElementById('sidebar-toggle');

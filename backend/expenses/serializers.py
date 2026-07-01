@@ -20,9 +20,19 @@ class WalletTransferSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class SpendSerializer(serializers.ModelSerializer):
+    transaction_date = serializers.DateField(write_only=True, required=False, allow_null=True)
+    note = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    counterparty = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
     class Meta:
         model = Spend
         fields = '__all__'
+
+    def create(self, validated_data):
+        validated_data.pop('note', None)
+        validated_data.pop('counterparty', None)
+        validated_data.pop('transaction_date', None)
+        return super().create(validated_data)
 
 class TransactionSerializer(serializers.ModelSerializer):
     attachments = AttachmentSerializer(many=True, read_only=True)

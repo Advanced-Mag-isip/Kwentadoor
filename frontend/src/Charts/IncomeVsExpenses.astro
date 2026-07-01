@@ -21,25 +21,30 @@ const {
 
 <script>
   const _chartId = "income-vs-expenses-chart";
+  const _chartState = window.__chartState__ || (window.__chartState__ = {});
+  if (!_chartState[_chartId]) {
+    _chartState[_chartId] = { initPromise: null, listenersAttached: false };
+  }
+
+  async function _ensureChartJs() {
+    if (window.Chart) return;
+    if (window.__chartJsLoading) return window.__chartJsLoading;
+    window.__chartJsLoading = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js";
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("Chart.js CDN load failed"));
+      document.head.appendChild(s);
+    });
+    return window.__chartJsLoading;
+  }
 
   async function _loadChart() {
     const canvas = document.getElementById(`${_chartId}-canvas`);
     const status = document.getElementById(`${_chartId}-status`);
     if (!canvas || !status) return;
 
-    if (typeof Chart === "undefined") {
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Chart.js CDN load timed out")), 8000));
-      await Promise.race([
-        new Promise((resolve, reject) => {
-          const s = document.createElement("script");
-          s.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js";
-          s.onload = resolve;
-          s.onerror = reject;
-          document.head.appendChild(s);
-        }),
-        timeout,
-      ]);
-    }
+    await _ensureChartJs();
 
     const BASE = "http://127.0.0.1:8000/api/analytics";
     const el = document.getElementById(_chartId);
@@ -153,17 +158,10 @@ const {
     }
   }
 
-  function _init() {
-    _loadChart().catch(err => {
-      const status = document.getElementById(`${_chartId}-status`);
-      if (status) status.textContent = "Error: " + err.message;
-      console.error("IncomeVsExpenses init error:", err);
-    });
+  if (!_chartState[_chartId].listenersAttached) {
+    _chartState[_chartId].listenersAttached = true;
+    document.addEventListener("chart-update", _loadChart);
   }
-
-  _init();
-  document.addEventListener("astro:page-load", _init);
-  document.addEventListener("chart-update", _loadChart);
 </script>
 
 <style>

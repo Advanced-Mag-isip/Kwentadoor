@@ -30,11 +30,4 @@ async function _loadMetrics() {
   }
 }
 
-async function _init() {
-  window.__chartFilters = window.__chartFilters || { period: "yearly", year: new Date().getFullYear(), month: null };
-  await _loadMetrics();
-}
-
-_init();
-document.addEventListener("astro:page-load", _init);
 document.addEventListener("chart-update", _loadMetrics);

@@ -34,6 +34,22 @@ const walletType = {
   "e-wallet": { icon: IconEWallet },
 };
 
+function parseApiDate(value) {
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(value);
+}
+
+function formatTransactionDate(value) {
+  const date = parseApiDate(value);
+  return date && !Number.isNaN(date.getTime())
+    ? date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : "";
+}
+
 let wallets = [];
 try {
   const res = await fetch("http://127.0.0.1:8000/api/expenses/wallets/", {
@@ -221,7 +237,7 @@ try {
                                     <p>{t.category_label || t.category}</p>
                                     <p>{t.note}</p>
                                     <p>{t.user_name}</p>
-                                    <p>{new Date(t.transaction_date).toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric"})}</p>
+                                    <p>{formatTransactionDate(t.transaction_date)}</p>
                                 </div>;
                             })
                         )}
@@ -1500,7 +1516,16 @@ try {
             },
             ...options,
         }).then(r => {
-            if (!r.ok) return r.json().then(e => { throw new Error(JSON.stringify(e)); });
+            if (!r.ok) {
+                return r.text().then(text => {
+                    try {
+                        const json = JSON.parse(text);
+                        throw new Error(JSON.stringify(json));
+                    } catch (_e) {
+                        throw new Error(text || r.statusText || "Request failed");
+                    }
+                });
+            }
             return r.json();
         });
     }
@@ -1795,16 +1820,15 @@ try {
             }
 
             try {
-                await apiFetch('/transactions/', {
+                await apiFetch('/spends/', {
                     method: 'POST',
                     body: JSON.stringify({
                         wallet: walletId,
                         amount: amount,
-                        transaction_type: 'spend funds',
-                        category: categorySelect?.value || '',
+                        category: categorySelect?.value || 'office_supplies',
                         note: noteInput?.value || '',
                         counterparty: counterpartyInput?.value || '',
-                        transaction_date: dateInput?.value || null,
+                        transaction_date: dateInput?.value || new Date().toISOString().split('T')[0],
                     })
                 });
 

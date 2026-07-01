@@ -23,7 +23,16 @@ function apiFetch(path, options) {
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     ...options,
   }).then(function (r) {
-    if (!r.ok) return r.json().then(function (e) { throw new Error(JSON.stringify(e)); });
+    if (!r.ok) {
+      return r.text().then(function (text) {
+        try {
+          var json = JSON.parse(text);
+          throw new Error(JSON.stringify(json));
+        } catch (e) {
+          throw new Error(text || r.statusText || "Request failed");
+        }
+      });
+    }
     return r.json();
   });
 }
@@ -52,7 +61,7 @@ window.__spendFunds = function (data) {
       category: data.category || "office_supplies",
       note: data.note || "",
       counterparty: data.counterparty || "",
-      transaction_date: data.transaction_date || "",
+      transaction_date: data.transaction_date || new Date().toISOString().split("T")[0],
     }),
   });
 };
@@ -80,22 +89,51 @@ window.__loadWalletBalance = function () {
   }).catch(function () {});
 };
 
-window.__loadRecentTransactions = function (filter) {
-  var url = "/transactions/?limit=20";
-  if (filter && filter !== "all") {
-    url += "&transaction_type=" + (filter === "added" ? "add funds" : "spend funds");
+function _parseApiDate(value) {
+  if (!value) return new Date(NaN);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    var parts = value.split("-");
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
   }
+  return new Date(value);
+}
+
+function _formatTransactionDate(value) {
+  var date = _parseApiDate(value);
+  return isNaN(date.getTime())
+    ? ""
+    : date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function _sortByRecency(list) {
+  return list.slice().sort(function (a, b) {
+    var dateA = _parseApiDate(a.transaction_date).getTime();
+    var dateB = _parseApiDate(b.transaction_date).getTime();
+    if (dateB !== dateA) return dateB - dateA;
+    // Same-day tiebreaker: higher id = created more recently
+    return (b.id || 0) - (a.id || 0);
+  });
+}
+
+window.__loadRecentTransactions = function (filter) {
+  var url = "/transactions/?limit=100";
+  var container = document.querySelector(".transaction-history-slots");
   apiFetch(url).then(function (data) {
     var list = data.results || data;
-    var container = document.querySelector(".transaction-history-slots");
+    if (filter === "added") {
+      list = list.filter(function (t) { return t.transaction_type === "add funds"; });
+    } else if (filter === "spent") {
+      list = list.filter(function (t) { return t.transaction_type === "spend funds"; });
+    }
+    list = _sortByRecency(list).slice(0, 20);
     if (!container) return;
     if (list.length === 0) {
-      container.innerHTML = '<div class="transactionrow"><p colspan="6" style="text-align:center;opacity:0.5">No transactions yet</p></div>';
+      container.innerHTML = '<div class="transactionrow"><p style="text-align:center;opacity:0.5">No transactions yet</p></div>';
       return;
     }
     container.innerHTML = list.map(function (t) {
       var amt = Number(t.amount).toLocaleString("en-PH", { minimumFractionDigits: 2 });
-      var date = new Date(t.transaction_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      var date = _formatTransactionDate(t.transaction_date);
       var note = t.note || "--";
       var uname = t.user_name || "User 1";
       var wname = t.wallet_name || "";
@@ -113,11 +151,15 @@ window.__loadRecentTransactions = function (filter) {
         + '<p>' + date + '</p>'
         + '</div>';
     }).join("");
-  }).catch(function () {});
+  }).catch(function (err) {
+    console.error("Failed to load transactions for filter '" + filter + "':", err);
+    if (container) {
+      container.innerHTML = '<div class="transactionrow"><p style="text-align:center;color:#e74c3c">Failed to load transactions. Check console for details.</p></div>';
+    }
+  });
 };
 
 window._loadDashMetrics = _loadDashMetrics;
 
 _loadDashMetrics();
 document.addEventListener("astro:page-load", _loadDashMetrics);
-window.__loadDashboardMetrics = loadDashboardMetrics;

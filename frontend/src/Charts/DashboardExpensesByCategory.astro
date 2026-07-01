@@ -12,6 +12,10 @@ const month = now.getMonth() + 1;
 
 <script>
   const _chartId = "dashboard-expenses-by-category";
+  const _chartState = window.__chartState__ || (window.__chartState__ = {});
+  if (!_chartState[_chartId]) {
+    _chartState[_chartId] = { initPromise: null, listenersAttached: false };
+  }
 
   async function _loadChart() {
     const canvas = document.getElementById(`${_chartId}-canvas`);
@@ -137,15 +141,24 @@ const month = now.getMonth() + 1;
   }
 
   function _init() {
-    _loadChart().catch(err => {
+    if (_chartState[_chartId].initPromise) {
+      return _chartState[_chartId].initPromise;
+    }
+    _chartState[_chartId].initPromise = _loadChart().catch(err => {
+      _chartState[_chartId].initPromise = null;
       const status = document.getElementById(`${_chartId}-status`);
       if (status) status.textContent = "Error: " + err.message;
       console.error("DashboardExpensesByCategory init error:", err);
+      throw err;
     });
+    return _chartState[_chartId].initPromise;
   }
 
   _init();
-  document.addEventListener("astro:page-load", _init);
+  if (!_chartState[_chartId].listenersAttached) {
+    _chartState[_chartId].listenersAttached = true;
+    document.addEventListener("astro:page-load", _init);
+  }
 </script>
 
 <style>
