@@ -252,6 +252,10 @@ try {
             </div>
         </div>
     </div>
+</Layout>
+
+
+<!-- Modals -->
     <div id="add-wallet-modal" class="modal-overlay" aria-hidden="true">
         <div class="modal modal--orange" role="dialog" aria-modal="true" aria-labelledby="add-wallet-title">
             <div class="modal-header">
@@ -362,11 +366,12 @@ try {
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="fund-attachment">ATTACHMENT</label>
-                            <div class="input-icon-wrapper">
-                                <input id="fund-attachment" name="attachment" type="text" placeholder="Select files" readonly />
+                            <label for="fund-attachment-input">ATTACHMENT</label>
+                            <label class="file-upload-wrapper" for="fund-attachment-input">
+                                <span class="placeholder-text" id="fund-attachment-filename">Select files</span>
                                 <span class="input-icon-right"><Fragment set:html={IconAttachment} /></span>
-                            </div>
+                            </label>
+                            <input type="file" id="fund-attachment-input" name="attachment" accept="image/*" style="display: none;" />
                         </div>
                     </div>
 
@@ -449,11 +454,12 @@ try {
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="move-attachment">ATTACHMENT</label>
-                            <div class="input-icon-wrapper">
-                                <input id="move-attachment" name="attachment" type="text" placeholder="Select files" readonly />
+                            <label for="move-attachment-input">ATTACHMENT</label>
+                            <label class="file-upload-wrapper" for="move-attachment-input">
+                                <span class="placeholder-text" id="move-attachment-filename">Select files</span>
                                 <span class="input-icon-right"><Fragment set:html={IconAttachment} /></span>
-                            </div>
+                            </label>
+                            <input type="file" id="move-attachment-input" name="attachment" accept="image/*" style="display: none;" />
                         </div>
                     </div>
                 </div>
@@ -547,7 +553,6 @@ try {
             </div>
         </div>
     </div>
-</Layout>
 
 <AddExpenseModal />
 
@@ -1050,6 +1055,36 @@ try {
     .input-icon-right :global(svg) {
         width: 18px;
         height: 18px;
+    }
+
+    .file-upload-wrapper {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1.5px solid #e0e4ed;
+        border-radius: 999px;
+        padding: 12px var(--space-md);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f3f5f9;
+        cursor: pointer;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .file-upload-wrapper:hover {
+        border-color: var(--primary-navyblue);
+    }
+
+    .file-upload-wrapper .placeholder-text {
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        color: var(--primary-navyblue);
+        opacity: 0.6;
+    }
+
+    .file-upload-wrapper .input-icon-right {
+        position: static;
+        opacity: 0.45;
     }
 
     .form-group input,
@@ -1640,9 +1675,9 @@ try {
 
         // Close modal handlers
         document.querySelectorAll('.modal-overlay').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) closeModal(modal);
-            });
+            // modal.addEventListener('click', (e) => {
+            //     if (e.target === modal) closeModal(modal);
+            // });
             modal.querySelector('.modal-close')?.addEventListener('click', () => closeModal(modal));
             modal.querySelectorAll('.btn-secondary').forEach(btn => {
                 btn.addEventListener('click', () => closeModal(modal));
@@ -1651,15 +1686,28 @@ try {
 
         // Advanced toggle
         document.querySelectorAll('.advanced-toggle').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.onclick = () => {
                 const targetId = btn.id.replace('advanced-toggle', 'advanced-fields');
                 const fields = document.getElementById(targetId);
                 if (!fields) return;
-                
+
                 const isOpen = fields.classList.toggle('open');
                 btn.classList.toggle('open', isOpen);
-            });
+            };
         });
+
+        function wireAttachmentPreview(inputId, labelId) {
+            const input = document.getElementById(inputId);
+            const label = document.getElementById(labelId);
+            if (!input || !label) return;
+
+            input.addEventListener("change", () => {
+                label.textContent = input.files?.[0]?.name || "Select files";
+            });
+        }
+
+        wireAttachmentPreview("fund-attachment-input", "fund-attachment-filename");
+        wireAttachmentPreview("move-attachment-input", "move-attachment-filename");
 
         // ---- SUBMIT HANDLERS ----
 

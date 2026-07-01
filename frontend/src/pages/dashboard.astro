@@ -306,6 +306,8 @@ const partitionColors = [
 
         </div>
     </div>
+</Layout>
+
     <!-- Add Funds Modal -->
     <div id="add-funds-modal" class="modal-overlay" aria-hidden="true">
         <div class="modal modal--navy" role="dialog" aria-modal="true" aria-labelledby="add-funds-title">
@@ -372,11 +374,12 @@ const partitionColors = [
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="fund-attachment">ATTACHMENT</label>
-                            <div class="input-icon-wrapper">
-                                <input id="fund-attachment" name="attachment" type="text" placeholder="Select files" readonly />
+                            <label for="fund-attachment-input">ATTACHMENT</label>
+                            <label class="file-upload-wrapper" for="fund-attachment-input">
+                                <span class="placeholder-text" id="fund-attachment-filename">Select files</span>
                                 <span class="input-icon-right"><Fragment set:html={IconAttachment} /></span>
-                            </div>
+                            </label>
+                            <input type="file" id="fund-attachment-input" name="attachment" accept="image/*" style="display: none;" />
                         </div>
                     </div>
 
@@ -464,11 +467,12 @@ const partitionColors = [
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="move-attachment">ATTACHMENT</label>
-                            <div class="input-icon-wrapper">
-                                <input id="move-attachment" name="attachment" type="text" placeholder="Select files" readonly />
+                            <label for="move-attachment-input">ATTACHMENT</label>
+                            <label class="file-upload-wrapper" for="move-attachment-input">
+                                <span class="placeholder-text" id="move-attachment-filename">Select files</span>
                                 <span class="input-icon-right"><Fragment set:html={IconAttachment} /></span>
-                            </div>
+                            </label>
+                            <input type="file" id="move-attachment-input" name="attachment" accept="image/*" style="display: none;" />
                         </div>
                     </div>
                 </div>
@@ -484,7 +488,6 @@ const partitionColors = [
             </div>
         </div>
     </div>
-</Layout>
 <AddExpenseModal />
 
 <script>
@@ -760,9 +763,9 @@ const partitionColors = [
 
         document.querySelectorAll(".modal-overlay").forEach(modal => {
 
-            modal.addEventListener("click", e => {
-                if (e.target === modal) closeModal(modal);
-            });
+            // modal.addEventListener("click", e => {
+            //     if (e.target === modal) closeModal(modal);
+            // });
 
             modal.querySelector(".modal-close")
                 ?.addEventListener("click", () => closeModal(modal));
@@ -780,7 +783,7 @@ const partitionColors = [
         });
 
         document.querySelectorAll(".advanced-toggle").forEach(btn => {
-            btn.addEventListener("click", () => {
+            btn.onclick = () => {
                 const targetId = btn.id.replace("advanced-toggle", "advanced-fields");
                 const fields = document.getElementById(targetId);
 
@@ -788,8 +791,21 @@ const partitionColors = [
 
                 const isOpen = fields.classList.toggle("open");
                 btn.classList.toggle("open", isOpen);
-            });
+            };
         });
+
+        function wireAttachmentPreview(inputId, labelId) {
+            const input = document.getElementById(inputId);
+            const label = document.getElementById(labelId);
+            if (!input || !label) return;
+
+            input.addEventListener("change", () => {
+                label.textContent = input.files?.[0]?.name || "Select files";
+            });
+        }
+
+        wireAttachmentPreview("fund-attachment-input", "fund-attachment-filename");
+        wireAttachmentPreview("move-attachment-input", "move-attachment-filename");
 
         document.querySelector("#add-funds-modal .btn-primary--navy")
             ?.addEventListener("click", () => submitAddFunds(false));
@@ -1029,6 +1045,7 @@ const partitionColors = [
         background-color: var(--white);
         box-shadow: var(--default-shadow);
         min-width: 0;
+        container-type: inline-size;
         transition: transform 180ms ease, box-shadow 180ms ease;
     }
 
@@ -1041,6 +1058,7 @@ const partitionColors = [
         display: flex;
         flex-direction: column;
         justify-content: space-between;
+        flex: 1;
         min-width: 0;
     }
 
@@ -1051,11 +1069,15 @@ const partitionColors = [
     }
 
     .metric-value {
-        font-size: var(--display-headings-text);
+        font-size: clamp(1.1rem, 6cqw, var(--display-headings-text));
         font-family: var(--display-headings-font);
         color: var(--primary-navyblue);
         font-weight: bold;
         margin-top: var(--space-sm);
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .metric-icon-wrapper {
@@ -1390,6 +1412,36 @@ const partitionColors = [
         height: 18px;
     }
 
+    .file-upload-wrapper {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1.5px solid #e0e4ed;
+        border-radius: 999px;
+        padding: 12px var(--space-md);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f3f5f9;
+        cursor: pointer;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .file-upload-wrapper:hover {
+        border-color: var(--primary-navyblue);
+    }
+
+    .file-upload-wrapper .placeholder-text {
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        color: var(--primary-navyblue);
+        opacity: 0.6;
+    }
+
+    .file-upload-wrapper .input-icon-right {
+        position: static;
+        opacity: 0.45;
+    }
+
     /* Spinner buttons (amount field) */
     .input-spinner {
         position: absolute;
@@ -1650,7 +1702,7 @@ const partitionColors = [
         }
 
         .metric-value {
-            font-size: 0.9 rem;
+            font-size: 1.25rem;
             margin-top: 4px;
         }
 
