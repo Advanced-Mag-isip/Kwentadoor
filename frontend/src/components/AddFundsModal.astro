@@ -88,10 +88,10 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
       </details>
 
       <div class="modal-actions">
-        <button type="button" class="btn btn-orange">Save and Spend Another</button>
+        <button type="button" class="btn btn-orange">Save and Add Another</button>
         <div class="action-row">
             <button type="button" id="cancel-modal-btn" class="btn btn-outline w-100" style="flex: 1;">Cancel</button>
-            <button type="submit" class="btn btn-navy" style="flex: 1;">Spend Fund</button>
+            <button type="submit" class="btn btn-navy" style="flex: 1;">Add Fund</button>
         </div>
       </div>
       
@@ -145,12 +145,25 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
     }
   }
 
+  function reloadForModal(modalId) {
+    if (modalId) {
+      sessionStorage.setItem('kwentadoor:reopen-modal', modalId);
+    }
+    window.location.reload();
+  }
+
   document.addEventListener('astro:page-load', () => {
     const modal = document.getElementById('addExpenseModal');
     const closeIcon = document.getElementById('close-modal-icon');
     const cancelBtn = document.getElementById('cancel-modal-btn');
     const submitBtn = modal ? modal.querySelector('.btn-navy') : null;
     const saveAnotherBtn = modal ? modal.querySelector('.btn-orange') : null;
+
+    const reopenModalId = sessionStorage.getItem('kwentadoor:reopen-modal');
+    if (reopenModalId === 'addExpenseModal') {
+      sessionStorage.removeItem('kwentadoor:reopen-modal');
+      if (modal) modal.showModal();
+    }
 
     function closeDialog() {
       if (modal) modal.close();
@@ -214,10 +227,12 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
           if (counterparty) counterparty.value = '';
           category.selectedIndex = 0;
           wallet.selectedIndex = 0;
-        } else {
-          closeDialog();
-          window.location.reload();
+          reloadForModal('addExpenseModal');
+          return;
         }
+
+        closeDialog();
+        window.location.reload();
         if (window.__loadWalletBalance) window.__loadWalletBalance();
         if (window.__loadRecentTransactions) window.__loadRecentTransactions();
       } catch (e) {

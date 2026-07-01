@@ -384,10 +384,10 @@ const partitionColors = [
             </div>
 
             <div class="modal-footer modal-footer--stack">
-                <button type="button" class="btn-save-another">Save and Add Another</button>
+                <button type="button" class="btn-save-another" onclick="window.submitAddFunds?.(true)">Save and Add Another</button>
                 <div class="modal-footer-row">
                     <button type="button" class="btn-secondary">Cancel</button>
-                    <button type="button" class="btn-primary btn-primary--navy">Add Fund</button>
+                    <button type="button" class="btn-primary btn-primary--navy" onclick="window.submitAddFunds?.(false)">Add Fund</button>
                 </div>
             </div>
         </div>
@@ -476,7 +476,7 @@ const partitionColors = [
             </div>
 
             <div class="modal-footer modal-footer--stack">
-                <button type="button" class="btn-save-another btn-save-another--grey">Save and Move Another</button>
+                <button type="button" class="btn-save-another btn-save-another--grey">Save and Add Another</button>
                 <div class="modal-footer-row">
                     <button type="button" class="btn-secondary">Cancel</button>
                     <button type="button" class="btn-primary--move">Move Fund</button>
@@ -489,25 +489,6 @@ const partitionColors = [
 
 <script>
     import "../scripts/dashboard-metrics.js";
-
-    async function reloadDashboard() {
-        await new Promise(resolve => setTimeout(resolve, 200));
-        window.location.reload();
-    }
-
-    document.addEventListener("astro:page-load", async () => {
-        console.log("page load");
-
-        const openBtn = document.getElementById("spend-funds-button");
-        const modalOutside = document.getElementById("addExpenseModal");
-        console.log(openBtn);
-        console.log(modal);
-
-        openBtn?.addEventListener("click", () => {
-            modalOutside?.showModal();
-        });
-
-    });
 </script>
 
 <script define:vars={{ wallets }}>
@@ -515,7 +496,22 @@ const partitionColors = [
 </script>
 
 <script is:inline>
-    async function reloadDashboard() {
+    function openModal(modal) {
+        if (!modal) return;
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeModal(modal) {
+        if (!modal) return;
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    async function reloadDashboard(modalId = null) {
+        if (modalId) {
+            sessionStorage.setItem('kwentadoor:reopen-modal', modalId);
+        }
         await new Promise(resolve => setTimeout(resolve, 200));
         window.location.reload();
     }
@@ -559,15 +555,19 @@ const partitionColors = [
                 btn.removeAttribute('disabled');
             }
 
-            if (keepOpen) {
-                amount.value = '';
-            } else {
-                closeModal(document.getElementById('add-funds-modal'));
-            }
-
             document.dispatchEvent(new CustomEvent('funds-added'));
 
-            await reloadDashboard();
+            if (keepOpen) {
+                amount.value = '';
+                note.value = '';
+                dateInput.value = '';
+                wallet.value = '';
+                if (wallet.options.length > 0) wallet.selectedIndex = 0;
+                await reloadDashboard('add-funds-modal');
+            } else {
+                closeModal(document.getElementById('add-funds-modal'));
+                await reloadDashboard();
+            }
 
         } catch (e) {
             if (btn) {
@@ -580,6 +580,8 @@ const partitionColors = [
             amount.removeAttribute('disabled');
         }
     }
+
+    window.submitAddFunds = submitAddFunds;
 
     async function submitMoveFunds(keepOpen) {
         const source = document.getElementById('move-source');
@@ -649,14 +651,16 @@ const partitionColors = [
 
             if (keepOpen) {
                 amount.value = '';
+                source.value = '';
+                dest.value = '';
+                note.value = '';
+                dateInput.value = '';
+                await reloadDashboard('move-funds-modal');
             } else {
                 closeModal(document.getElementById('move-funds-modal'));
+                document.dispatchEvent(new CustomEvent('funds-moved'));
+                await reloadDashboard();
             }
-
-            document.dispatchEvent(new CustomEvent('funds-moved'));
-
-            // Refresh every component
-            await reloadDashboard();
 
         } catch (e) {
             if (btn) {
@@ -671,13 +675,16 @@ const partitionColors = [
         }
     }
 
-    function closeModal(modal) {
-        if (!modal) return;
-        modal.classList.remove('open');
-        modal.setAttribute('aria-hidden', 'true');
-    }
-
     document.addEventListener("astro:page-load", async () => {
+        const reopenModalId = sessionStorage.getItem('kwentadoor:reopen-modal');
+        if (reopenModalId) {
+            sessionStorage.removeItem('kwentadoor:reopen-modal');
+            if (reopenModalId === 'addExpenseModal') {
+                document.getElementById('addExpenseModal')?.showModal();
+            } else {
+                openModal(document.getElementById(reopenModalId));
+            }
+        }
 
         const toggle = document.getElementById("show-balance");
         const balance = document.getElementById("balance-amount");
@@ -747,9 +754,7 @@ const partitionColors = [
             trigger.addEventListener("click", () => {
                 const modal = document.getElementById(trigger.dataset.modal);
                 if (!modal) return;
-
-                modal.classList.add("open");
-                modal.setAttribute("aria-hidden", "false");
+                openModal(modal);
             });
         });
 
@@ -798,7 +803,6 @@ const partitionColors = [
         document.querySelector("#move-funds-modal .btn-save-another")
             ?.addEventListener("click", () => submitMoveFunds(true));
     });
-
 
     const spendBtn = document.getElementById("spend-funds-button");
     const spendModal = document.getElementById("addExpenseModal");
@@ -850,7 +854,7 @@ const partitionColors = [
         gap: var(--space-md);
         box-shadow: var(--default-shadow);
         min-width: 0;
-        transition: transform .25s ease, box-shadow .25s ease;
+        transition: transform .25s ease, box-shadow .25s ease;  
     }
 
     .balancecard:hover {
@@ -1646,7 +1650,7 @@ const partitionColors = [
         }
 
         .metric-value {
-            font-size: 1.2rem;
+            font-size: 0.9 rem;
             margin-top: 4px;
         }
 
