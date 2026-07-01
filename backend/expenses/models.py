@@ -62,7 +62,7 @@ class Transaction(models.Model):
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE_CHOICES)
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="transactions")
     wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="transactions")
-    category = models.CharField(max_length=100, choices=CATEGORY_CHOICES, null=True, blank=True)
+    category = models.CharField(max_length=100, choices=CATEGORY_CHOICES)
     transaction_date = models.DateField()
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     counterparty = models.CharField(max_length=255, blank=True)

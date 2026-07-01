@@ -1,5 +1,12 @@
 INCOME_CATEGORIES_DATA = [
-    {"id": "add_funds", "label": "Add Funds", "bir_mapping": "Other Income"},
+    {"id": "capital_injection", "label": "Capital Injection", "bir_mapping": "Capital Injection"},
+    {"id": "generic_income", "label": "Generic", "bir_mapping": "Generic"},
+    {
+        "id": "grants_donations",
+        "label": "Grants / Donations Received",
+        "bir_mapping": "Grants / Donations"
+    },
+
 ]
 
 TRANSFER_CATEGORIES_DATA = [
@@ -36,11 +43,6 @@ EXPENSE_CATEGORIES_DATA = [
         "id": "rent",
         "label": "Rent/Co-working Space",
         "bir_mapping": "Rental"
-    },
-    {
-        "id": "grants_donations",
-        "label": "Grants / Donations Received",
-        "bir_mapping": "Grants / Donations"
     },
 ]
 

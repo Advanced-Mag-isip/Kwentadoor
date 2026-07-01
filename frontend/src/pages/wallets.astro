@@ -333,9 +333,7 @@ try {
                         <div class="input-icon-wrapper">
                             <span class="input-icon"><Fragment set:html={IconCashDown} /></span>
                             <select id="fund-category" name="category">
-                                <option value="" disabled selected>Select Category</option>
-                                <option>Generic</option>
-                                <option>Capital Injection</option>
+                                <option value="" disabled selected>Loading categories...</option>
                             </select>
                         </div>
                     </div>
@@ -1526,6 +1524,24 @@ try {
         window.location.reload();
     }
 
+    async function _populateAddFundsCategorySelect() {
+        const sel = document.getElementById('fund-category');
+        if (!sel) return;
+        try {
+            const data = await apiFetch('/categories/?type=income');
+            const list = data.results || data;
+            sel.innerHTML = '<option value="" disabled selected>Select Category</option>';
+            list.forEach((c) => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.label;
+                sel.appendChild(opt);
+            });
+        } catch (e) {
+            sel.innerHTML = '<option value="" disabled selected>No categories available</option>';
+        }
+    }
+
     // --- Wallet selection ---
     document.addEventListener("astro:page-load", () => {
         const walletIcons = {
@@ -1535,6 +1551,8 @@ try {
         };
 
         window.apiFetch = apiFetch;
+
+        _populateAddFundsCategorySelect();
 
         const walletItems = document.querySelectorAll(".wallet-item");
         
@@ -1781,19 +1799,43 @@ try {
         });
 
         // Add Funds
-        document.getElementById('add-funds-submit')?.addEventListener('click', () => submitAddFunds(false));
-        document.getElementById('add-funds-save-another')?.addEventListener('click', () => submitAddFunds(true));
+        const addFundsSubmitBtn = document.getElementById('add-funds-submit');
+        const addFundsSaveAnotherBtn = document.getElementById('add-funds-save-another');
+
+        # Guard para dire mag duplicate
+        if (addFundsSubmitBtn && !addFundsSubmitBtn.dataset.bound) {
+            addFundsSubmitBtn.dataset.bound = 'true';
+            addFundsSubmitBtn.addEventListener('click', () => submitAddFunds(false));
+        }
+        if (addFundsSaveAnotherBtn && !addFundsSaveAnotherBtn.dataset.bound) {
+            addFundsSaveAnotherBtn.dataset.bound = 'true';
+            addFundsSaveAnotherBtn.addEventListener('click', () => submitAddFunds(true));
+        }
+
+        let addFundsInFlight = false;
 
         async function submitAddFunds(keepOpen) {
+            if (addFundsInFlight) return;
+
             const walletSelect = document.getElementById('fund-wallet');
+            const categorySelect = document.getElementById('fund-category');
             const amountInput = document.getElementById('fund-amount');
             const noteInput = document.getElementById('fund-note');
             const dateInput = document.getElementById('fund-date');
 
             const walletId = walletSelect?.value;
+            const categoryId = categorySelect?.value;
             const amount = parseFloat(amountInput?.value);
             if (!walletId) { alert('Please select a wallet.'); return; }
+            if (!categoryId) { alert('Please select a category.'); return; }
             if (isNaN(amount) || amount <= 0) { alert('Amount must be greater than 0.'); return; }
+
+            addFundsInFlight = true;
+            const activeBtn = keepOpen ? addFundsSaveAnotherBtn : addFundsSubmitBtn;
+            const originalText = activeBtn ? activeBtn.textContent : '';
+            if (addFundsSubmitBtn) addFundsSubmitBtn.disabled = true;
+            if (addFundsSaveAnotherBtn) addFundsSaveAnotherBtn.disabled = true;
+            if (activeBtn) activeBtn.textContent = 'Saving...';
 
             try {
                 await apiFetch('/transactions/', {
@@ -1802,6 +1844,7 @@ try {
                         wallet: walletId,
                         amount: amount,
                         transaction_type: 'add funds',
+                        category: categoryId,
                         note: noteInput?.value || '',
                         transaction_date: dateInput?.value || null,
                     })
@@ -1815,6 +1858,11 @@ try {
                 reloadPage();
             } catch (e) {
                 alert('Failed to add funds: ' + e.message);
+            } finally {
+                addFundsInFlight = false;
+                if (addFundsSubmitBtn) addFundsSubmitBtn.disabled = false;
+                if (addFundsSaveAnotherBtn) addFundsSaveAnotherBtn.disabled = false;
+                if (activeBtn) activeBtn.textContent = originalText;
             }
         }
 

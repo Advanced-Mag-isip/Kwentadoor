@@ -14,7 +14,7 @@ from django.utils.dateparse import parse_date
 
 from .models import User, Wallet, Transaction, Attachment, Log, WalletTransfer, Spend
 from .serializers import WalletSerializer, TransactionSerializer, AttachmentSerializer, LogSerializer, WalletTransferSerializer, SpendSerializer
-from .constants import EXPENSE_CATEGORIES_DATA
+from .constants import EXPENSE_CATEGORIES_DATA, INCOME_CATEGORIES_DATA, TRANSFER_CATEGORIES_DATA
 
 from audit.models import AuditLog
 
@@ -26,8 +26,16 @@ class StandardResultsSetPagination(PageNumberPagination):
 class CategoryViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
 
+    CATEGORY_TYPE_MAP = {
+        'expense': EXPENSE_CATEGORIES_DATA,
+        'income': INCOME_CATEGORIES_DATA,
+        'transfer': TRANSFER_CATEGORIES_DATA,
+    }
+
     def list(self, request):
-        return Response(EXPENSE_CATEGORIES_DATA)
+        category_type = request.query_params.get('type', 'expense')
+        data = self.CATEGORY_TYPE_MAP.get(category_type, EXPENSE_CATEGORIES_DATA)
+        return Response(data)
 
 class WalletViewSet(viewsets.ModelViewSet):
     queryset = Wallet.objects.all()

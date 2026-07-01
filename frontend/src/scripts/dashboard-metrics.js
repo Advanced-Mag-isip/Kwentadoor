@@ -37,21 +37,6 @@ function apiFetch(path, options) {
   });
 }
 
-window.__addFunds = function (data) {
-  return apiFetch("/transactions/", {
-    method: "POST",
-    body: JSON.stringify({
-      transaction_type: "add funds",
-      wallet: parseInt(data.wallet),
-      amount: parseFloat(data.amount),
-      note: data.note || "",
-      category: "add_funds",
-      transaction_date: data.transaction_date || new Date().toISOString().split("T")[0],
-      counterparty: data.counterparty || "",
-    }),
-  });
-};
-
 window.__spendFunds = function (data) {
   return apiFetch("/spends/", {
     method: "POST",
