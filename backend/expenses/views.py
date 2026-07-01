@@ -145,7 +145,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
         total_expenses = expenses.aggregate(Sum('amount'))['amount__sum'] or 0.0
         total_income = income.aggregate(Sum('amount'))['amount__sum'] or 0.0
         net_balance = total_income - total_expenses
-        expenses_by_category = expenses.values('category').annotate(total=Sum('amount')).order_by('-total')
+        expenses_by_category = expenses.exclude(category__isnull=True).values('category').annotate(total=Sum('amount')).order_by('-total')
+        
         return Response({
             "total_income": total_income,
             "total_expenses": total_expenses,
@@ -166,7 +167,6 @@ class WalletTransferViewSet(viewsets.ModelViewSet):
                 transaction_type="move funds",
                 user=user,
                 wallet=wt.from_wallet,
-                category="transfers",
                 transaction_date=wt.created_at.date(),
                 amount=wt.amount,
                 counterparty=wt.to_wallet.name,

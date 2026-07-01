@@ -46,6 +46,8 @@ class TransactionSerializer(serializers.ModelSerializer):
         read_only_fields = ['user']
 
     def get_BIR_label(self, obj):
+        if not obj.category:
+            return None
         return BIR_MAPPING.get(obj.category, obj.category)
 
 class LogSerializer(serializers.ModelSerializer):
