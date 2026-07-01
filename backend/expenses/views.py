@@ -1,3 +1,9 @@
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+from django.utils import timezone
+from datetime import datetime
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -214,3 +220,130 @@ class LogViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = LogSerializer
     permission_classes = [permissions.AllowAny]
     pagination_class = StandardResultsSetPagination
+
+class ExportExpensesViewSet(viewsets.ViewSet):
+    """
+    ViewSet for exporting expenses to XLSX
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request):
+        """
+        GET /api/expenses/export/xlsx/
+        Export expenses for a date range to XLSX.
+        Query params: start_date, end_date, category, wallet
+        """
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        category = request.query_params.get('category')
+        wallet_id = request.query_params.get('wallet_id')
+
+        # Filter transactions (spend funds only)
+        transactions = Transaction.objects.filter(
+            transaction_type='spend funds'
+        ).select_related('wallet', 'user')
+
+        if start_date:
+            transactions = transactions.filter(transaction_date__gte=start_date)
+        if end_date:
+            transactions = transactions.filter(transaction_date__lte=end_date)
+        if category:
+            transactions = transactions.filter(category=category)
+        if wallet_id:
+            transactions = transactions.filter(wallet_id=wallet_id)
+
+        transactions = transactions.order_by('-transaction_date')
+
+        # Create workbook
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Expenses"
+
+        # Define styles
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="1a3a5c", end_color="1a3a5c", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+        cell_alignment = Alignment(horizontal="left", vertical="center")
+        money_alignment = Alignment(horizontal="right", vertical="center")
+        
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+        # Headers
+        headers = [
+            "Date", "Description", "Amount (₱)", "Friendly Category", 
+            "BIR Category", "Payment Method", "Wallet", "Counterparty", 
+            "Note", "Created By", "Created At"
+        ]
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = thin_border
+
+        # Add data rows
+        for row_idx, txn in enumerate(transactions, 2):
+            # Get category display
+            category_display = dict(Transaction.CATEGORY_CHOICES).get(txn.category, txn.category)
+            
+            row_data = [
+                txn.transaction_date.strftime("%Y-%m-%d"),
+                txn.note[:100] if txn.note else "",
+                float(txn.amount),
+                category_display,
+                txn.category.replace('_', ' ').title(),
+                txn.transaction_type.replace('_', ' ').title(),
+                txn.wallet.name if txn.wallet else "",
+                txn.counterparty or "",
+                txn.note or "",
+                txn.user.username if txn.user else "",
+                txn.created_at.strftime("%Y-%m-%d %H:%M") if txn.created_at else "",
+            ]
+            
+            for col, value in enumerate(row_data, 1):
+                cell = ws.cell(row=row_idx, column=col, value=value)
+                cell.border = thin_border
+                
+                if isinstance(value, (int, float)):
+                    cell.alignment = money_alignment
+                    cell.number_format = '#,##0.00'
+                else:
+                    cell.alignment = cell_alignment
+
+        # Auto-size columns
+        for col in range(1, len(headers) + 1):
+            column_letter = get_column_letter(col)
+            max_length = 0
+            for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=col, max_col=col):
+                for cell in row:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+            adjusted_length = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_length
+
+        # Add summary row
+        summary_row = ws.max_row + 2
+        ws.cell(row=summary_row, column=1, value="TOTAL").font = Font(bold=True)
+        total_cell = ws.cell(
+            row=summary_row, 
+            column=3, 
+            value=sum(float(t.amount) for t in transactions)
+        )
+        total_cell.font = Font(bold=True)
+        total_cell.number_format = '#,##0.00'
+
+        # Create response
+        filename = f"expenses_{start_date or 'all'}_{end_date or 'all'}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        wb.save(response)
+        
+        return response

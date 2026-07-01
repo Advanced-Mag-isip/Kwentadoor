@@ -116,8 +116,13 @@ def sync_timesheets(period_start, period_end):
             continue
 
         shift_id = row.get('shiftId')
-        # Restore paid status for shifts that were already paid
-        was_paid = shift_id in already_paid_ids if shift_id else row.get('isPaid', False)
+        # Prefer the DTR source-of-truth paid flag. Only fall back to the
+        # previously stored local state when the DTR payload does not provide it.
+        dtr_paid_flag = row.get('isPaid')
+        if dtr_paid_flag is None:
+            was_paid = shift_id in already_paid_ids if shift_id else False
+        else:
+            was_paid = bool(dtr_paid_flag)
 
         sync = TimesheetSync.objects.create(
             worker=worker,
@@ -273,7 +278,7 @@ def recalculate_entry(entry):
 
     return entry
 
-def approve_payroll_run(payroll_run, source_wallet=None, wallet_id=None, user=None):
+def approve_payroll_run(payroll_run, source_wallet=None, wallet_id=None, user=None, shift_ids=None):
     """
     Finalizes payroll, creates transaction entries, and writes back to DTR.
     """
@@ -299,6 +304,12 @@ def approve_payroll_run(payroll_run, source_wallet=None, wallet_id=None, user=No
             for entry in payroll_run.entries.all():
                 if entry.logged_to_expenses:
                     continue
+                
+                print(f"DEBUG: Creating transaction for {entry.worker.full_name}")
+                print(f"DEBUG: gross_pay={entry.gross_pay}")
+                print(f"DEBUG: total_additions={entry.total_additions}")
+                print(f"DEBUG: total_deductions={entry.total_deductions}")
+                print(f"DEBUG: net_pay={entry.net_pay}")
 
                 Transaction.objects.create(
                     transaction_type='spend funds',
@@ -324,15 +335,19 @@ def approve_payroll_run(payroll_run, source_wallet=None, wallet_id=None, user=No
     # Mark all entries as logged
     payroll_run.entries.update(logged_to_expenses=True)
 
-    # Write back to DTR
-    shift_ids = list(
-        TimesheetSync.objects.filter(
-            period_start=payroll_run.period_start,
-            period_end=payroll_run.period_end,
-            is_paid_in_dtr=False,
-        ).exclude(dtr_shift_id__isnull=True)
-        .values_list('dtr_shift_id', flat=True)
-    )
+    # Write back to DTR. Prefer the exact shift IDs from the pay action,
+    # and fall back to the period-based lookup only when none were provided.
+    if shift_ids is None:
+        shift_ids = list(
+            TimesheetSync.objects.filter(
+                period_start=payroll_run.period_start,
+                period_end=payroll_run.period_end,
+                is_paid_in_dtr=False,
+            ).exclude(dtr_shift_id__isnull=True)
+            .values_list('dtr_shift_id', flat=True)
+        )
+    else:
+        shift_ids = [shift_id for shift_id in shift_ids if shift_id is not None]
 
     print(f"DEBUG shift_ids to mark paid: {shift_ids}")
 

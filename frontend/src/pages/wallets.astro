@@ -252,6 +252,10 @@ try {
             </div>
         </div>
     </div>
+</Layout>
+
+
+<!-- Modals -->
     <div id="add-wallet-modal" class="modal-overlay" aria-hidden="true">
         <div class="modal modal--orange" role="dialog" aria-modal="true" aria-labelledby="add-wallet-title">
             <div class="modal-header">
@@ -362,11 +366,12 @@ try {
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="fund-attachment">ATTACHMENT</label>
-                            <div class="input-icon-wrapper">
-                                <input id="fund-attachment" name="attachment" type="text" placeholder="Select files" readonly />
+                            <label for="fund-attachment-input">ATTACHMENT</label>
+                            <label class="file-upload-wrapper" for="fund-attachment-input">
+                                <span class="placeholder-text" id="fund-attachment-filename">Select files</span>
                                 <span class="input-icon-right"><Fragment set:html={IconAttachment} /></span>
-                            </div>
+                            </label>
+                            <input type="file" id="fund-attachment-input" name="attachment" accept="image/*" style="display: none;" />
                         </div>
                     </div>
 
@@ -377,7 +382,7 @@ try {
                 <button type="button" class="btn-save-another" id="add-funds-save-another">Save and Add Another</button>
                 <div class="modal-footer-row">
                     <button type="button" class="btn-secondary">Cancel</button>
-                    <button type="button" class="btn-primary btn-primary--navy" id="add-funds-submit">Add Fund</button>
+                    <button type="button" class="btn-primary btn-primary--navy" id="add-funds-submit">Add Funds</button>
                 </div>
             </div>
         </div>
@@ -449,11 +454,12 @@ try {
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="move-attachment">ATTACHMENT</label>
-                            <div class="input-icon-wrapper">
-                                <input id="move-attachment" name="attachment" type="text" placeholder="Select files" readonly />
+                            <label for="move-attachment-input">ATTACHMENT</label>
+                            <label class="file-upload-wrapper" for="move-attachment-input">
+                                <span class="placeholder-text" id="move-attachment-filename">Select files</span>
                                 <span class="input-icon-right"><Fragment set:html={IconAttachment} /></span>
-                            </div>
+                            </label>
+                            <input type="file" id="move-attachment-input" name="attachment" accept="image/*" style="display: none;" />
                         </div>
                     </div>
                 </div>
@@ -461,10 +467,10 @@ try {
             </div>
 
             <div class="modal-footer modal-footer--stack">
-                <button type="button" class="btn-save-another btn-save-another--grey" id="move-funds-save-another">Save and Add Another</button>
+                <button type="button" class="btn-save-another btn-save-another--grey" id="move-funds-save-another">Save and Move Another</button>
                 <div class="modal-footer-row">
                     <button type="button" class="btn-secondary">Cancel</button>
-                    <button type="button" class="btn-primary--move" id="move-funds-submit">Move Fund</button>
+                    <button type="button" class="btn-primary--move" id="move-funds-submit">Move Funds</button>
                 </div>
             </div>
         </div>
@@ -547,7 +553,6 @@ try {
             </div>
         </div>
     </div>
-</Layout>
 
 <AddExpenseModal />
 
@@ -555,7 +560,6 @@ try {
   document.addEventListener('astro:page-load', () => {
     const openBtn = document.getElementById('spend-funds-button');
     const modalOutside = document.getElementById('addExpenseModal');
-
     if (openBtn && modalOutside) {
       openBtn.addEventListener('click', () => {
         const currentWallet = window.currentWallet;
@@ -1053,6 +1057,36 @@ try {
         height: 18px;
     }
 
+    .file-upload-wrapper {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1.5px solid #e0e4ed;
+        border-radius: 999px;
+        padding: 12px var(--space-md);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f3f5f9;
+        cursor: pointer;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .file-upload-wrapper:hover {
+        border-color: var(--primary-navyblue);
+    }
+
+    .file-upload-wrapper .placeholder-text {
+        font-family: var(--general-text-font);
+        font-size: var(--paragraph-text);
+        color: var(--primary-navyblue);
+        opacity: 0.6;
+    }
+
+    .file-upload-wrapper .input-icon-right {
+        position: static;
+        opacity: 0.45;
+    }
+
     .form-group input,
     .form-group select,
     .form-group textarea {
@@ -1490,79 +1524,7 @@ try {
         window.apiFetch = apiFetch;
 
         const walletItems = document.querySelectorAll(".wallet-item");
-        const walletName = document.getElementById("wallet-name");
-        const walletDescription = document.getElementById("wallet-description");
-        const walletAmount = document.getElementById("balance-amount");
-        const walletIcon = document.getElementById("wallet-icon");
-
-        window.currentWallet = {
-            id: walletItems[0]?.dataset.id ?? null,
-            name: walletItems[0]?.dataset.name ?? "",
-            description: walletItems[0]?.dataset.description ?? "",
-            amount: walletItems[0]?.dataset.amount ?? 0,
-            type: walletItems[0]?.dataset.type ?? "cash"
-        };
-
-        // Activate first wallet by default (if exists)
-        if (walletItems.length) {
-            const first = walletItems[0];
-            first.classList.add('active');
-            const body = first.querySelector('.card-body');
-            if (body) body.style.backgroundImage = "var(--orange-gradient)";
-            const shell = first.querySelector('.card-shell');
-            if (shell) shell.style.backgroundColor = "var(--primary-orange-dark)";
-
-            // Update icon and data
-            walletIcon.innerHTML = walletIcons[first.dataset.type];
-            window.currentWallet = {
-                id: first.dataset.id,
-                name: first.dataset.name,
-                description: first.dataset.description,
-                amount: first.dataset.amount,
-                type: first.dataset.type
-            };
-        }
-
-        walletItems.forEach(item => {
-            item.addEventListener("click", () => {
-                // Reset all
-                walletItems.forEach(w => {
-                    w.classList.remove("active");
-                    const body = w.querySelector(".card-body");
-                    if (body) body.style.backgroundImage = "var(--navyblue-gradient)";
-                    const shell = w.querySelector(".card-shell");
-                    if (shell) shell.style.backgroundColor = "var(--primary-navyblue)";
-                });
-
-                // Activate clicked
-                item.classList.add("active");
-                const activeBody = item.querySelector(".card-body");
-                if (activeBody) activeBody.style.backgroundImage = "var(--orange-gradient)";
-                const activeShell = item.querySelector(".card-shell");
-                if (activeShell) activeShell.style.backgroundColor = "var(--primary-orange-dark)";
-
-                // Update balance card
-                walletName.textContent = item.dataset.name;
-                walletDescription.textContent = item.dataset.description;
-                const amount = Number(item.dataset.amount);
-                walletAmount.textContent = "₱" + amount.toLocaleString("en-PH", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
-                walletAmount.dataset.balance = amount;
-                walletIcon.innerHTML = walletIcons[item.dataset.type];
-
-                // Update current wallet
-                window.currentWallet = {
-                    id: item.dataset.id,
-                    name: item.dataset.name,
-                    description: item.dataset.description,
-                    amount: item.dataset.amount,
-                    type: item.dataset.type
-                };
-            });
-        });
-
+        
         function setTodayDate(input) {
             if (input) {
                 const today = new Date().toISOString().split('T')[0];
@@ -1570,73 +1532,152 @@ try {
             }
         }
 
-        // --- Modal opening with data prefill ---
+        function activateWalletItem(item) {
+            if (!item) return;
+
+            // Reset all
+            walletItems.forEach(w => {
+                w.classList.remove("active");
+                const body = w.querySelector(".card-body");
+                if (body) body.style.backgroundImage = "var(--navyblue-gradient)";
+                const shell = w.querySelector(".card-shell");
+                if (shell) shell.style.backgroundColor = "var(--primary-navyblue)";
+            });
+
+            // Activate clicked
+            item.classList.add("active");
+            const activeBody = item.querySelector(".card-body");
+            if (activeBody) activeBody.style.backgroundImage = "var(--orange-gradient)";
+            const activeShell = item.querySelector(".card-shell");
+            if (activeShell) activeShell.style.backgroundColor = "var(--primary-orange-dark)";
+
+            // Update balance card
+            const walletName = document.getElementById("wallet-name");
+            const walletDescription = document.getElementById("wallet-description");
+            const walletAmount = document.getElementById("balance-amount");
+            const walletIcon = document.getElementById("wallet-icon");
+
+            if(walletName) walletName.textContent = item.dataset.name;
+            if(walletDescription) walletDescription.textContent = item.dataset.description;
+            
+            const amount = Number(item.dataset.amount);
+            if(walletAmount) {
+                walletAmount.textContent = "₱" + amount.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                walletAmount.dataset.balance = amount;
+            }
+            if(walletIcon) {
+                walletIcon.innerHTML = walletIcons[item.dataset.type] || IconCash;
+            }
+
+            // Update current wallet
+            window.currentWallet = {
+                id: item.dataset.id,
+                name: item.dataset.name,
+                description: item.dataset.description,
+                amount: item.dataset.amount,
+                type: item.dataset.type
+            };
+        }
+
+        // Initialize Wallet from session or first item
+        const savedWalletId = sessionStorage.getItem('activeWalletId');
+        let walletToActivate = walletItems.length > 0 ? walletItems[0] : null;
+
+        if (savedWalletId && walletItems.length > 0) {
+            const found = Array.from(walletItems).find(w => w.dataset.id === savedWalletId);
+            if (found) walletToActivate = found;
+        }
+
+        if (walletToActivate) {
+            activateWalletItem(walletToActivate);
+        }
+
+        walletItems.forEach(item => {
+            item.addEventListener("click", () => activateWalletItem(item));
+        });
+
+        function openModalWithPrefill(modal) {
+            // Prefill edit modal
+            if (modal.id === 'edit-wallet-modal') {
+                const nameInput = document.getElementById('edit-wallet-name-input');
+                const typeInput = document.getElementById('edit-wallet-type-input');
+                const descInput = document.getElementById('edit-wallet-description-input');
+                if (nameInput) nameInput.value = window.currentWallet.name || '';
+                if (typeInput) typeInput.value = window.currentWallet.type || 'cash';
+                if (descInput) descInput.value = window.currentWallet.description || '';
+            }
+
+            // Prefill delete modal
+            if (modal.id === 'delete-wallet-modal') {
+                const nameEl = document.getElementById('delete-wallet-name');
+                const amountEl = document.getElementById('delete-wallet-amount');
+                if (nameEl) nameEl.textContent = window.currentWallet.name || 'Wallet';
+                if (amountEl) {
+                    const amt = Number(window.currentWallet.amount) || 0;
+                    amountEl.textContent = "₱" + amt.toLocaleString("en-PH", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                }
+            }
+
+            if (modal.id === 'add-funds-modal') {
+                const walletSelect = document.getElementById('fund-wallet');
+                if (walletSelect && window.currentWallet && window.currentWallet.id) {
+                    const option = Array.from(walletSelect.options).find(opt => opt.value === String(window.currentWallet.id));
+                    if (option) {
+                        walletSelect.value = window.currentWallet.id;
+                    }
+                }
+                const dateInput = document.getElementById('fund-date');
+                setTodayDate(dateInput);
+            }
+
+            if (modal.id === 'move-funds-modal') {
+                const sourceSelect = document.getElementById('move-source');
+                if (sourceSelect && window.currentWallet && window.currentWallet.id) {
+                    const option = Array.from(sourceSelect.options).find(opt => opt.value === String(window.currentWallet.id));
+                    if (option) {
+                        sourceSelect.value = window.currentWallet.id;
+                    }
+                }
+                const destSelect = document.getElementById('move-destination');
+                if (destSelect) destSelect.value = ''; // Reset destination
+                
+                const dateInput = document.getElementById('move-date');
+                setTodayDate(dateInput);
+            }
+
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        // --- Modal opening logic ---
         document.querySelectorAll('[data-modal]').forEach(trigger => {
             trigger.addEventListener('click', () => {
                 const modal = document.getElementById(trigger.dataset.modal);
-                if (!modal) return;
-
-                // Prefill edit modal
-                if (modal.id === 'edit-wallet-modal') {
-                    const nameInput = document.getElementById('edit-wallet-name-input');
-                    const typeInput = document.getElementById('edit-wallet-type-input');
-                    const descInput = document.getElementById('edit-wallet-description-input');
-                    if (nameInput) nameInput.value = window.currentWallet.name || '';
-                    if (typeInput) typeInput.value = window.currentWallet.type || 'cash';
-                    if (descInput) descInput.value = window.currentWallet.description || '';
-                }
-
-                // Prefill delete modal
-                if (modal.id === 'delete-wallet-modal') {
-                    const nameEl = document.getElementById('delete-wallet-name');
-                    const amountEl = document.getElementById('delete-wallet-amount');
-                    if (nameEl) nameEl.textContent = window.currentWallet.name || 'Wallet';
-                    if (amountEl) {
-                        const amt = Number(window.currentWallet.amount) || 0;
-                        amountEl.textContent = "₱" + amt.toLocaleString("en-PH", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        });
-                    }
-                }
-
-                // Prefill Add Funds modal: select current wallet and set date
-                if (modal.id === 'add-funds-modal') {
-                    const walletSelect = document.getElementById('fund-wallet');
-                    if (walletSelect && window.currentWallet.id) {
-                        const option = Array.from(walletSelect.options).find(opt => opt.value === String(window.currentWallet.id));
-                        if (option) {
-                            walletSelect.value = window.currentWallet.id;
-                        }
-                    }
-                    const dateInput = document.getElementById('fund-date');
-                    setTodayDate(dateInput);
-                }
-
-                // Prefill Move Funds modal: source = current wallet, date = today
-                if (modal.id === 'move-funds-modal') {
-                    const sourceSelect = document.getElementById('move-source');
-                    if (sourceSelect && window.currentWallet.id) {
-                        const option = Array.from(sourceSelect.options).find(opt => opt.value === String(window.currentWallet.id));
-                        if (option) {
-                            sourceSelect.value = window.currentWallet.id;
-                        }
-                    }
-                    // Leave destination empty (user selects)
-                    const dateInput = document.getElementById('move-date');
-                    setTodayDate(dateInput);
-                }
-
-                modal.classList.add('open');
-                modal.setAttribute('aria-hidden', 'false');
+                if (modal) openModalWithPrefill(modal);
             });
         });
 
+        const reopenModalId = sessionStorage.getItem('reopenModal');
+        if (reopenModalId) {
+            sessionStorage.removeItem('reopenModal');
+            sessionStorage.removeItem('activeWalletId');
+            const modal = document.getElementById(reopenModalId);
+            if (modal) {
+                openModalWithPrefill(modal);
+            }
+        }
+
         // Close modal handlers
         document.querySelectorAll('.modal-overlay').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) closeModal(modal);
-            });
+            // modal.addEventListener('click', (e) => {
+            //     if (e.target === modal) closeModal(modal);
+            // });
             modal.querySelector('.modal-close')?.addEventListener('click', () => closeModal(modal));
             modal.querySelectorAll('.btn-secondary').forEach(btn => {
                 btn.addEventListener('click', () => closeModal(modal));
@@ -1645,15 +1686,28 @@ try {
 
         // Advanced toggle
         document.querySelectorAll('.advanced-toggle').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.onclick = () => {
                 const targetId = btn.id.replace('advanced-toggle', 'advanced-fields');
                 const fields = document.getElementById(targetId);
                 if (!fields) return;
-                
+
                 const isOpen = fields.classList.toggle('open');
                 btn.classList.toggle('open', isOpen);
-            });
+            };
         });
+
+        function wireAttachmentPreview(inputId, labelId) {
+            const input = document.getElementById(inputId);
+            const label = document.getElementById(labelId);
+            if (!input || !label) return;
+
+            input.addEventListener("change", () => {
+                label.textContent = input.files?.[0]?.name || "Select files";
+            });
+        }
+
+        wireAttachmentPreview("fund-attachment-input", "fund-attachment-filename");
+        wireAttachmentPreview("move-attachment-input", "move-attachment-filename");
 
         // ---- SUBMIT HANDLERS ----
 
@@ -1740,9 +1794,8 @@ try {
                     })
                 });
                 if (keepOpen) {
-                    amountInput.value = '';
-                    noteInput.value = '';
-                    dateInput.value = '';
+                    sessionStorage.setItem('reopenModal', 'add-funds-modal');
+                    sessionStorage.setItem('activeWalletId', window.currentWallet ? window.currentWallet.id : walletId);
                 } else {
                     closeModal(document.getElementById('add-funds-modal'));
                 }
@@ -1803,12 +1856,10 @@ try {
                         transaction_date: dateInput?.value || null,
                     })
                 });
+                
                 if (keepOpen) {
-                    amountInput.value = '';
-                    noteInput.value = '';
-                    dateInput.value = '';
-                    source.value = '';
-                    dest.value = '';
+                    sessionStorage.setItem('reopenModal', 'move-funds-modal');
+                    sessionStorage.setItem('activeWalletId', window.currentWallet ? window.currentWallet.id : sourceId);
                 } else {
                     closeModal(document.getElementById('move-funds-modal'));
                 }
@@ -1822,11 +1873,9 @@ try {
 
 <script is:inline>
 window.__currentTransactionFilter = "all";
-
 window.__loadRecentTransactions = function (filter) {
     filter = filter || window.__currentTransactionFilter || "all";
     window.__currentTransactionFilter = filter;
-
     var baseUrl = "http://127.0.0.1:8000/api/expenses/transactions/?limit=20";
     
     var typeValue = null;
@@ -1845,6 +1894,7 @@ window.__loadRecentTransactions = function (filter) {
         return res.json();
     }).then(function (data) {
         var list = data.results || data;
+    
         var container = document.getElementById("recent-transactions");
 
         if (!container) return;
@@ -1887,6 +1937,7 @@ window.__loadRecentTransactions = function (filter) {
             });
 
             var d = parseApiDateClient(t.transaction_date);
+           
             var dateStr = d ? d.toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
@@ -1894,6 +1945,7 @@ window.__loadRecentTransactions = function (filter) {
             }) : "";
 
             var note = t.note || "--";
+           
             var uname = t.user_name || "User 1";
             var wname = t.wallet_name || "";
             var cat = t.BIR_label || t.category || "";
@@ -1921,7 +1973,6 @@ window.__loadRecentTransactions = function (filter) {
 function initWalletPage() {
     var chips = document.querySelectorAll(".filter-chip");
     var label = document.getElementById("transaction-filter-label");
-
     chips.forEach(function (chip) {
         chip.onclick = function () {
             chips.forEach(function (c) {
@@ -1993,5 +2044,4 @@ window.__spendFunds = async function (data) {
         alert("Failed to spend funds: " + error.message);
     }
 };
-
 </script>

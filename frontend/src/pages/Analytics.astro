@@ -16,9 +16,10 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
 
 <Layout>
     <div id="analytics-container">
-        <AnalyticsFilters />
-        <div id="metrics-container">
-            <div class="metrics-row">
+        <div class="analytics-inner">
+            <AnalyticsFilters />
+            <div id="metrics-container">
+            <div class="metrics-row cols-2">
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">TOTAL INCOMING FUNDS</span>
@@ -40,7 +41,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
                 </div>
             </div>
 
-            <div class="metrics-row">
+            <div class="metrics-row cols-3">
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">AVERAGE INCOMING FUNDS</span>
@@ -72,7 +73,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
                 </div>
             </div>
 
-            <div class="metrics-row">
+            <div class="metrics-row cols-3">
                 <div class="metric-card">
                     <div class="metric-info">
                         <span class="metric-label">TOTAL MISSING RECEIPTS</span>
@@ -104,7 +105,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
                 </div>
             </div>
 
-            <div class="metrics-row">
+            <div class="metrics-row cols-2">
                 <div class="graph-card">
                     <span class="graph-label orange">TOTAL INCOMING VS OUTGOING THIS MONTH</span>
                     <div class="graph-content">
@@ -120,7 +121,7 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
                 </div>
             </div>
 
-            <div class="metrics-row">
+            <div class="metrics-row cols-2">
                 <div class="graph-card">
                     <span class="graph-label blue">EXPENSES BY CATEGORY</span>
                     <div class="graph-content">
@@ -135,22 +136,45 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
                     </div>
                 </div>
             </div>
+            </div>
         </div>
     </div>
 </Layout>
 
 <style>
     #analytics-container {
+        display: flex;
+        justify-content: center;
+        box-sizing: border-box;
         width: 100%;
     }
 
-    .metrics-row {
-        display: flex;
-        flex-direction: row;
+    .analytics-inner {
         width: 100%;
-        height: auto;
+        max-width: 1600px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--space-md, 20px);
+    }
+
+    #metrics-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .metrics-row {
+        display: grid;
+        width: 100%;
         gap: 15px;
-        margin-bottom: 20px; 
+    }
+
+    .metrics-row.cols-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .metrics-row.cols-3 {
+        grid-template-columns: repeat(3, 1fr);
     }
 
     
@@ -166,12 +190,15 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
         box-sizing: border-box;
         background-color: var(--white);
         box-shadow: var(--default-shadow);
+        container-type: inline-size;
     }
 
     .metric-info {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
+        flex: 1;
+        min-width: 0;
     }
 
     .metric-label {
@@ -181,11 +208,15 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
     }
 
     .metric-value {
-        font-size: var(--display-headings-text);
+        font-size: clamp(1.1rem, 6cqw, var(--display-headings-text));
         font-family: var(--display-headings-font);
         color: var(--primary-navyblue);
         font-weight: bold;
         margin-top: 10px;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
 
@@ -234,13 +265,22 @@ import percentageDownIcon from "../assets/percentage-note-down.svg?raw";
         font-size: var(--paragraph-text); 
     }
 
-    .blue {
-        background-image: var(--navyblue-gradient);
-    }
+    @media (max-width: 1200px) {
+        .metrics-row.cols-2,
+        .metrics-row.cols-3 {
+            grid-template-columns: 1fr;
+        }
 
-    .orange {
-        background-image: var(--orange-gradient);
-    }
+        .metric-card {
+            height: auto;
+            min-height: 100px;
+        }
+
+        .graph-card {
+            height: auto;
+            min-height: 280px;
+        }
+}
 </style>
 
 <script>

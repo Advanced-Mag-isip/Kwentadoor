@@ -32,4 +32,6 @@ urlpatterns = [
 
     path('workers/status/', views.workers_payment_status, name='workers_status'),
 
+    path('export/xlsx/', views.export_payroll_xlsx, name='export_payroll_xlsx'),
+
 ]

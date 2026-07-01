@@ -75,8 +75,9 @@ const defaultPeriodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padS
                             <p class="table-heading-sub" id="emp-count">Loading...</p>
                         </div>
                         <div class="filtergroup">
-                            <button id="sync-btn" class="filter-chip">Sync DTR</button>
-                            <button id="generate-btn" class="filter-chip">Generate Payroll</button>
+                            <!-- <button id="sync-btn" class="filter-chip">Sync DTR</button>
+                            <button id="generate-btn" class="filter-chip">Generate Payroll</button> -->
+                            <button id="export-btn" class="filter-chip">Export XLSX</button>
                             <button class="filter-chip active" data-filter="all">All</button>
                             <button class="filter-chip" data-filter="paid">Paid</button>
                             <button class="filter-chip" data-filter="unpaid">Unpaid</button>
@@ -1266,7 +1267,7 @@ const defaultPeriodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padS
                         const employee = row.dataset.employee || '';
                         const position = row.dataset.position || '';
                         const rate = parseFloat(row.dataset.rate || '0');
-                        const remaining = parseFloat(row.dataset.remaining || '0');  // ← Use remaining
+                        const remaining = parseFloat(row.dataset.remaining || '0');  
                         const employeeId = row.dataset.employeeId || '';
 
                         const nameEl = document.getElementById('pay-employee-name');
@@ -1283,12 +1284,12 @@ const defaultPeriodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padS
 
                         if (nameEl) nameEl.textContent = employee;
                         if (posEl) posEl.textContent = position;
-                        if (paymentEl) paymentEl.textContent = formatPeso(remaining);  // ← Use remaining
+                        if (paymentEl) paymentEl.textContent = formatPeso(remaining);  
                         if (periodEl) periodEl.textContent = `${periodStart} – ${periodEnd}`;
                         if (shiftsEl) shiftsEl.textContent = rate > 0 ? String(Math.round(remaining / rate)) : '—';
                         if (rateEl) rateEl.textContent = formatPeso(rate);
 
-                        if (grossInput) grossInput.value = formatPeso(remaining);  // ← Use remaining
+                        if (grossInput) grossInput.value = formatPeso(remaining);
                         if (bonusInput) bonusInput.value = "0.00";
                         if (overtimeInput) overtimeInput.value = "0.00";
                         if (deductionInput) deductionInput.value = "0.00";
@@ -1424,12 +1425,29 @@ const defaultPeriodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padS
             return;
         }
 
-        tableBody.innerHTML = '<div class="state-text">Loading payroll...</div>';
+        tableBody.innerHTML = '<div class="state-text">Syncing & loading payroll...</div>';
 
         try {
-            const employees = await apiFetch(`/payroll/employees/?period_start=${periodStart}&period_end=${periodEnd}`);
+            // Auto-sync workers + timesheets silently before every load
+            await Promise.all([
+                fetch(`${BASE}/payroll/workers/sync/`, {
+                    method: "POST",
+                    headers: { Authorization: `Token ${token}` }
+                }),
+                fetch(`${BASE}/payroll/timesheets/sync/`, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Token ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ period_start: periodStart, period_end: periodEnd })
+                })
+            ]);
 
-            // ✅ Calculate total payroll from ALL shifts (gross_pay), not just remaining
+            const employees = await apiFetch(`/payroll/employees/?period_start=${periodStart}&period_end=${periodEnd}`);
+            // ... rest unchanged
+
+            //  Calculate total payroll from ALL shifts (gross_pay), not just remaining
             const totalPayroll = employees.reduce((sum, e) => sum + Number(e.gross_pay || 0), 0);
             const totalEmployees = employees.length;
             const paidEmployees = employees.filter(e => e.payment_status === 'paid').length;
@@ -1460,6 +1478,67 @@ const defaultPeriodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padS
         }
     }
 
+    async function exportPayroll() {
+        const params = new URLSearchParams({
+            period_start: periodStart,
+            period_end: periodEnd,
+            status: 'approved'
+        });
+        
+        // Show loading state
+        const exportBtn = document.getElementById('export-btn');
+        const originalText = exportBtn?.textContent || 'Export';
+        if (exportBtn) {
+            exportBtn.textContent = 'Exporting...';
+            exportBtn.disabled = true;
+        }
+        
+        try {
+            const response = await fetch(`${BASE}/payroll/export/xlsx/?${params}`, {
+                headers: {
+                    'Authorization': `Token ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.error || `Export failed: ${response.status}`);
+            }
+
+            // Download the file
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Get filename from response or use default
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = `payroll_${periodStart}_${periodEnd}.xlsx`;
+            if (contentDisposition) {
+                const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (match) filename = match[1].replace(/['"]/g, '');
+            }
+            
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+        } catch (error) {
+            console.error('Export failed:', error);
+            alert(error.message || 'Failed to export payroll. Please try again.');
+        } finally {
+            // Restore button
+            if (exportBtn) {
+                exportBtn.textContent = originalText;
+                exportBtn.disabled = false;
+            }
+        }
+    }
+
+    document.getElementById('export-btn')?.addEventListener('click', exportPayroll);
+
     function init() {
         const defaults = getDefaultPeriod();
         periodStart = defaults.start;
@@ -1475,8 +1554,8 @@ const defaultPeriodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padS
 
         // Filter chips and DTR/generate buttons — only bound once.
         attachFilters();
-        document.getElementById("sync-btn")?.addEventListener("click", syncDTR);
-        document.getElementById("generate-btn")?.addEventListener("click", generatePayroll);
+        // document.getElementById("sync-btn")?.addEventListener("click", syncDTR);
+        // document.getElementById("generate-btn")?.addEventListener("click", generatePayroll);
 
         // Period dropdown
         const periodDropdown = document.getElementById('period-dropdown');
