@@ -1802,7 +1802,6 @@ try {
         const addFundsSubmitBtn = document.getElementById('add-funds-submit');
         const addFundsSaveAnotherBtn = document.getElementById('add-funds-save-another');
 
-        # Guard para dire mag duplicate
         if (addFundsSubmitBtn && !addFundsSubmitBtn.dataset.bound) {
             addFundsSubmitBtn.dataset.bound = 'true';
             addFundsSubmitBtn.addEventListener('click', () => submitAddFunds(false));
