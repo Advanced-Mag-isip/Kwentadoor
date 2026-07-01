@@ -1,8 +1,13 @@
+from datetime import date
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from .services.dtr_client import DTRClient
+from decimal import Decimal
+from .services.payroll_calculator import _to_decimal
+from audit.models import AuditLog
 
 from .models import Worker, TimesheetSync, PayrollRun, PayrollEntry, PayrollAdjustment
 from .serializers import (
@@ -20,6 +25,17 @@ from .services.payroll_calculator import (
     recalculate_entry,
     approve_payroll_run,
 )
+
+from expenses.models import Transaction, Wallet
+
+def get_client_ip(request):
+    """Get client IP address from request."""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
 
 
 @api_view(['POST'])
@@ -303,6 +319,385 @@ def update_worker_rates_view(request, pk):
         serializer = WorkerSerializer(worker)
         return Response(serializer.data)
     except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def payroll_summary(request):
+    period_start = request.query_params.get('period_start')
+    period_end = request.query_params.get('period_end')
+
+    if not period_start or not period_end:
+        return Response(
+            {'error': 'period_start and period_end are required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    workers = Worker.objects.filter(is_active=True)
+    client = DTRClient()
+
+    total_payroll = Decimal('0')
+    total_employees = 0
+    paid_employees = 0
+    unpaid_employees = 0
+
+    for worker in workers:
+        all_shifts = TimesheetSync.objects.filter(
+            worker=worker,
+            date__gte=period_start,
+            date__lte=period_end
+        )
+
+        if not all_shifts.exists():
+            continue
+
+        total_employees += 1
+
+        # Calculate total payroll from ALL shifts in this period
+        try:
+            salary_data = client.get_salary(
+                dtr_id=worker.dtr_id,
+                start_date=period_start,
+                end_date=period_end,
+            )
+            total_payroll += _to_decimal(salary_data.get('grossPay', 0))
+        except Exception:
+            pass
+
+        # Check if all shifts are paid
+        unpaid_shifts = all_shifts.filter(is_paid_in_dtr=False)
+        if unpaid_shifts.exists():
+            unpaid_employees += 1
+        else:
+            paid_employees += 1
+
+    return Response({
+        'period_start': period_start,
+        'period_end': period_end,
+        'total_payroll': total_payroll,
+        'total_employees': total_employees,
+        'paid_employees': paid_employees,
+        'unpaid_employees': unpaid_employees,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def employee_payroll_list(request):
+    period_start = request.query_params.get('period_start')
+    period_end = request.query_params.get('period_end')
+    month = request.query_params.get('month')
+
+    if not period_start or not period_end:
+        if not month:
+            return Response(
+                {'error': 'period_start and period_end are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        year, month_num = map(int, month.split('-'))
+        period_start = date(year, month_num, 1)
+        if month_num == 12:
+            period_end = date(year + 1, 1, 1)
+        else:
+            period_end = date(year, month_num + 1, 1)
+    else:
+        period_start = date.fromisoformat(period_start)
+        period_end = date.fromisoformat(period_end)
+
+    workers = Worker.objects.filter(is_active=True)
+    client = DTRClient()
+    result = []
+
+    for worker in workers:
+        all_shifts = TimesheetSync.objects.filter(
+            worker=worker,
+            date__gte=period_start,
+            date__lte=period_end
+        )
+
+        if not all_shifts.exists():
+            continue
+
+        total_hours = sum(s.total_hours for s in all_shifts)
+
+        # Calculate total gross for ALL shifts in this period
+        try:
+            salary_data = client.get_salary(
+                dtr_id=worker.dtr_id,
+                start_date=str(period_start),
+                end_date=str(period_end),
+            )
+            gross_pay = salary_data.get('grossPay', 0)
+        except Exception:
+            gross_pay = 0
+
+        # Calculate remaining gross for UNPAID shifts only
+        unpaid_shifts = all_shifts.filter(is_paid_in_dtr=False)
+        remaining_gross = 0
+        
+        if unpaid_shifts.exists():
+            unpaid_dates = unpaid_shifts.order_by('date')
+            unpaid_start = str(unpaid_dates.first().date)
+            unpaid_end = str(unpaid_dates.last().date)
+            
+            try:
+                salary_data = client.get_salary(
+                    dtr_id=worker.dtr_id,
+                    start_date=unpaid_start,
+                    end_date=unpaid_end,
+                )
+                remaining_gross = salary_data.get('grossPay', 0)
+            except Exception:
+                pass
+
+        payment_status = 'paid' if not unpaid_shifts.exists() else 'unpaid'
+
+        result.append({
+            'id': worker.id,
+            'employee_id': worker.employee_id,
+            'full_name': worker.full_name,
+            'position': worker.position or '—',
+            'department': worker.department or '—',
+            'payment_type': worker.payment_type,
+            'hourly_rate': worker.hourly_rate,
+            'monthly_salary': worker.monthly_salary,
+            'total_hours': total_hours,
+            'gross_pay': gross_pay,              # ← Total gross for ALL shifts
+            'remaining_gross': remaining_gross,   # ← Gross for UNPAID shifts only
+            'payment_status': payment_status,
+        })
+
+    return Response(result)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def workers_payment_status(request):
+    """
+    GET /api/payroll/workers/status/
+    Returns worker payment status for a period.
+    """
+    period_start = request.query_params.get('period_start')
+    period_end = request.query_params.get('period_end')
+
+    if not period_start or not period_end:
+        return Response(
+            {'error': 'period_start and period_end are required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    workers = Worker.objects.filter(is_active=True)
+    result = []
+
+    for worker in workers:
+        shifts = TimesheetSync.objects.filter(
+            worker=worker,
+            date__gte=period_start,
+            date__lte=period_end
+        )
+        
+        payroll_entries = PayrollEntry.objects.filter(
+            worker=worker,
+            payroll_run__period_start__gte=period_start,
+            payroll_run__period_end__lte=period_end,
+            payroll_run__status='approved'
+        )
+        
+        total_hours = sum(s.total_hours for s in shifts)
+        gross_pay = sum(e.gross_pay for e in payroll_entries)
+        days_worked = shifts.count()
+
+        result.append({
+            'worker_id': worker.id,
+            'dtr_id': worker.dtr_id,
+            'employee_id': worker.employee_id,
+            'full_name': worker.full_name,
+            'position': worker.position,
+            'department': worker.department,
+            'payment_type': worker.payment_type,
+            'hourly_rate': worker.hourly_rate,
+            'monthly_salary': worker.monthly_salary,
+            'gross_pay': gross_pay,
+            'days_worked': days_worked,
+            'total_hours': total_hours,
+        })
+
+    return Response(result)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def pay_employee(request, employee_id):
+    period_start = request.data.get('period_start')
+    period_end = request.data.get('period_end')
+    wallet_id = request.data.get('wallet_id')
+    bonus = Decimal(str(request.data.get('bonus', 0)))
+    overtime_pay = Decimal(str(request.data.get('overtime', 0)))
+    deduction = Decimal(str(request.data.get('deduction', 0)))
+    note = request.data.get('note', '')
+
+    if not period_start or not period_end:
+        return Response(
+            {'error': 'period_start and period_end are required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not wallet_id:
+        return Response(
+            {'error': 'wallet_id is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        worker = Worker.objects.get(id=employee_id)
+    except Worker.DoesNotExist:
+        return Response(
+            {'error': 'Worker not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    client = DTRClient()
+
+    from datetime import date as date_type
+    period_start_date = date_type.fromisoformat(period_start)
+    period_end_date = date_type.fromisoformat(period_end)
+
+    # Get ALL shifts in the period
+    all_shifts = TimesheetSync.objects.filter(
+        worker=worker,
+        date__gte=period_start_date,
+        date__lte=period_end_date,
+    )
+
+    # Filter only UNPAID shifts
+    unpaid_shifts = all_shifts.filter(is_paid_in_dtr=False)
+
+    if not unpaid_shifts.exists():
+        return Response(
+            {'error': 'This employee has already been paid for this period'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Use ONLY the date range of unpaid shifts
+    unpaid_dates = unpaid_shifts.order_by('date')
+    unpaid_start = str(unpaid_dates.first().date)
+    unpaid_end = str(unpaid_dates.last().date)
+
+    print(f" Unpaid shifts found: {unpaid_shifts.count()}")
+    print(f" Unpaid date range: {unpaid_start} to {unpaid_end}")
+
+    try:
+        #  Calculate salary ONLY for unpaid shift date range
+        salary_data = client.get_salary(
+            dtr_id=worker.dtr_id,
+            start_date=unpaid_start,  # ← UNPAID start, not period_start
+            end_date=unpaid_end,      # ← UNPAID end, not period_end
+        )
+        gross = Decimal(str(salary_data.get('grossPay', 0)))
+
+        print(f" Gross pay for unpaid shifts: {gross}")
+
+        # Check if there's already a draft run for this period
+        existing_run = PayrollRun.objects.filter(
+            period_start=period_start_date,
+            period_end=period_end_date,
+            status='draft',
+            entries__worker=worker
+        ).first()
+
+        if existing_run:
+            payroll_run = existing_run
+            entry = payroll_run.entries.get(worker=worker)
+        else:
+            payroll_run = PayrollRun.objects.create(
+                period_start=period_start_date,
+                period_end=period_end_date,
+                status='draft',
+                generated_by=request.user,
+                notes=note,
+                source_wallet=wallet_id,
+            )
+            entry = PayrollEntry.objects.create(
+                payroll_run=payroll_run,
+                worker=worker,
+                total_working_hours=Decimal(str(salary_data.get('totalRegularHours', 0))),
+                total_overtime_hours=Decimal(str(salary_data.get('totalOvertimeHours', 0))),
+                total_days_worked=salary_data.get('daysWorked', 0),
+                payment_type=worker.payment_type,
+                hourly_rate=worker.hourly_rate,
+                overtime_hourly_rate=worker.overtime_hourly_rate,
+                monthly_salary=worker.monthly_salary,
+                gross_pay=gross,
+                total_additions=Decimal('0'),
+                total_deductions=Decimal('0'),
+                net_pay=gross,
+            )
+
+        # Refresh the payroll entry so the payment amount reflects only the
+        # unpaid shifts for this period, even when reusing an existing draft.
+        entry.total_working_hours = Decimal(str(salary_data.get('totalRegularHours', 0)))
+        entry.total_overtime_hours = Decimal(str(salary_data.get('totalOvertimeHours', 0)))
+        entry.total_days_worked = salary_data.get('daysWorked', 0)
+        entry.payment_type = worker.payment_type
+        entry.hourly_rate = worker.hourly_rate
+        entry.overtime_hourly_rate = worker.overtime_hourly_rate
+        entry.monthly_salary = worker.monthly_salary
+        entry.gross_pay = gross
+        entry.total_additions = Decimal('0')
+        entry.total_deductions = Decimal('0')
+        entry.net_pay = gross
+        entry.save()
+
+        # Add adjustments
+        if bonus > 0:
+            PayrollAdjustment.objects.create(
+                payroll_entry=entry,
+                type='addition',
+                category='bonus',
+                amount=bonus,
+                reason='Bonus'
+            )
+        if overtime_pay > 0:
+            PayrollAdjustment.objects.create(
+                payroll_entry=entry,
+                type='addition',
+                category='overtime_premium',
+                amount=overtime_pay,
+                reason='Overtime'
+            )
+        if deduction > 0:
+            PayrollAdjustment.objects.create(
+                payroll_entry=entry,
+                type='deduction',
+                category='other',
+                amount=deduction,
+                reason='Deduction'
+            )
+
+        recalculate_entry(entry)
+
+        payroll_run.total_gross_pay = entry.gross_pay
+        payroll_run.total_net_pay = entry.net_pay
+        payroll_run.save()
+
+        approve_payroll_run(payroll_run, wallet_id=wallet_id, user=request.user)
+
+        return Response({
+            'status': 'paid',
+            'worker': worker.full_name,
+            'gross_pay': str(entry.gross_pay),
+            'net_pay': str(entry.net_pay),
+            'period_start': period_start,
+            'period_end': period_end,
+            'unpaid_shifts_paid': unpaid_shifts.count(),
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         return Response(
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR

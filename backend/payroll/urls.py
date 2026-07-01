@@ -22,6 +22,14 @@ urlpatterns = [
     # Adjustments
     path('entries/<int:entry_id>/adjustments/', views.add_adjustment),
     path('entries/<int:entry_id>/adjustments/<int:adjustment_id>/', views.delete_adjustment),
+    path('employees/<int:employee_id>/pay/', views.pay_employee, name='pay_employee'),
 
     path('workers/<int:pk>/rates/', views.update_worker_rates_view),
+
+    path('summary/', views.payroll_summary, name='payroll_summary'),
+    
+    path('employees/', views.employee_payroll_list, name='employee_payroll_list'),
+
+    path('workers/status/', views.workers_payment_status, name='workers_status'),
+
 ]

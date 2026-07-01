@@ -59,7 +59,7 @@ class TimesheetSync(models.Model):
     period_end = models.DateField()
     synced_at = models.DateTimeField(auto_now_add=True)
 
-    dtr_shift_id = models.IntegerField(null=True, blank=True)   # ADD
+    dtr_shift_id = models.IntegerField(null=True, blank=True)
 
     date = models.DateField()
     morning_time_in = models.CharField(max_length=10, blank=True, null=True)
@@ -82,8 +82,8 @@ class TimesheetSync(models.Model):
     holiday_name = models.CharField(max_length=100, blank=True, null=True)
     face_verified = models.BooleanField(default=False)
 
-    is_paid_in_dtr = models.BooleanField(default=False)         # ADD
-    paid_at_in_dtr = models.DateTimeField(blank=True, null=True)  # ADD
+    is_paid_in_dtr = models.BooleanField(default=False)
+    paid_at_in_dtr = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.worker.full_name} - {self.date}"
@@ -98,18 +98,16 @@ class PayrollRun(models.Model):
     period_end = models.DateField()
 
     STATUS_CHOICES = [
-        ('draft', 'Draft'),           # synced, not yet approved
-        ('approved', 'Approved'),     # finalized and logged to expenses
+        ('draft', 'Draft'),
+        ('approved', 'Approved'),
     ]
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
 
-    # Totals — auto-calculated, shown in Finalize modal
     total_gross_pay = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     total_deductions = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     total_net_pay = models.DecimalField(max_digits=14, decimal_places=2, default=0)
 
-    # From Finalize modal
-    source_wallet = models.CharField(max_length=100, blank=True, null=True)  # e.g. "BDO Payroll Account"
+    source_wallet = models.CharField(max_length=100, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
 
     generated_at = models.DateTimeField(auto_now_add=True)
@@ -130,6 +128,11 @@ class PayrollEntry(models.Model):
     One worker's pay calculation within a payroll run.
     Shown in the Review Payroll screen.
     """
+    PAYMENT_STATUS_CHOICES = [
+        ('unpaid', 'Unpaid'),
+        ('paid', 'Paid'),
+    ]
+
     payroll_run = models.ForeignKey(
         PayrollRun,
         on_delete=models.CASCADE,
@@ -161,6 +164,13 @@ class PayrollEntry(models.Model):
 
     # Tracks if this entry has been logged to expenses app
     logged_to_expenses = models.BooleanField(default=False)
+
+    # ✅ ADD THIS FIELD
+    payment_status = models.CharField(
+        max_length=10,
+        choices=PAYMENT_STATUS_CHOICES,
+        default='unpaid'
+    )
 
     def __str__(self):
         return f"{self.worker.full_name} - {self.payroll_run}"

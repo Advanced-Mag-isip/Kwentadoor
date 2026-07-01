@@ -5,84 +5,33 @@ import IconWallet from '../assets/wallet-icon.svg?raw';
 import IconAttachment from '../assets/paperclip.svg?raw';
 import IconChevronDown from '../assets/chevron-down.svg?raw';
 
-const wallets = [
-    {
-        id: 1,
-        name: "Petty Cash",
-        description: "Daily operational cash kept on hand for small business expenses and immediate purchases. This wallet is used for quick transactions that do not require bank transfers or digital payments. Regular monitoring helps ensure accurate cash reconciliation.",
-        amount: 1250.00,
-        type: "cash",
-        created_at: "2026-06-01T08:00:00Z",
-        updated_at: "2026-06-25T14:30:00Z"
-    },
-    {
-        id: 2,
-        name: "Emergency Cash",
-        description: "Reserved cash set aside for unexpected expenses or urgent financial situations. These funds should only be used when absolutely necessary to avoid disrupting regular operations. Maintaining this reserve provides additional financial security.",
-        amount: 5000.00,
-        type: "cash",
-        created_at: "2026-06-01T08:00:00Z",
-        updated_at: "2026-06-20T09:15:00Z"
-    },
-    {
-        id: 3,
-        name: "GCash",
-        description: "Primary digital wallet used for mobile payments, online purchases, and fund transfers. It offers a convenient way to send and receive money instantly. Transactions are synchronized regularly to keep balances up to date.",
-        amount: 2845.50,
-        type: "e-wallet",
-        created_at: "2026-05-10T12:00:00Z",
-        updated_at: "2026-06-27T17:45:00Z"
-    },
-    {
-        id: 4,
-        name: "Maya Wallet",
-        description: "Secondary e-wallet dedicated to online shopping, subscriptions, and digital services. Keeping it separate from the primary wallet makes budgeting and expense tracking easier. It also serves as a backup payment option when needed.",
-        amount: 9120.00,
-        type: "e-wallet",
-        created_at: "2026-05-15T12:00:00Z",
-        updated_at: "2026-06-26T11:20:00Z"
-    },
-    {
-        id: 5,
-        name: "UnionBank Savings",
-        description: "Main savings account used for storing long-term funds and personal savings. Interest earned helps grow the balance over time while keeping funds readily accessible. Large deposits and planned withdrawals are typically managed through this account.",
-        amount: 38750.81,
-        type: "bank",
-        created_at: "2026-04-01T09:00:00Z",
-        updated_at: "2026-06-28T10:30:00Z"
-    },
-    {
-        id: 6,
-        name: "BDO Checkings",
-        description: "Primary checking account used for recurring bills, supplier payments, and everyday banking transactions. It supports higher transaction volumes and provides easy access through checks and online banking. Regular activity ensures smooth financial operations.",
-        amount: 112450.25,
-        type: "bank",
-        created_at: "2026-03-01T09:00:00Z",
-        updated_at: "2026-06-29T08:15:00Z"
-    }
-];
-
+// No server-side data fetching — token only exists in the browser.
+// All fetching happens in the <script> block below.
+const now = new Date();
+const defaultPeriodStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+const defaultPeriodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 ---
 
 <Layout>
     <div class="payrolls-page">
         <div class="payrolls-inner">
 
+            <!-- HEADING SECTION -->
             <div class="heading-section blue">
                 <div class="heading-top-row">
                     <h2 class="heading-title">
-                        Showing Results For 
+                        Showing Results For
                         <span id="heading-period-label"></span>
                     </h2>
                     <div class="date-filters">
                         <div class="period-dropdown" id="period-dropdown">
                             <button type="button" class="period-trigger" id="period-trigger">
-                                <span id="period-trigger-label">Select Time</span>
+                                <span id="period-trigger-label">This Month</span>
                                 <span class="period-chevron"><Fragment set:html={IconChevronDown} /></span>
                             </button>
                             <div class="period-menu" id="period-menu">
-                                <button type="button" class="period-option active" data-period="week">Week</button>
-                                <button type="button" class="period-option" data-period="month">Month</button>
+                                <button type="button" class="period-option active" data-period="month">Month</button>
+                                <button type="button" class="period-option" data-period="week">Week</button>
                                 <button type="button" class="period-option" data-period="quarter">Quarter</button>
                                 <button type="button" class="period-option" data-period="year">Year</button>
                                 <button type="button" class="period-option" data-period="custom">Custom</button>
@@ -90,9 +39,9 @@ const wallets = [
                         </div>
 
                         <div class="custom-date-fields" id="custom-date-fields">
-                            <input type="date" class="date-input" id="period-from" value="2026-05-27" />
+                            <input type="date" class="date-input" id="period-from" value={defaultPeriodStart} />
                             <span class="date-separator">to</span>
-                            <input type="date" class="date-input" id="period-to" value="2026-05-30" />
+                            <input type="date" class="date-input" id="period-to" value={defaultPeriodEnd} />
                         </div>
                     </div>
                 </div>
@@ -100,98 +49,60 @@ const wallets = [
                 <div class="overviews">
                     <div class="overview-item">
                         <p class="overview-label">TOTAL PAYROLL</p>
-                        <p class="overview-value">P1236821</p>
+                        <p class="overview-value" id="stat-total">—</p>
                     </div>
                     <div class="overview-item">
                         <p class="overview-label">TOTAL EMPLOYEES</p>
-                        <p class="overview-value">21</p>
+                        <p class="overview-value" id="stat-emp">—</p>
                     </div>
                     <div class="overview-item">
                         <p class="overview-label">PAID EMPLOYEES</p>
-                        <p class="overview-value">8</p>
+                        <p class="overview-value" id="stat-paid">—</p>
                     </div>
                     <div class="overview-item">
                         <p class="overview-label">UNPAID EMPLOYEES</p>
-                        <p class="overview-value">13</p>
+                        <p class="overview-value" id="stat-unpaid">—</p>
                     </div>
                 </div>
             </div>
 
+            <!-- EMPLOYEE PAYROLL TABLE -->
             <div class="transaction-history">
                 <div class="transaction-headings orange">
                     <div class="transaction-top-row">
                         <div>
                             <p class="table-heading-title">EMPLOYEE PAYROLL</p>
-                            <p class="table-heading-sub">Showing results for</p>
+                            <p class="table-heading-sub" id="emp-count">Loading...</p>
                         </div>
                         <div class="filtergroup">
+                            <button id="sync-btn" class="filter-chip">Sync DTR</button>
+                            <button id="generate-btn" class="filter-chip">Generate Payroll</button>
                             <button class="filter-chip active" data-filter="all">All</button>
-                            <button class="filter-chip" data-filter="Paid">Paid</button>
-                            <button class="filter-chip" data-filter="Unpaid">Unpaid</button>
+                            <button class="filter-chip" data-filter="paid">Paid</button>
+                            <button class="filter-chip" data-filter="unpaid">Unpaid</button>
                         </div>
                     </div>
                     <div class="payroll-labels">
                         <p>EMPLOYEE</p>
                         <p>POSITION</p>
                         <p>SALARY RATE</p>
-                        <p>REMAINING</p>
+                        <p>GROSS PAY</p>
+                        <p>AMOUNT DUE</p>
                         <p>STATUS</p>
                         <p>ACTION</p>
                     </div>
                 </div>
+
                 <div class="transaction-history-scrollable">
-                    <div class="transaction-history-slots">
-                        <div
-                            class="transactionrow"
-                            data-status="Paid"
-                            data-employee="Admin User"
-                            data-position="Admin Developer"
-                            data-rate="1999.99"
-                            data-remaining="0"
-                        >
-                            <p>Admin User</p>
-                            <p>Admin Developer</p>
-                            <p>₱1,999.99/hr</p>
-                            <p>₱00.00</p>
-                            <p class="status-badge paid">Paid</p>
-                            <button class="pay-btn" data-modal="pay-employee-modal">Pay</button>
-                        </div>
-                        <div
-                            class="transactionrow"
-                            data-status="Unpaid"
-                            data-employee="Juan Dela Cruz"
-                            data-position="Cashier"
-                            data-rate="80.00"
-                            data-remaining="3200.00"
-                        >
-                            <p>Juan Dela Cruz</p>
-                            <p>Cashier</p>
-                            <p>₱80.00/hr</p>
-                            <p>₱3,200.00</p>
-                            <p class="status-badge unpaid">Unpaid</p>
-                            <button class="pay-btn" data-modal="pay-employee-modal">Pay</button>
-                        </div>
-                        <div
-                            class="transactionrow"
-                            data-status="Paid"
-                            data-employee="Maria Santos"
-                            data-position="Supervisor"
-                            data-rate="120.00"
-                            data-remaining="0"
-                        >
-                            <p>Maria Santos</p>
-                            <p>Supervisor</p>
-                            <p>₱120.00/hr</p>
-                            <p>₱00.00</p>
-                            <p class="status-badge paid">Paid</p>
-                            <button class="pay-btn" data-modal="pay-employee-modal">Pay</button>
-                        </div>
+                    <div id="table-body">
+                        <div class="state-text">Loading payroll data...</div>
                     </div>
                 </div>
             </div>
 
         </div>
     </div>
+
     <!-- Pay Employee Modal -->
     <div id="pay-employee-modal" class="modal-overlay" aria-hidden="true">
         <div class="modal modal--orange" role="dialog" aria-modal="true" aria-labelledby="pay-employee-title">
@@ -204,7 +115,6 @@ const wallets = [
             </div>
 
             <div class="modal-body">
-
                 <!-- Employee + Position -->
                 <div class="form-row">
                     <div class="form-group">
@@ -246,13 +156,12 @@ const wallets = [
                         <span class="input-icon"><Fragment set:html={IconWallet} /></span>
                         <select id="pay-source-wallet" name="source_wallet">
                             <option value="" disabled selected>Select Wallet</option>
-                            {
-                                wallets.map((wallet) => (
-                                    <option value={wallet.id}>
-                                        {wallet.name}
-                                    </option>
-                                ))
-                            }
+                            <option value="1">Petty Cash</option>
+                            <option value="2">Emergency Cash</option>
+                            <option value="3">GCash</option>
+                            <option value="4">Maya Wallet</option>
+                            <option value="5">UnionBank Savings</option>
+                            <option value="6">BDO Checkings</option>
                         </select>
                     </div>
                 </div>
@@ -265,9 +174,8 @@ const wallets = [
                     <div class="advanced-divider"></div>
                 </div>
 
-                <!-- Advanced Fields (open by default, matches the screenshot) -->
+                <!-- Advanced Fields -->
                 <div class="advanced-fields open" id="advanced-fields-pay">
-
                     <!-- Breakdown -->
                     <div class="breakdown-box">
                         <p class="breakdown-title">BREAKDOWN</p>
@@ -322,21 +230,20 @@ const wallets = [
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
 
             <div class="modal-footer modal-footer--stack">
                 <div class="modal-footer-row">
                     <button type="button" class="btn-secondary">Cancel</button>
-                    <button type="button" class="btn-primary--navy">Pay Employee</button>
+                    <button type="button" class="btn-primary--navy" id="pay-employee-confirm">Pay Employee</button>
                 </div>
             </div>
         </div>
     </div>
 </Layout>
 
-<style>
+<style is:global>
     .payrolls-page {
         display: flex;
         justify-content: center;
@@ -357,6 +264,10 @@ const wallets = [
         display: flex;
         flex-direction: column;
         gap: var(--space-md);
+    }
+
+    .heading-section.blue {
+        background: var(--navyblue-gradient);
     }
 
     .heading-top-row {
@@ -504,7 +415,7 @@ const wallets = [
     .heading-divider {
         height: 1px;
         width: 100%;
-        background-color: #ffffff;
+        background-color: rgba(255, 255, 255, 0.3);
     }
 
     .overviews {
@@ -550,6 +461,10 @@ const wallets = [
         display: flex;
         flex-direction: column;
         gap: var(--space-md);
+    }
+
+    .transaction-headings.orange {
+        background: var(--orange-gradient);
     }
 
     .transaction-top-row {
@@ -603,10 +518,12 @@ const wallets = [
 
     .payroll-labels {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr 1fr 120px;
+        grid-template-columns: 1.5fr 1fr 1.2fr 1fr 1fr 0.8fr 100px;
+        /* EMPLOYEE | POSITION | SALARY RATE | GROSS PAY | REMAINING | STATUS | ACTION */
         padding: 0 var(--space-lg);
         font-family: var(--general-text-font);
         font-size: var(--paragraph-text);
+        gap: var(--space-sm);
     }
 
     .transaction-history-scrollable {
@@ -619,17 +536,26 @@ const wallets = [
 
     .transactionrow {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr 1fr 120px;
+        grid-template-columns: 1.5fr 1fr 1.2fr 1fr 1fr 0.8fr 100px;
         align-items: center;
         padding: var(--space-md) var(--space-lg);
         border-bottom: 1px solid var(--light-grey);
         font-family: var(--general-text-font);
         font-size: var(--paragraph-text);
         transition: background-color 150ms ease;
+        gap: var(--space-sm);
+    }
+
+    .transactionrow:hover {
+        background: #f9fafb;
+    }
+
+    .transactionrow.hidden {
+        display: none;
     }
 
     .status-badge {
-        display: flex;
+        display: inline-block;
         padding: 3px 10px;
         border-radius: var(--radius-pill);
         font-size: 0.8rem;
@@ -637,15 +563,24 @@ const wallets = [
     }
 
     .status-badge.paid {
-        color: #00a10d;
+        background: rgba(46, 196, 160, 0.15);
+        color: #1a9e7a;
     }
 
     .status-badge.unpaid {
-        color: #721e34;
+        background: rgba(232, 109, 138, 0.15);
+        color: #c0365a;
     }
 
-    .transactionrow.hidden {
-        display: none;
+    .state-text {
+        padding: 2rem;
+        text-align: center;
+        color: #6b7280;
+        font-family: var(--general-text-font);
+    }
+
+    .state-text.error-text {
+        color: #dc2626;
     }
 
     .pay-btn {
@@ -655,20 +590,15 @@ const wallets = [
         background: var(--orange-gradient);
         color: white;
         font-family: var(--general-text-font);
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         font-weight: 600;
         cursor: pointer;
-        transition: transform 150ms ease, opacity 150ms ease;
+        transition: opacity 150ms ease, transform 150ms ease;
     }
 
     .pay-btn:hover {
         opacity: 0.9;
         transform: translateY(-1px);
-    }
-
-    .pay-btn:active {
-        transform: translateY(0);
-    
     }
 
     /* Modals */
@@ -887,9 +817,9 @@ const wallets = [
         appearance: none;
         -webkit-appearance: none;
     }
-    
-    .input-icon-wrapper .input-icon ~ select,
-    .input-icon-wrapper .input-icon ~ input {
+
+    .input-icon-wrapper .input-icon~select,
+    .input-icon-wrapper .input-icon~input {
         padding-left: 42px;
     }
 
@@ -977,7 +907,6 @@ const wallets = [
         gap: var(--space-md);
     }
 
-    /* Breakdown box */
     .breakdown-box {
         border: 1.5px solid #e0e4ed;
         border-radius: var(--radius-md);
@@ -1092,7 +1021,6 @@ const wallets = [
         transform: translateY(-1px);
     }
 
-
     @media (max-width: 1500px) {
         .overviews {
             grid-template-columns: 1fr 1fr;
@@ -1118,7 +1046,6 @@ const wallets = [
             gap: var(--space-md);
         }
 
-        /* --- Heading section --- */
         .heading-section {
             padding: var(--space-md);
             gap: var(--space-sm);
@@ -1139,7 +1066,6 @@ const wallets = [
             font-size: 0.75rem;
         }
 
-        /* --- Overview stats --- */
         .overviews {
             grid-template-columns: 1fr 1fr;
         }
@@ -1157,7 +1083,6 @@ const wallets = [
             font-size: 1.6rem;
         }
 
-        /* --- Transaction table --- */
         .transaction-headings {
             padding: var(--space-sm) var(--space-md);
             gap: var(--space-sm);
@@ -1189,118 +1114,160 @@ const wallets = [
         .transactionrow {
             font-size: 0.75rem;
         }
+
+        .payroll-labels p:nth-child(n+4),
+        .transactionrow p:nth-child(n+4) {
+            display: none;
+        }
     }
 </style>
 
 <script>
-    function closeModal(modal: HTMLElement) {
-        modal.classList.remove('open');
-        modal.setAttribute('aria-hidden', 'true');
+    const BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000/api';
+    const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+
+    function formatLocalDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
-    document.addEventListener('keydown', (e) => {
-        if (e.key !== 'Escape') return;
-        document.querySelectorAll<HTMLElement>('.modal-overlay.open').forEach(closeModal);
-    });
+    // mutable state — single source of truth for the selected period
+    let periodStart = '';
+    let periodEnd = '';
 
-    function formatPeso(amount: number) {
-        return "₱" + amount.toLocaleString("en-PH", {
+    function getDefaultPeriod() {
+        const now = new Date();
+        const start = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        const end = formatLocalDate(now);
+        return { start, end };
+    }
+
+    function formatPeso(amount) {
+        return "₱" + Number(amount).toLocaleString("en-PH", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
     }
 
-    document.addEventListener("astro:page-load", () => {
+    function updateOverviewHeading(period, label) {
+        const headingLabel = document.getElementById('heading-period-label');
+        if (!headingLabel) return;
 
-        const headingPeriodLabel = document.getElementById("heading-period-label") as HTMLElement;
-        const periodFrom = document.getElementById("period-from") as HTMLInputElement;
-        const periodTo = document.getElementById("period-to") as HTMLInputElement;
-
-        function updateOverviewHeading(period: string, label: string) {
-            if (!headingPeriodLabel) return;
-
-            if (period === "custom") {
-                if (periodFrom.value && periodTo.value) {
-                    const from = new Date(periodFrom.value).toLocaleDateString("en-PH", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                    });
-
-                    const to = new Date(periodTo.value).toLocaleDateString("en-PH", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                    });
-
-                    headingPeriodLabel.textContent = ` ${from} – ${to}`;
-                } else {
-                    headingPeriodLabel.textContent = "Custom Range";
-                }
+        if (period === 'custom') {
+            const from = document.getElementById('period-from');
+            const to = document.getElementById('period-to');
+            if (from && to && from.value && to.value) {
+                const fromDate = new Date(from.value).toLocaleDateString('en-PH', {
+                    month: 'short', day: 'numeric', year: 'numeric'
+                });
+                const toDate = new Date(to.value).toLocaleDateString('en-PH', {
+                    month: 'short', day: 'numeric', year: 'numeric'
+                });
+                headingLabel.textContent = ` ${fromDate} – ${toDate}`;
             } else {
-                headingPeriodLabel.textContent = ` This ${label}`;
+                headingLabel.textContent = ' Custom Range';
             }
+        } else {
+            headingLabel.textContent = ` This ${label}`;
+        }
+    }
+
+    async function apiFetch(path) {
+        const headers = {};
+        if (token) headers['Authorization'] = `Token ${token}`;
+        const res = await fetch(`${BASE}${path}`, { headers });
+        if (!res.ok) throw new Error(`${path} failed with status ${res.status}`);
+        return res.json();
+    }
+
+    function renderRows(employees) {
+        if (employees.length === 0) {
+            return '<div class="state-text">No employees found for this period.</div>';
         }
 
-        const chips = document.querySelectorAll<HTMLElement>(".filter-chip");
-        const rows = document.querySelectorAll<HTMLElement>(".transactionrow");
-        const subLabel = document.querySelector<HTMLElement>(".table-heading-sub");
+        return employees.map(emp => {
+            const isPaid = emp.payment_status === 'paid';
+            const rate = emp.payment_type === 'hourly'
+                ? Number(emp.hourly_rate || 0)
+                : Number(emp.monthly_salary || 0);
+            const rateText = emp.payment_type === 'hourly'
+                ? `${formatPeso(rate)}/hr`
+                : emp.payment_type === 'monthly'
+                    ? `${formatPeso(rate)}/mo`
+                    : '—';
+            const grossPay = Number(emp.gross_pay || 0);
+            const remaining = Number(emp.remaining_gross || 0);
+            const name = emp.full_name || emp.name || `Employee ${emp.id}`;
+            const position = emp.position || '—';
 
-        chips.forEach((chip) => {
-            chip.addEventListener("click", () => {
-                chips.forEach((c) => c.classList.remove("active"));
-                chip.classList.add("active");
+            return `
+                <div
+                    class="transactionrow"
+                    data-status="${isPaid ? 'paid' : 'unpaid'}"
+                    data-employee-id="${emp.id}"
+                    data-employee="${name}"
+                    data-position="${position}"
+                    data-rate="${rate}"
+                    data-gross="${grossPay}"
+                    data-remaining="${remaining}"
+                >
+                    <p>${name}</p>
+                    <p>${position}</p>
+                    <p>${rateText}</p>
+                    <p>${formatPeso(grossPay)}</p>
+                    <p>${isPaid ? '₱0.00' : formatPeso(remaining)}</p>
+                    <p><span class="status-badge ${isPaid ? 'paid' : 'unpaid'}">${isPaid ? 'Paid' : 'Unpaid'}</span></p>
+                    <button class="pay-btn" data-modal="pay-employee-modal" ${isPaid ? 'disabled' : ''}>
+                        ${isPaid ? 'Paid' : 'Pay'}
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function attachFilters() {
+        const chips = document.querySelectorAll('.filtergroup .filter-chip[data-filter]');
+        const subLabel = document.getElementById('emp-count');
+
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                chips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
 
                 const filter = chip.dataset.filter;
+                const rows = document.querySelectorAll('.transactionrow');
 
-                if (subLabel) {
-                    subLabel.textContent =
-                        filter === "all"
-                            ? "Showing all employees"
-                            : `Showing ${filter} employees`;
-                }
-
-                rows.forEach((row) => {
-                    const status = row.dataset.status;
-                    if (filter === "all" || status === filter) {
-                        row.classList.remove("hidden");
-                    } else {
-                        row.classList.add("hidden");
-                    }
+                rows.forEach(row => {
+                    const match = filter === 'all' || row.dataset.status === filter;
+                    row.classList.toggle('hidden', !match);
                 });
+
+                const visibleCount = [...rows].filter(r => !r.classList.contains('hidden')).length;
+                if (subLabel) {
+                    subLabel.textContent = `Showing ${visibleCount} ${filter === 'all' ? '' : filter + ' '}employees`;
+                }
             });
         });
+    }
 
-        function recalcNetPay() {
-            const gross = parseFloat((document.getElementById('pay-gross') as HTMLInputElement)?.value.replace(/[₱,]/g, '') || '0');
-            const bonus = parseFloat((document.getElementById('pay-bonus') as HTMLInputElement)?.value || '0');
-            const overtime = parseFloat((document.getElementById('pay-overtime') as HTMLInputElement)?.value || '0');
-            const deduction = parseFloat((document.getElementById('pay-deduction') as HTMLInputElement)?.value || '0');
-
-            const net = gross + bonus + overtime - deduction;
-            const netEl = document.getElementById('pay-netpay');
-            if (netEl) netEl.textContent = formatPeso(net);
-        }
-
-        ['pay-bonus', 'pay-overtime', 'pay-deduction'].forEach((id) => {
-            document.getElementById(id)?.addEventListener('input', recalcNetPay);
-        });
-
-        document.querySelectorAll<HTMLElement>('[data-modal]').forEach((trigger) => {
+    // Pay button + modal wiring — re-attached after every table re-render
+    // since the row elements (and their data-* attributes) are recreated.
+    function attachPayButtons() {
+        document.querySelectorAll('[data-modal]').forEach((trigger) => {
             trigger.addEventListener('click', () => {
-                const modal = document.getElementById(trigger.dataset.modal!);
+                const modal = document.getElementById(trigger.dataset.modal);
                 if (!modal) return;
 
                 if (modal.id === 'pay-employee-modal') {
-                    const row = trigger.closest<HTMLElement>('.transactionrow');
+                    const row = trigger.closest('.transactionrow');
                     if (row) {
                         const employee = row.dataset.employee || '';
                         const position = row.dataset.position || '';
                         const rate = parseFloat(row.dataset.rate || '0');
-                        const remaining = parseFloat(row.dataset.remaining || '0');
-
-                        const grossPay = remaining > 0 ? remaining : rate;
-                        const shifts = remaining > 0 ? Math.round(remaining / rate) : 0;
+                        const remaining = parseFloat(row.dataset.remaining || '0');  // ← Use remaining
+                        const employeeId = row.dataset.employeeId || '';
 
                         const nameEl = document.getElementById('pay-employee-name');
                         const posEl = document.getElementById('pay-employee-position');
@@ -1308,22 +1275,24 @@ const wallets = [
                         const periodEl = document.getElementById('pay-employee-period');
                         const shiftsEl = document.getElementById('pay-employee-shifts');
                         const rateEl = document.getElementById('pay-employee-rate');
-                        const grossInput = document.getElementById('pay-gross') as HTMLInputElement;
-                        const bonusInput = document.getElementById('pay-bonus') as HTMLInputElement;
-                        const overtimeInput = document.getElementById('pay-overtime') as HTMLInputElement;
-                        const deductionInput = document.getElementById('pay-deduction') as HTMLInputElement;
+                        const grossInput = document.getElementById('pay-gross');
+                        const bonusInput = document.getElementById('pay-bonus');
+                        const overtimeInput = document.getElementById('pay-overtime');
+                        const deductionInput = document.getElementById('pay-deduction');
+                        const confirmBtn = document.getElementById('pay-employee-confirm');
 
                         if (nameEl) nameEl.textContent = employee;
                         if (posEl) posEl.textContent = position;
-                        if (paymentEl) paymentEl.textContent = formatPeso(grossPay);
-                        if (periodEl) periodEl.textContent = "27/05/2026 - 27/05/2026";
-                        if (shiftsEl) shiftsEl.textContent = String(shifts);
+                        if (paymentEl) paymentEl.textContent = formatPeso(remaining);  // ← Use remaining
+                        if (periodEl) periodEl.textContent = `${periodStart} – ${periodEnd}`;
+                        if (shiftsEl) shiftsEl.textContent = rate > 0 ? String(Math.round(remaining / rate)) : '—';
                         if (rateEl) rateEl.textContent = formatPeso(rate);
 
-                        if (grossInput) grossInput.value = formatPeso(grossPay);
+                        if (grossInput) grossInput.value = formatPeso(remaining);  // ← Use remaining
                         if (bonusInput) bonusInput.value = "0.00";
                         if (overtimeInput) overtimeInput.value = "0.00";
                         if (deductionInput) deductionInput.value = "0.00";
+                        if (confirmBtn) confirmBtn.dataset.employeeId = employeeId;
 
                         recalcNetPay();
                     }
@@ -1333,31 +1302,187 @@ const wallets = [
                 modal.setAttribute('aria-hidden', 'false');
             });
         });
+    }
 
-        document.querySelectorAll<HTMLElement>('.modal-overlay').forEach((modal) => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) closeModal(modal);
-            });
-            modal.querySelector('.modal-close')?.addEventListener('click', () => closeModal(modal));
-            modal.querySelector('.btn-secondary')?.addEventListener('click', () => closeModal(modal));
-        });
+    function recalcNetPay() {
+        const gross = parseFloat(document.getElementById('pay-gross')?.value.replace(/[₱,]/g, '') || '0');
+        const bonus = parseFloat(document.getElementById('pay-bonus')?.value || '0');
+        const overtime = parseFloat(document.getElementById('pay-overtime')?.value || '0');
+        const deduction = parseFloat(document.getElementById('pay-deduction')?.value || '0');
 
-        document.querySelectorAll<HTMLElement>('.advanced-toggle').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const targetId = btn.id.replace('advanced-toggle', 'advanced-fields');
-                const fields = document.getElementById(targetId);
-                if (!fields) return;
-                const isOpen = fields.classList.toggle('open');
-                btn.classList.toggle('open', isOpen);
+        const net = gross + bonus + overtime - deduction;
+        const netEl = document.getElementById('pay-netpay');
+        if (netEl) netEl.textContent = formatPeso(net);
+    }
+
+    function closeModal(modal) {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    async function payEmployee() {
+        const confirmBtn = document.getElementById('pay-employee-confirm');
+        const employeeId = confirmBtn?.dataset.employeeId;
+        const wallet = document.getElementById('pay-source-wallet');
+        const note = document.getElementById('pay-note')?.value || '';
+        const bonus = parseFloat(document.getElementById('pay-bonus')?.value || '0');
+        const overtime = parseFloat(document.getElementById('pay-overtime')?.value || '0');
+        const deduction = parseFloat(document.getElementById('pay-deduction')?.value || '0');
+
+        if (!wallet?.value) {
+            alert('Please select a source wallet.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${BASE}/payroll/employees/${employeeId}/pay/`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Token ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    wallet_id: wallet.value,
+                    bonus,
+                    overtime,
+                    deduction,
+                    note,
+                    period_start: periodStart,
+                    period_end: periodEnd
+                })
             });
-        });
+
+            if (!res.ok) {
+                const error = await res.json().catch(() => ({}));
+                throw new Error(error.error || 'Payment failed.');
+            }
+
+            const modal = document.getElementById('pay-employee-modal');
+            if (modal) closeModal(modal);
+
+            await loadPayroll();
+        } catch (err) {
+            console.error(err);
+            alert(err.message);
+        }
+    }
+
+    async function syncDTR() {
+        try {
+            await fetch(`${BASE}/payroll/workers/sync/`, {
+                method: "POST",
+                headers: { Authorization: `Token ${token}` }
+            });
+
+            await fetch(`${BASE}/payroll/timesheets/sync/`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Token ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ period_start: periodStart, period_end: periodEnd })
+            });
+
+            alert("DTR synced successfully.");
+        } catch (err) {
+            console.error(err);
+            alert("Sync failed.");
+        }
+    }
+
+    async function generatePayroll() {
+        try {
+            const res = await fetch(`${BASE}/payroll/runs/build/`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Token ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ period_start: periodStart, period_end: periodEnd })
+            });
+
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.error);
+            }
+
+            await loadPayroll();
+            alert("Payroll generated.");
+        } catch (err) {
+            console.error(err);
+            alert(err.message);
+        }
+    }
+
+    async function loadPayroll() {
+        const tableBody = document.getElementById("table-body");
+        const empCount = document.getElementById("emp-count");
+
+        if (!token) {
+            tableBody.innerHTML = '<div class="state-text error-text">Not logged in.</div>';
+            empCount.textContent = "Unable to load data";
+            return;
+        }
+
+        tableBody.innerHTML = '<div class="state-text">Loading payroll...</div>';
+
+        try {
+            const employees = await apiFetch(`/payroll/employees/?period_start=${periodStart}&period_end=${periodEnd}`);
+
+            // ✅ Calculate total payroll from ALL shifts (gross_pay), not just remaining
+            const totalPayroll = employees.reduce((sum, e) => sum + Number(e.gross_pay || 0), 0);
+            const totalEmployees = employees.length;
+            const paidEmployees = employees.filter(e => e.payment_status === 'paid').length;
+            const unpaidEmployees = totalEmployees - paidEmployees;
+
+            document.getElementById("stat-total").textContent = formatPeso(totalPayroll);
+            document.getElementById("stat-emp").textContent = totalEmployees;
+            document.getElementById("stat-paid").textContent = paidEmployees;
+            document.getElementById("stat-unpaid").textContent = unpaidEmployees;
+
+            empCount.textContent = `Showing ${employees.length} employees`;
+            tableBody.innerHTML = renderRows(employees);
+
+            attachPayButtons();
+            const activeChip = document.querySelector('.filtergroup .filter-chip.active[data-filter]');
+            if (activeChip && activeChip.dataset.filter !== 'all') {
+                const filter = activeChip.dataset.filter;
+                const rows = document.querySelectorAll('.transactionrow');
+                rows.forEach(row => {
+                    row.classList.toggle('hidden', row.dataset.status !== filter);
+                });
+                const visibleCount = [...rows].filter(r => !r.classList.contains('hidden')).length;
+                empCount.textContent = `Showing ${visibleCount} ${filter} employees`;
+            }
+        } catch (err) {
+            console.error(err);
+            tableBody.innerHTML = `<div class="state-text error-text">${err.message}</div>`;
+        }
+    }
+
+    function init() {
+        const defaults = getDefaultPeriod();
+        periodStart = defaults.start;
+        periodEnd = defaults.end;
+
+        const fromInput = document.getElementById('period-from');
+        const toInput = document.getElementById('period-to');
+        if (fromInput) fromInput.value = periodStart;
+        if (toInput) toInput.value = periodEnd;
+
+        updateOverviewHeading('month', 'Month');
+        loadPayroll();
+
+        // Filter chips and DTR/generate buttons — only bound once.
+        attachFilters();
+        document.getElementById("sync-btn")?.addEventListener("click", syncDTR);
+        document.getElementById("generate-btn")?.addEventListener("click", generatePayroll);
 
         // Period dropdown
         const periodDropdown = document.getElementById('period-dropdown');
         const periodTrigger = document.getElementById('period-trigger');
         const periodTriggerLabel = document.getElementById('period-trigger-label');
-        const periodMenu = document.getElementById('period-menu');
-        const periodOptions = document.querySelectorAll<HTMLElement>('.period-option');
+        const periodOptions = document.querySelectorAll('.period-option');
         const customDateFields = document.getElementById('custom-date-fields');
 
         periodTrigger?.addEventListener('click', (e) => {
@@ -1366,7 +1491,7 @@ const wallets = [
         });
 
         document.addEventListener('click', (e) => {
-            if (periodDropdown && !periodDropdown.contains(e.target as Node)) {
+            if (periodDropdown && !periodDropdown.contains(e.target)) {
                 periodDropdown.classList.remove('open');
             }
         });
@@ -1376,14 +1501,11 @@ const wallets = [
                 periodOptions.forEach((o) => o.classList.remove('active'));
                 option.classList.add('active');
 
-                const period = option.dataset.period || "";
-                const label = option.textContent?.trim() || "";
+                const period = option.dataset.period || '';
+                const label = option.textContent?.trim() || '';
 
                 if (periodTriggerLabel) {
-                    periodTriggerLabel.textContent =
-                        period === "custom"
-                            ? "Custom"
-                            : ` This ${label}`;
+                    periodTriggerLabel.textContent = period === 'custom' ? 'Custom' : ` This ${label}`;
                 }
 
                 updateOverviewHeading(period, label);
@@ -1392,19 +1514,97 @@ const wallets = [
                     customDateFields?.classList.add('visible');
                 } else {
                     customDateFields?.classList.remove('visible');
+
+                    const now = new Date();
+                    let start, end;
+                    switch (period) {
+                        case 'week':
+                            start = new Date(now);
+                            start.setDate(now.getDate() - 7);
+                            end = now;
+                            break;
+                        case 'month':
+                            start = new Date(now.getFullYear(), now.getMonth(), 1);
+                            end = now;
+                            break;
+                        case 'quarter':
+                            const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
+                            start = new Date(now.getFullYear(), quarterMonth, 1);
+                            end = now;
+                            break;
+                        case 'year':
+                            start = new Date(now.getFullYear(), 0, 1);
+                            end = now;
+                            break;
+                        default:
+                            return;
+                    }
+                    periodStart = formatLocalDate(start);
+                    periodEnd = formatLocalDate(end);
+                    if (fromInput) fromInput.value = periodStart;
+                    if (toInput) toInput.value = periodEnd;
+                    loadPayroll();
                 }
 
                 periodDropdown?.classList.remove('open');
             });
         });
 
-        periodFrom?.addEventListener("change", () => {
-            updateOverviewHeading("custom", "Custom");
+        fromInput?.addEventListener('change', () => {
+            if (!fromInput.value) return;
+            if (toInput?.value && fromInput.value > toInput.value) {
+                alert('Start date cannot be after end date.');
+                fromInput.value = periodStart;
+                return;
+            }
+            periodStart = fromInput.value;
+            updateOverviewHeading('custom', 'Custom');
+            loadPayroll();
         });
 
-        periodTo?.addEventListener("change", () => {
-            updateOverviewHeading("custom", "Custom");
+        toInput?.addEventListener('change', () => {
+            if (!toInput.value) return;
+            if (fromInput?.value && toInput.value < fromInput.value) {
+                alert('End date cannot be before start date.');
+                toInput.value = periodEnd;
+                return;
+            }
+            periodEnd = toInput.value;
+            updateOverviewHeading('custom', 'Custom');
+            loadPayroll();
         });
 
-    });
+        // Modal close handlers
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            document.querySelectorAll('.modal-overlay.open').forEach(closeModal);
+        });
+
+        document.querySelectorAll('.modal-overlay').forEach((modal) => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal(modal);
+            });
+            modal.querySelector('.modal-close')?.addEventListener('click', () => closeModal(modal));
+            modal.querySelector('.btn-secondary')?.addEventListener('click', () => closeModal(modal));
+        });
+
+        // Advanced toggle
+        document.querySelectorAll('.advanced-toggle').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.id.replace('advanced-toggle', 'advanced-fields');
+                const fields = document.getElementById(targetId);
+                if (!fields) return;
+                const isOpen = fields.classList.toggle('open');
+                btn.classList.toggle('open', isOpen);
+            });
+        });
+
+        ['pay-bonus', 'pay-overtime', 'pay-deduction'].forEach((id) => {
+            document.getElementById(id)?.addEventListener('input', recalcNetPay);
+        });
+
+        document.getElementById('pay-employee-confirm')?.addEventListener('click', payEmployee);
+    }
+
+    document.addEventListener('astro:page-load', init);
 </script>
