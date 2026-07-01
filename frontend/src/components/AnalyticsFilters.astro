@@ -57,7 +57,13 @@
             </select>
         </form>
         <button id="apply-filters" type="button" class="custom-button custom-button--primary">Apply</button>
-        <button id="export-button" type="button" class="custom-button custom-button--ghost">Export</button>
+        <div class="export-dropdown-container">
+            <button id="export-button" type="button" class="custom-button custom-button--ghost">Export</button>
+            <div id="export-menu" class="export-menu">
+                <button type="button" class="export-option" data-format="xlsx">Excel (.xlsx)</button>
+                <button type="button" class="export-option" data-format="pdf">PDF Report</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -149,17 +155,59 @@
         const yearSel = document.getElementById('filter-year');
         const valueSel = document.getElementById('filter-period-value');
         const summaryText = document.getElementById('filter-summary-text');
+        
         if (!typeSel || !yearSel || !valueSel || !summaryText) return;
+        
+        // FIX 1: Set the initialization flag so events don't double-bind
         if (typeSel.dataset.analyticsFiltersInitialized === 'true') return;
+        typeSel.dataset.analyticsFiltersInitialized = 'true';
+
+        // FIX 2: Move export button logic ABOVE the await call
+        const exportBtn = document.getElementById('export-button');
+        const exportMenu = document.getElementById('export-menu');
+        const exportOptions = document.querySelectorAll('.export-option');
+
+        if (exportBtn && exportMenu) {
+            exportBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                exportMenu.classList.toggle('show');
+            });
+
+            exportOptions.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    exportMenu.classList.remove('show'); 
+                    const f = getFilters();
+                    if (!f) {
+                        alert("Please apply a filter first.");
+                        return;
+                    }
+
+                    const format = e.target.getAttribute('data-format'); 
+                    let url = `${BASE}/export/?period=${f.period}&year=${f.year}&export_format=${format}`;
+                    if (f.month) {
+                        url += `&month=${f.month}`;
+                    }
+                    window.open(url, '_blank');
+                });
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!exportBtn.contains(e.target) && !exportMenu.contains(e.target)) {
+                    exportMenu.classList.remove('show');
+                }
+            });
+        }
 
         const yearDropdown = document.getElementById('year-dropdown');
         const yearLabel = document.getElementById('year-trigger-label');
         const valueDropdown = document.getElementById('period-value-dropdown');
         const valueLabel = document.getElementById('period-value-trigger-label');
 
+        // Note: The await happens down here now, safely AFTER UI listeners are attached
         const data = await _fetchPeriods();
         const availYears = data.years;
         const availMonthsByYear = data.months;
+        
 
         yearSel.innerHTML = '<option value="" disabled selected>Select Year</option>';
         for (const y of availYears) {
@@ -261,24 +309,9 @@
         typeSel.addEventListener('change', populatePeriodValue);
         typeSel.addEventListener('change', togglePeriodValue);
         yearSel.addEventListener('change', populatePeriodValue);
-        valueSel.addEventListener('change', () => {});
 
         const applyBtn = document.getElementById('apply-filters');
         if (applyBtn) applyBtn.addEventListener('click', applyFilters);
-
-        const exportBtn = document.getElementById('export-button');
-        if (exportBtn) exportBtn.addEventListener('click', () => {});
-
-        const form = document.querySelector('#filters form');
-        if (form) form.addEventListener('submit', (e) => e.preventDefault());
-
-        populatePeriodValue();
-        togglePeriodValue();
-        applyFilters();
-        typeSel.dataset.analyticsFiltersInitialized = 'true';
-        if (!window.__chartFilters) {
-            window.__chartFilters = getFilters();
-        }
     }
 
     function _initPeriodTypeDropdown() {
@@ -292,8 +325,8 @@
         _initDropdownToggle(dropdown);
 
         if (dropdown.dataset.optionsInitialized === 'true') return;
+        
         const options = menu.querySelectorAll('.period-option');
-
         options.forEach((opt) => {
             opt.addEventListener('click', () => {
                 options.forEach((o) => {
@@ -315,8 +348,7 @@
         dropdown.dataset.optionsInitialized = 'true';
     }
 
-    _initFilters();
-    _initPeriodTypeDropdown();
+    // FIX 3: Rely solely on Astro View Transitions lifecycle events
     document.addEventListener('astro:page-load', _initFilters);
     document.addEventListener('astro:page-load', _initPeriodTypeDropdown);
 </script>
@@ -487,6 +519,47 @@
 
     .custom-button:active {
         transform: translateY(0);
+    }
+    
+    .export-dropdown-container {
+        position: relative;
+        display: inline-block;
+    }
+
+    .export-menu {
+        display: none; 
+        position: absolute;
+        top: 100%; 
+        right: 0; 
+        margin-top: 8px;
+        background-color: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        z-index: 50;
+        min-width: 140px;
+        overflow: hidden;
+    }
+
+    .export-menu.show {
+        display: block;
+    }
+
+    .export-option {
+        display: block;
+        width: 100%;
+        padding: 10px 15px;
+        border: none;
+        background: transparent;
+        text-align: left;
+        font-size: 14px;
+        cursor: pointer;
+        color: #334155;
+        transition: background-color 0.2s ease;
+    }
+
+    .export-option:hover {
+        background-color: #f1f5f9;
     }
 
     @media (max-width: 700px) {

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        @page { size: A4; margin: 2cm; }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; font-size: 12px; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 24px; }
+        h3 { color: #2c3e50; margin-top: 25px; }
+        .summary-box { background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .growth-positive { color: #e74c3c; font-weight: bold; }
+        .growth-negative { color: #27ae60; font-weight: bold; }
+        
+        /* Forces the detailed table to start on a new page */
+        .page-break { page-break-before: always; }
+        
+        /* Makes the transaction amount column align right for easier reading */
+        .text-right { text-align: right; }
+        
+    </style>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;550;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <h1>Financial Report ({{ period_label }})</h1>
+    
+    <div class="summary-box">
+        <h3>Overview</h3>
+        <p><strong>Total Incoming Funds:</strong> Php{{ summary.total_incoming_funds|floatformat:2 }}</p>
+        <p><strong>Total Outgoing Expenses:</strong> Php{{ summary.total_outgoing_funds|floatformat:2 }}</p>
+        
+        <p>
+            Total expenses this period are 
+            <span class="{% if summary.expense_growth > 0 %}growth-positive{% else %}growth-negative{% endif %}">
+                {{ summary.expense_growth|default:"0" }}%
+            </span> 
+            {% if summary.expense_growth > 0 %}higher{% else %}lower{% endif %} than the previous period.
+        </p>
+    </div>
+
+    <h3>Top 5 Expense Categories</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th class="text-right">Total Spent</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cat in categories %}
+            <tr>
+                <td>{{ cat.category|default:"Uncategorized" }}</td>
+                <td class="text-right">Php{{ cat.total|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="2">No expenses found for this period.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="page-break"></div>
+    
+    <h3>All Transactions</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Wallet</th>
+                <th>Category</th>
+                <th>Note / Counterparty</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in transactions %}
+            <tr>
+                <td>{{ tx.transaction_date|date:"Y-m-d" }}</td>
+                <td>{{ tx.transaction_type|title }}</td>
+                <td>{{ tx.wallet|default:"-" }}</td>
+                <td>{{ tx.category|default:"-" }}</td>
+                <td>
+                    {% if tx.counterparty %}<strong>{{ tx.counterparty }}</strong><br>{% endif %}
+                    {{ tx.note|default:"-" }}
+                </td>
+                <td class="text-right">Php{{ tx.amount|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">No transactions recorded in this period.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
+
+<style>
+    /* 1. Register the custom font */
+    @font-face {
+        font-family: 'Roboto';
+        /* Point this URL to where the font lives in your static folder */
+        src: url('/static/fonts/Roboto-Regular.ttf'); 
+    }
+
+    @page { size: A4; margin: 2cm; }
+    
+    /* 2. Apply it to your body */
+    body { 
+        font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+        color: #333; 
+        font-size: 12px; 
+    }
+    
+    /* ... keep the rest of your CSS the exact same ... */
+</style>
