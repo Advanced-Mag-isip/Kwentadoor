@@ -1904,10 +1904,23 @@ try {
         }
 
         // Move Funds
-        document.getElementById('move-funds-submit')?.addEventListener('click', () => submitMoveFunds(false));
-        document.getElementById('move-funds-save-another')?.addEventListener('click', () => submitMoveFunds(true));
+        const moveFundsSubmitBtn = document.getElementById('move-funds-submit');
+        const moveFundsSaveAnotherBtn = document.getElementById('move-funds-save-another');
+
+        if (moveFundsSubmitBtn && !moveFundsSubmitBtn.dataset.bound) {
+            moveFundsSubmitBtn.dataset.bound = 'true';
+            moveFundsSubmitBtn.addEventListener('click', () => submitMoveFunds(false));
+        }
+        if (moveFundsSaveAnotherBtn && !moveFundsSaveAnotherBtn.dataset.bound) {
+            moveFundsSaveAnotherBtn.dataset.bound = 'true';
+            moveFundsSaveAnotherBtn.addEventListener('click', () => submitMoveFunds(true));
+        }
+
+        let moveFundsInFlight = false;
 
         async function submitMoveFunds(keepOpen) {
+            if (moveFundsInFlight) return;
+
             const source = document.getElementById('move-source');
             const dest = document.getElementById('move-destination');
             const amountInput = document.getElementById('move-amount');
@@ -1933,6 +1946,13 @@ try {
                 }
             }
 
+            moveFundsInFlight = true;
+            const activeBtn = keepOpen ? moveFundsSaveAnotherBtn : moveFundsSubmitBtn;
+            const originalText = activeBtn ? activeBtn.textContent : '';
+            if (moveFundsSubmitBtn) moveFundsSubmitBtn.disabled = true;
+            if (moveFundsSaveAnotherBtn) moveFundsSaveAnotherBtn.disabled = true;
+            if (activeBtn) activeBtn.textContent = 'Saving...';
+
             try {
                 await apiFetch('/transfers/', {
                     method: 'POST',
@@ -1952,6 +1972,11 @@ try {
                 reloadPage();
             } catch (e) {
                 alert('Failed to move funds: ' + e.message);
+            } finally {
+                moveFundsInFlight = false;
+                if (moveFundsSubmitBtn) moveFundsSubmitBtn.disabled = false;
+                if (moveFundsSaveAnotherBtn) moveFundsSaveAnotherBtn.disabled = false;
+                if (activeBtn) activeBtn.textContent = originalText;
             }
         }
     });
