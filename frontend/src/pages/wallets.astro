@@ -1973,7 +1973,9 @@ try {
                     body: JSON.stringify({
                         from_wallet: sourceId,
                         to_wallet: destId,
-                        amount: amount
+                        amount: amount,
+                        note: noteInput?.value || '',
+                        transaction_date: dateInput?.value || null
                     })
                 });
 

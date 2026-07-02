@@ -199,17 +199,26 @@ class WalletTransferViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
+        from datetime import datetime as dt
         with transaction.atomic():
             wt = serializer.save()
             user = self.request.user
+            tx_date_str = self.request.data.get('transaction_date', '')
+            try:
+                tx_date = dt.strptime(tx_date_str, '%Y-%m-%d').date() if tx_date_str else wt.created_at.date()
+            except (ValueError, TypeError):
+                tx_date = wt.created_at.date()
+
             txn = Transaction.objects.create(
                 transaction_type="move funds",
                 user=user,
                 wallet=wt.from_wallet,
-                transaction_date=wt.created_at.date(),
+                category="transfers",
+                transaction_date=tx_date,
                 amount=wt.amount,
                 counterparty=wt.to_wallet.name,
                 wallet_transfer=wt,
+                note=self.request.data.get('note', ''),
             )
             wt.transaction = txn
             wt.save(update_fields=["transaction"])
