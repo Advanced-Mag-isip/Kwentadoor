@@ -47,6 +47,25 @@ function apiFetch(path, options) {
   });
 }
 
+function _uploadAttachment(transactionId, file) {
+  if (!file || !transactionId) return Promise.resolve(null);
+  var form = new FormData();
+  form.append("transaction", transactionId);
+  form.append("photo", file);
+  return fetch(API_BASE + "/attachments/", {
+    method: "POST",
+    headers: Object.assign({ Accept: "application/json" }, _authHeaders()),
+    body: form,
+  }).then(function (r) {
+    if (!r.ok) {
+      return r.text().then(function (text) {
+        throw new Error(text || r.statusText || "Attachment upload failed");
+      });
+    }
+    return r.json();
+  });
+}
+
 window.__spendFunds = function (data) {
   return apiFetch("/spends/", {
     method: "POST",
@@ -58,6 +77,15 @@ window.__spendFunds = function (data) {
       counterparty: data.counterparty || "",
       transaction_date: data.transaction_date || new Date().toISOString().split("T")[0],
     }),
+  }).then(function (result) {
+    return _uploadAttachment(result.transaction, data.attachment)
+      .catch(function (err) {
+        console.error("Spend saved, but attachment upload failed:", err);
+        alert("Spend was saved, but the attachment failed to upload.");
+      })
+      .then(function () {
+        return result;
+      });
   });
 };
 
@@ -69,6 +97,15 @@ window.__moveFunds = function (data) {
       to_wallet: parseInt(data.to_wallet),
       amount: parseFloat(data.amount),
     }),
+  }).then(function (result) {
+    return _uploadAttachment(result.transaction, data.attachment)
+      .catch(function (err) {
+        console.error("Transfer saved, but attachment upload failed:", err);
+        alert("Funds were moved, but the attachment failed to upload.");
+      })
+      .then(function () {
+        return result;
+      });
   });
 };
 

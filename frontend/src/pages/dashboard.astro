@@ -608,6 +608,33 @@ const partitionColors = [
                 throw new Error(text || response.statusText || "Request failed");
             }
 
+            const createdTransaction = await response.json();
+
+            const attachmentInput = document.getElementById('fund-attachment-input');
+            const attachmentFile = attachmentInput?.files?.[0];
+            if (attachmentFile && createdTransaction?.id) {
+                const attachmentForm = new FormData();
+                attachmentForm.append('transaction', createdTransaction.id);
+                attachmentForm.append('photo', attachmentFile);
+
+                const attachmentRes = await fetch("http://127.0.0.1:8000/api/expenses/attachments/", {
+                    method: "POST",
+                    headers: {
+                        Accept: "application/json",
+                        ...(authToken ? { Authorization: "Token " + authToken } : {}),
+                        // Do not set Content-Type here — the browser needs to add the
+                        // multipart boundary itself for FormData uploads.
+                    },
+                    body: attachmentForm,
+                });
+
+                if (!attachmentRes.ok) {
+                    const attachmentErrorText = await attachmentRes.text();
+                    console.error('Attachment upload failed:', attachmentErrorText);
+                    alert('Funds were added, but the attachment failed to upload.');
+                }
+            }
+
             if (btn) {
                 btn.textContent = originalText;
                 btn.removeAttribute('disabled');
@@ -620,6 +647,9 @@ const partitionColors = [
                 note.value = '';
                 dateInput.value = '';
                 wallet.value = '';
+                if (attachmentInput) attachmentInput.value = '';
+                const attachmentLabel = document.getElementById('fund-attachment-filename');
+                if (attachmentLabel) attachmentLabel.textContent = 'Select files';
                 if (wallet.options.length > 0) wallet.selectedIndex = 0;
                 if (category.options.length > 0) category.selectedIndex = 0;
                 await reloadDashboard('add-funds-modal');
@@ -695,12 +725,14 @@ const partitionColors = [
         }
 
         try {
+            const moveAttachmentInput = document.getElementById('move-attachment-input');
             await window.__moveFunds({
                 from_wallet: source.value,
                 to_wallet: dest.value,
                 amount: amount.value,
                 note: note?.value || '',
                 transaction_date: dateInput?.value || '',
+                attachment: moveAttachmentInput?.files?.[0] || null,
             });
 
             if (btn) {
@@ -714,6 +746,9 @@ const partitionColors = [
                 dest.value = '';
                 note.value = '';
                 dateInput.value = '';
+                if (moveAttachmentInput) moveAttachmentInput.value = '';
+                const moveAttachmentLabel = document.getElementById('move-attachment-filename');
+                if (moveAttachmentLabel) moveAttachmentLabel.textContent = 'Select files';
                 await reloadDashboard('move-funds-modal');
             } else {
                 closeModal(document.getElementById('move-funds-modal'));
