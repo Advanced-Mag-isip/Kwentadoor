@@ -7,6 +7,7 @@ from datetime import datetime
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Sum
 from django.db import transaction
@@ -67,18 +68,40 @@ class WalletViewSet(viewsets.ModelViewSet):
             description="Updated a wallet."
         )
 
-    def perform_destroy(self, instance):
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
         old_data = self.get_serializer(instance).data
         wallet_id = instance.id
-        instance.delete()
-        AuditLog.objects.create(
-            user=self.request.user if self.request.user.is_authenticated else None,
-            action='DELETE',
-            model_name='Wallet',
-            object_id=str(wallet_id),
-            changes={'old_data': old_data},
-            description="Deleted a wallet."
-        )
+
+        with transaction.atomic():
+            spend_ids = list(Spend.objects.filter(wallet=instance).values_list('id', flat=True))
+            transfer_ids = list(
+                WalletTransfer.objects.filter(from_wallet=instance).values_list('id', flat=True)
+            )
+            transfer_ids.extend(
+                WalletTransfer.objects.filter(to_wallet=instance).values_list('id', flat=True)
+            )
+
+            if spend_ids:
+                Spend.objects.filter(id__in=spend_ids).delete()
+
+            if transfer_ids:
+                WalletTransfer.objects.filter(id__in=transfer_ids).delete()
+
+            Transaction.objects.filter(wallet=instance).delete()
+
+            instance.delete()
+
+            AuditLog.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                action='DELETE',
+                model_name='Wallet',
+                object_id=str(wallet_id),
+                changes={'old_data': old_data},
+                description="Deleted a wallet."
+            )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()

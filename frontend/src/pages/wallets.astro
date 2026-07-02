@@ -76,7 +76,7 @@ const icon = selectedWallet.type ?
 
 let transactions = [];
 try {
-  const txRes = await fetch("http://127.0.0.1:8000/api/expenses/transactions/?limit=20", {
+  const txRes = await fetch("http://127.0.0.1:8000/api/expenses/transactions/?limit=100", {
     headers: { Accept: "application/json" },
   });
   if (txRes.ok) {
@@ -88,6 +88,7 @@ try {
       if (dateDiff !== 0) return dateDiff;
       return (b.id || 0) - (a.id || 0);
     });
+    
     transactions = list.map((t) => ({
       id: t.id,
       amount: t.amount,
@@ -591,6 +592,7 @@ try {
         modalOutside.showModal();
       });
     }
+    
   });
 </script>
 
@@ -1522,9 +1524,27 @@ try {
                 ..._authHeaders(),
                 ...(options.headers || {}),
             },
-        }).then(r => {
-            if (!r.ok) return r.json().then(e => { throw new Error(JSON.stringify(e)); });
-            return r.json();
+        }).then(async (r) => {
+            if (!r.ok) {
+                const errorText = await r.text();
+                if (!errorText) {
+                    throw new Error(`Request failed with status ${r.status}`);
+                }
+                throw new Error(errorText);
+            }
+
+            if (r.status === 204 || r.status === 205) {
+                return null;
+            }
+
+            const text = await r.text();
+            if (!text) return null;
+
+            try {
+                return JSON.parse(text);
+            } catch (_) {
+                return text;
+            }
         });
     }
 
@@ -1598,7 +1618,7 @@ try {
 
             if(walletName) walletName.textContent = item.dataset.name;
             if(walletDescription) walletDescription.textContent = item.dataset.description;
-            
+
             const amount = Number(item.dataset.amount);
             if(walletAmount) {
                 walletAmount.textContent = "₱" + amount.toLocaleString("en-PH", {
@@ -1607,6 +1627,7 @@ try {
                 });
                 walletAmount.dataset.balance = amount;
             }
+
             if(walletIcon) {
                 walletIcon.innerHTML = walletIcons[item.dataset.type] || IconCash;
             }
@@ -1619,9 +1640,12 @@ try {
                 amount: item.dataset.amount,
                 type: item.dataset.type
             };
+
+            if (typeof window.__loadRecentTransactions === 'function') {
+                window.__loadRecentTransactions(window.__currentTransactionFilter);
+            }
         }
 
-        // Initialize Wallet from session or first item
         const savedWalletId = sessionStorage.getItem('activeWalletId');
         let walletToActivate = walletItems.length > 0 ? walletItems[0] : null;
 
@@ -1904,27 +1928,15 @@ try {
             }
 
             try {
-                await apiFetch('/transactions/', {
+                await apiFetch('/transfers/', {
                     method: 'POST',
                     body: JSON.stringify({
-                        wallet: sourceId,
-                        amount: amount,
-                        transaction_type: 'spend funds',
-                        note: noteInput?.value || `Transfer to ${dest.options[dest.selectedIndex].text}`,
-                        transaction_date: dateInput?.value || null,
+                        from_wallet: sourceId,
+                        to_wallet: destId,
+                        amount: amount
                     })
                 });
-                await apiFetch('/transactions/', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        wallet: destId,
-                        amount: amount,
-                        transaction_type: 'add funds',
-                        note: noteInput?.value || `Transfer from ${source.options[source.selectedIndex].text}`,
-                        transaction_date: dateInput?.value || null,
-                    })
-                });
-                
+
                 if (keepOpen) {
                     sessionStorage.setItem('reopenModal', 'move-funds-modal');
                     sessionStorage.setItem('activeWalletId', window.currentWallet ? window.currentWallet.id : sourceId);
@@ -1940,50 +1952,55 @@ try {
 </script>
 
 <script is:inline>
-window.__currentTransactionFilter = "all";
-window.__loadRecentTransactions = function (filter) {
-    filter = filter || window.__currentTransactionFilter || "all";
-    window.__currentTransactionFilter = filter;
-    var baseUrl = "http://127.0.0.1:8000/api/expenses/transactions/?limit=20";
-    
-    var typeValue = null;
-    if (filter !== "all") {
-        typeValue = filter === "added" ? "add funds" : "spend funds";
-        baseUrl += "&transaction_type=" + encodeURIComponent(typeValue);
-    }
+    window.__loadRecentTransactions = function (filter) {
+        filter = filter || window.__currentTransactionFilter || "all";
+        window.__currentTransactionFilter = filter;
 
-    var _token = localStorage.getItem("auth_token");
-    fetch(baseUrl, {
-        headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            ...(_token ? { Authorization: "Token " + _token } : {})
-        }
-    }).then(function (res) {
-        if (!res.ok) throw new Error("Failed to fetch");
-        return res.json();
-    }).then(function (data) {
-        var list = data.results || data;
-    
-        var container = document.getElementById("recent-transactions");
-
-        if (!container) return;
-
-        if (typeValue) {
-            list = list.filter(function(t) {
-                return t.transaction_type === typeValue;
-            });
+        var baseUrl = "http://127.0.0.1:8000/api/expenses/transactions/?limit=100";
+        
+        var typeValue = null;
+        if (filter !== "all") {
+            typeValue = filter === "added" ? "add funds" : "spend funds";
+            baseUrl += "&transaction_type=" + encodeURIComponent(typeValue);
         }
 
-        if (!list.length) {
-            container.innerHTML =
-                '<div class="transactionrow">' +
-                '<p style="grid-column:1/-1;text-align:center;opacity:.5">' +
-                'No transactions yet' +
-                '</p>' +
-                '</div>';
-            return;
-        }
+        var _token = localStorage.getItem("auth_token");
+        fetch(baseUrl, {
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                ...(_token ? { Authorization: "Token " + _token } : {})
+            }
+        }).then(function (res) {
+            if (!res.ok) throw new Error("Failed to fetch");
+            return res.json();
+        }).then(function (data) {
+            var list = data.results || data;
+            var container = document.getElementById("recent-transactions");
+
+            if (!container) return;
+
+            if (window.currentWallet && window.currentWallet.id) {
+                list = list.filter(function(t) {
+                    return String(t.wallet) === String(window.currentWallet.id) || t.wallet_name === window.currentWallet.name;
+                });
+            }
+
+            if (typeValue) {
+                list = list.filter(function(t) {
+                    return t.transaction_type === typeValue;
+                });
+            }
+
+            if (!list.length) {
+                container.innerHTML =
+                    '<div class="transactionrow">' +
+                    '<p style="grid-column:1/-1;text-align:center;opacity:.5">' +
+                    'No transactions yet' +
+                    '</p>' +
+                    '</div>';
+                return;
+            }
 
         list.sort(function(a, b) {
             var dateDiff = new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime();
