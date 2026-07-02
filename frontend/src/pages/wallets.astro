@@ -1507,13 +1507,21 @@ try {
     // Shared API helpers
     const API_BASE = "http://127.0.0.1:8000/api/expenses";
 
+    function _authHeaders() {
+        const token = localStorage.getItem("auth_token");
+        return token ? { Authorization: "Token " + token } : {};
+    }
+
     function apiFetch(path, options) {
+        options = options || {};
         return fetch(API_BASE + path, {
+            ...options,
             headers: {
                 "Content-Type": "application/json",
-                Accept: "application/json"
+                Accept: "application/json",
+                ..._authHeaders(),
+                ...(options.headers || {}),
             },
-            ...options,
         }).then(r => {
             if (!r.ok) return r.json().then(e => { throw new Error(JSON.stringify(e)); });
             return r.json();
@@ -1944,10 +1952,12 @@ window.__loadRecentTransactions = function (filter) {
         baseUrl += "&transaction_type=" + encodeURIComponent(typeValue);
     }
 
+    var _token = localStorage.getItem("auth_token");
     fetch(baseUrl, {
         headers: {
             "Content-Type": "application/json",
-            Accept: "application/json"
+            Accept: "application/json",
+            ...(_token ? { Authorization: "Token " + _token } : {})
         }
     }).then(function (res) {
         if (!res.ok) throw new Error("Failed to fetch");
@@ -2061,10 +2071,16 @@ function initWalletPage() {
     });
 }
 
+function _loadInitialWalletTransactions() {
+    window.__loadRecentTransactions("all");
+}
+
 if (document.readyState === 'complete') {
     initWalletPage();
+    _loadInitialWalletTransactions();
 } else {
     document.addEventListener('astro:page-load', initWalletPage);
+    document.addEventListener('astro:page-load', _loadInitialWalletTransactions);
 }
 
 window.__spendFunds = async function (data) {
@@ -2084,11 +2100,13 @@ window.__spendFunds = async function (data) {
     }
 
     try {
+        const authToken = localStorage.getItem("auth_token");
         const response = await fetch("http://127.0.0.1:8000/api/expenses/transactions/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Accept: "application/json"
+                Accept: "application/json",
+                ...(authToken ? { Authorization: "Token " + authToken } : {})
             },
             body: JSON.stringify(payload)
         });

@@ -585,11 +585,13 @@ const partitionColors = [
         }
 
         try {
+            const authToken = localStorage.getItem("auth_token");
             const response = await fetch("http://127.0.0.1:8000/api/expenses/transactions/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Accept: "application/json",
+                    ...(authToken ? { Authorization: "Token " + authToken } : {}),
                 },
                 body: JSON.stringify({
                     transaction_type: "add funds",

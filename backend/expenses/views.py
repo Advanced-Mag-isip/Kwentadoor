@@ -83,11 +83,11 @@ class WalletViewSet(viewsets.ModelViewSet):
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination
 
     def perform_create(self, serializer):
-        user = self.request.user if self.request.user.is_authenticated else User.objects.first()
+        user = self.request.user
         transaction = serializer.save(user=user)
         Log.objects.create(
             user=user,
@@ -106,15 +106,16 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         instance = self.get_object()
         old_data = self.get_serializer(instance).data
+        user = self.request.user
         transaction = serializer.save()
         Log.objects.create(
-            user=self.request.user if self.request.user.is_authenticated else User.objects.first(),
+            user=user,
             action="Update Expense",
             old_data=old_data,
             new_data=serializer.data
         )
         AuditLog.objects.create(
-            user=self.request.user if self.request.user.is_authenticated else None,
+            user=user,
             action='UPDATE',
             model_name='Transaction',
             object_id=str(transaction.id),
@@ -126,14 +127,15 @@ class TransactionViewSet(viewsets.ModelViewSet):
         old_data = self.get_serializer(instance).data
         transaction_id = instance.id
         transaction_type = instance.transaction_type
+        user = self.request.user
         Log.objects.create(
-            user=self.request.user if self.request.user.is_authenticated else User.objects.first(),
+            user=user,
             action="Delete Expense",
             old_data=old_data
         )
         instance.delete()
         AuditLog.objects.create(
-            user=self.request.user if self.request.user.is_authenticated else None,
+            user=user,
             action='DELETE',
             model_name='Transaction',
             object_id=str(transaction_id),
@@ -171,12 +173,12 @@ class TransactionViewSet(viewsets.ModelViewSet):
 class WalletTransferViewSet(viewsets.ModelViewSet):
     queryset = WalletTransfer.objects.all()
     serializer_class = WalletTransferSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         with transaction.atomic():
             wt = serializer.save()
-            user = self.request.user if self.request.user.is_authenticated else User.objects.first()
+            user = self.request.user
             txn = Transaction.objects.create(
                 transaction_type="move funds",
                 user=user,
@@ -192,13 +194,13 @@ class WalletTransferViewSet(viewsets.ModelViewSet):
 class SpendViewSet(viewsets.ModelViewSet):
     queryset = Spend.objects.all()
     serializer_class = SpendSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         from datetime import datetime as dt
         with transaction.atomic():
             sp = serializer.save()
-            user = self.request.user if self.request.user.is_authenticated else User.objects.first()
+            user = self.request.user
             tx_date_str = self.request.data.get('transaction_date', '')
             try:
                 tx_date = dt.strptime(tx_date_str, '%Y-%m-%d').date() if tx_date_str else sp.created_at.date()
@@ -346,7 +348,6 @@ class ExportExpensesViewSet(viewsets.ViewSet):
         total_cell.font = Font(bold=True)
         total_cell.number_format = '#,##0.00'
 
-        # Create response
         filename = f"expenses_{start_date or 'all'}_{end_date or 'all'}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
