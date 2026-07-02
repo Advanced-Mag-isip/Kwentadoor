@@ -24,6 +24,27 @@ import '../styles/global.css';
         
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
+                <script>
+                    const LOGIN_PATH = '/login';
+
+                    function redirectIfUnauthenticated() {
+                        if (window.location.pathname === LOGIN_PATH) {
+                            return true;
+                        }
+
+                        const token = localStorage.getItem('auth_token');
+                        if (!token) {
+                            window.location.replace(LOGIN_PATH);
+                            return false;
+                        }
+
+                        return true;
+                    }
+
+                    redirectIfUnauthenticated();
+                    window.addEventListener('pageshow', redirectIfUnauthenticated);
+                    document.addEventListener('astro:page-load', redirectIfUnauthenticated);
+                </script>
         <ClientRouter />
     </head>
     <body>
