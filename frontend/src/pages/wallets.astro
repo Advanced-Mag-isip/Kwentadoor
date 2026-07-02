@@ -49,10 +49,19 @@ function formatTransactionDate(value) {
         : "";
 }
 
+function parseWalletAmount(value) {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+    const normalized = String(value).replace(/[^0-9.-]/g, "");
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
 let wallets = [];
 try {
   const res = await fetch("http://127.0.0.1:8000/api/expenses/wallets/", {
     headers: { Accept: "application/json" },
+        cache: "no-store",
   });
   if (res.ok) {
     const data = await res.json();
@@ -61,7 +70,7 @@ try {
       id: w.id,
       name: w.name,
       description: w.description || "",
-      amount: parseFloat(w.balance || 0),
+            amount: parseWalletAmount(w.balance),
       type: WALLET_TYPE_MAP[w.name] || "cash",
       created_at: w.created_at,
       updated_at: w.updated_at,
@@ -71,6 +80,7 @@ try {
 
 const selectedWallet = wallets.length > 0 ?
   wallets[0] : { id: null, name: "No wallets", description: "", amount: 0, type: "cash" };
+const selectedWalletAmount = parseWalletAmount(selectedWallet.amount);
 const icon = selectedWallet.type ?
   walletType[selectedWallet.type as keyof typeof walletType]?.icon : IconCash;
 
@@ -78,6 +88,7 @@ let transactions = [];
 try {
   const txRes = await fetch("http://127.0.0.1:8000/api/expenses/transactions/?limit=100", {
     headers: { Accept: "application/json" },
+        cache: "no-store",
   });
   if (txRes.ok) {
     const txData = await txRes.json();
@@ -152,11 +163,11 @@ try {
                 </div>
 
                 <div
-                    id="balance-amount"
+                    id="wallet-balance-amount"
                     class="balancecard-amount truncate"
-                    data-balance={selectedWallet.amount}
+                    data-balance={selectedWalletAmount}
                 >
-                    {`₱${selectedWallet.amount.toLocaleString("en-PH", {
+                    {`₱${selectedWalletAmount.toLocaleString("en-PH", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                     })}`}
@@ -1619,7 +1630,7 @@ try {
             // Update balance card
             const walletName = document.getElementById("wallet-name");
             const walletDescription = document.getElementById("wallet-description");
-            const walletAmount = document.getElementById("balance-amount");
+            const walletAmount = document.getElementById("wallet-balance-amount");
             const walletIcon = document.getElementById("wallet-icon");
 
             if(walletName) walletName.textContent = item.dataset.name;
@@ -1639,13 +1650,16 @@ try {
             }
 
             // Update current wallet
+            const walletAmountValue = Number(item.dataset.amount) || 0;
             window.currentWallet = {
                 id: item.dataset.id,
                 name: item.dataset.name,
                 description: item.dataset.description,
-                amount: item.dataset.amount,
+                amount: walletAmountValue,
                 type: item.dataset.type
             };
+
+            sessionStorage.setItem('activeWalletId', item.dataset.id);
 
             if (typeof window.__loadRecentTransactions === 'function') {
                 window.__loadRecentTransactions(window.__currentTransactionFilter);
@@ -2124,12 +2138,60 @@ function _loadInitialWalletTransactions() {
     window.__loadRecentTransactions("all");
 }
 
+function _refreshWalletBalances() {
+    var token = localStorage.getItem("auth_token");
+
+    fetch("http://127.0.0.1:8000/api/expenses/wallets/", {
+        headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            ...(token ? { Authorization: "Token " + token } : {})
+        }
+    })
+    .then(function (res) {
+        if (!res.ok) throw new Error("Failed to fetch wallets");
+        return res.json();
+    })
+    .then(function (data) {
+        var list = data.results || data;
+        list.forEach(function (wallet) {
+            var el = document.querySelector('.wallet-item[data-id="' + wallet.id + '"]');
+            if (!el) return;
+
+            var newAmount = parseWalletAmount(wallet.balance);
+            el.dataset.amount = String(newAmount);
+
+            if (el.classList.contains('active')) {
+                var walletAmount = document.getElementById("wallet-balance-amount");
+                if (walletAmount) {
+                    walletAmount.textContent = "₱" + newAmount.toLocaleString("en-PH", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    walletAmount.dataset.balance = String(newAmount);
+                }
+
+                window.currentWallet = {
+                    id: String(wallet.id),
+                    name: wallet.name,
+                    description: wallet.description || "",
+                    amount: newAmount,
+                    type: WALLET_TYPE_MAP[wallet.name] || "cash"
+                };
+            }
+        });
+    })
+    .catch(console.error);
+}
+
 if (document.readyState === 'complete') {
     initWalletPage();
     _loadInitialWalletTransactions();
+    _refreshWalletBalances();
 } else {
     document.addEventListener('astro:page-load', initWalletPage);
     document.addEventListener('astro:page-load', _loadInitialWalletTransactions);
+    document.addEventListener('astro:page-load', _refreshWalletBalances);
 }
 
 window.__spendFunds = async function (data) {
