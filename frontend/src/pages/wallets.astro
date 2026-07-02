@@ -82,8 +82,13 @@ try {
   if (txRes.ok) {
     const txData = await txRes.json();
     const rawList = txData.results || txData;
-    // Sort newest first, tie by ID descending
-    const list = rawList.slice().sort((a, b) => {
+
+    let filteredList = rawList;
+    if (selectedWallet && selectedWallet.id) {
+      filteredList = rawList.filter((t) => String(t.wallet) === String(selectedWallet.id) || t.wallet_name === selectedWallet.name);
+    }
+
+    const list = filteredList.slice().sort((a, b) => {
       const dateDiff = new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime();
       if (dateDiff !== 0) return dateDiff;
       return (b.id || 0) - (a.id || 0);
@@ -1518,6 +1523,7 @@ try {
         options = options || {};
         return fetch(API_BASE + path, {
             ...options,
+            credentials: "include",
             headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
@@ -1966,6 +1972,7 @@ try {
 
         var _token = localStorage.getItem("auth_token");
         fetch(baseUrl, {
+            credentials: "include",
             headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
