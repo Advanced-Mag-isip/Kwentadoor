@@ -1553,6 +1553,29 @@ try {
             }
         });
     }
+    async function uploadAttachment(transactionId, file) {
+        if (!file || !transactionId) return;
+
+        const attachmentForm = new FormData();
+        attachmentForm.append('transaction', transactionId);
+        attachmentForm.append('photo', file);
+
+        const res = await fetch(API_BASE + '/attachments/', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                Accept: 'application/json',
+                ..._authHeaders(),
+            },
+            body: attachmentForm,
+        });
+
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error('Attachment upload failed:', errorText);
+            throw new Error('The attachment failed to upload.');
+        }
+    }
 
     function reloadPage() {
         window.location.reload();
@@ -1875,7 +1898,7 @@ try {
             if (activeBtn) activeBtn.textContent = 'Saving...';
 
             try {
-                await apiFetch('/transactions/', {
+                const createdTransaction = await apiFetch('/transactions/', {
                     method: 'POST',
                     body: JSON.stringify({
                         wallet: walletId,
@@ -1886,6 +1909,20 @@ try {
                         transaction_date: dateInput?.value || null,
                     })
                 });
+
+                const attachmentInput = document.getElementById('fund-attachment-input');
+                const attachmentFile = attachmentInput?.files?.[0];
+                if (attachmentFile && createdTransaction?.id) {
+                    try {
+                        await uploadAttachment(createdTransaction.id, attachmentFile);
+                    } catch (attachErr) {
+                        alert('Funds were added, but the attachment failed to upload.');
+                    }
+                }
+                if (attachmentInput) attachmentInput.value = '';
+                const attachmentLabel = document.getElementById('fund-attachment-filename');
+                if (attachmentLabel) attachmentLabel.textContent = 'Select files';
+
                 if (keepOpen) {
                     sessionStorage.setItem('reopenModal', 'add-funds-modal');
                     sessionStorage.setItem('activeWalletId', window.currentWallet ? window.currentWallet.id : walletId);
@@ -1934,14 +1971,32 @@ try {
             }
 
             try {
-                await apiFetch('/transfers/', {
+                const createdTransfer = await apiFetch('/transfers/', {
                     method: 'POST',
                     body: JSON.stringify({
                         from_wallet: sourceId,
                         to_wallet: destId,
-                        amount: amount
+                        amount: amount,
+                        note: noteInput?.value || '',
+                        transaction_date: dateInput?.value || null,
                     })
                 });
+
+                const attachmentInput = document.getElementById('move-attachment-input');
+                const attachmentFile = attachmentInput?.files?.[0];
+                const transferTransactionId = createdTransfer?.id
+                    ?? createdTransfer?.transaction
+                    ?? createdTransfer?.transaction_id;
+                if (attachmentFile && transferTransactionId) {
+                    try {
+                        await uploadAttachment(transferTransactionId, attachmentFile);
+                    } catch (attachErr) {
+                        alert('Funds were moved, but the attachment failed to upload.');
+                    }
+                }
+                if (attachmentInput) attachmentInput.value = '';
+                const moveAttachmentLabel = document.getElementById('move-attachment-filename');
+                if (moveAttachmentLabel) moveAttachmentLabel.textContent = 'Select files';
 
                 if (keepOpen) {
                     sessionStorage.setItem('reopenModal', 'move-funds-modal');
