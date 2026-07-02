@@ -209,6 +209,7 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
       }
 
       try {
+        const attachmentInputEl = document.getElementById('attachment-input');
         await window.__spendFunds({
           wallet: wallet.value,
           amount: amount.value,
@@ -216,6 +217,7 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
           note: note ? note.value : '',
           counterparty: counterparty ? counterparty.value : '',
           transaction_date: dateInput ? dateInput.value : '',
+          attachment: attachmentInputEl?.files?.[0] || null,
         });
         if (btn) {
           btn.textContent = originalText;
@@ -227,6 +229,9 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
           if (counterparty) counterparty.value = '';
           category.selectedIndex = 0;
           wallet.selectedIndex = 0;
+          if (attachmentInputEl) attachmentInputEl.value = '';
+          const attachmentPlaceholder = document.querySelector('.file-upload-wrapper .placeholder-text');
+          if (attachmentPlaceholder) attachmentPlaceholder.textContent = 'Select files';
           reloadForModal('addExpenseModal');
           return;
         }

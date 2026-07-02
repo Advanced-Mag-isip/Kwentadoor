@@ -1,10 +1,15 @@
 var API_BASE = "http://127.0.0.1:8000/api/expenses";
 
+function _authHeaders() {
+  var token = localStorage.getItem("auth_token");
+  return token ? { Authorization: "Token " + token } : {};
+}
+
 function _loadDashMetrics() {
   const now = new Date();
   const y = now.getFullYear();
   const m = now.getMonth() + 1;
-  fetch("http://127.0.0.1:8000/api/analytics/charts/monthly-metrics/?year=" + y + "&month=" + m, { headers: { Accept: "application/json" } })
+  fetch("http://127.0.0.1:8000/api/analytics/charts/monthly-metrics/?year=" + y + "&month=" + m, { headers: Object.assign({ Accept: "application/json" }, _authHeaders()) })
     .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
     .then(function (d) {
       var fmt = function (n) { return "\u20B1" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2 }); };
@@ -19,9 +24,14 @@ function _loadDashMetrics() {
 }
 
 function apiFetch(path, options) {
+  options = options || {};
   return fetch(API_BASE + path, {
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
     ...options,
+    headers: Object.assign(
+      { "Content-Type": "application/json", Accept: "application/json" },
+      _authHeaders(),
+      options.headers || {}
+    ),
   }).then(function (r) {
     if (!r.ok) {
       return r.text().then(function (text) {
@@ -37,20 +47,24 @@ function apiFetch(path, options) {
   });
 }
 
-window.__addFunds = function (data) {
-  return apiFetch("/transactions/", {
+function _uploadAttachment(transactionId, file) {
+  if (!file || !transactionId) return Promise.resolve(null);
+  var form = new FormData();
+  form.append("transaction", transactionId);
+  form.append("photo", file);
+  return fetch(API_BASE + "/attachments/", {
     method: "POST",
-    body: JSON.stringify({
-      transaction_type: "add funds",
-      wallet: parseInt(data.wallet),
-      amount: parseFloat(data.amount),
-      note: data.note || "",
-      category: "add_funds",
-      transaction_date: data.transaction_date || new Date().toISOString().split("T")[0],
-      counterparty: data.counterparty || "",
-    }),
+    headers: Object.assign({ Accept: "application/json" }, _authHeaders()),
+    body: form,
+  }).then(function (r) {
+    if (!r.ok) {
+      return r.text().then(function (text) {
+        throw new Error(text || r.statusText || "Attachment upload failed");
+      });
+    }
+    return r.json();
   });
-};
+}
 
 window.__spendFunds = function (data) {
   return apiFetch("/spends/", {
@@ -63,6 +77,15 @@ window.__spendFunds = function (data) {
       counterparty: data.counterparty || "",
       transaction_date: data.transaction_date || new Date().toISOString().split("T")[0],
     }),
+  }).then(function (result) {
+    return _uploadAttachment(result.transaction, data.attachment)
+      .catch(function (err) {
+        console.error("Spend saved, but attachment upload failed:", err);
+        alert("Spend was saved, but the attachment failed to upload.");
+      })
+      .then(function () {
+        return result;
+      });
   });
 };
 
@@ -74,6 +97,15 @@ window.__moveFunds = function (data) {
       to_wallet: parseInt(data.to_wallet),
       amount: parseFloat(data.amount),
     }),
+  }).then(function (result) {
+    return _uploadAttachment(result.transaction, data.attachment)
+      .catch(function (err) {
+        console.error("Transfer saved, but attachment upload failed:", err);
+        alert("Funds were moved, but the attachment failed to upload.");
+      })
+      .then(function () {
+        return result;
+      });
   });
 };
 
@@ -161,5 +193,12 @@ window.__loadRecentTransactions = function (filter) {
 
 window._loadDashMetrics = _loadDashMetrics;
 
+function _loadInitialTransactions() {
+  window.__loadRecentTransactions?.();
+  window.__loadWalletBalance?.();
+}
+
 _loadDashMetrics();
+_loadInitialTransactions();
 document.addEventListener("astro:page-load", _loadDashMetrics);
+document.addEventListener("astro:page-load", _loadInitialTransactions);

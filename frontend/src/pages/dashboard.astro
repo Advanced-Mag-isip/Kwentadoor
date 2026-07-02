@@ -331,20 +331,31 @@ const partitionColors = [
                 </div>
 
                 <!-- Destination Wallet -->
-                <div class="form-group">
-                    <label for="fund-wallet">DESTINATION WALLET</label>
-                    <div class="input-icon-wrapper">
-                        <span class="input-icon"><Fragment set:html={IconWallet} /></span>
-                        <select id="fund-wallet" name="wallet">
-                            <option value="" disabled selected>Select Wallet</option>
-                            {
-                                wallets.map((wallet) => (
-                                    <option value={wallet.id}>
-                                        {wallet.name}
-                                    </option>
-                                ))
-                            }
-                        </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fund-category">CATEGORY</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon"><Fragment set:html={IconCashDown} /></span>
+                            <select id="fund-category" name="category">
+                                <option value="" disabled selected>Loading categories...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fund-wallet">DESTINATION WALLET</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon"><Fragment set:html={IconWallet} /></span>
+                            <select id="fund-wallet" name="wallet">
+                                <option value="" disabled selected>Select Wallet</option>
+                                {
+                                    wallets.map((wallet) => (
+                                        <option value={wallet.id}>
+                                            {wallet.name}
+                                        </option>
+                                    ))
+                                }
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -519,8 +530,31 @@ const partitionColors = [
         window.location.reload();
     }
 
+    async function _populateAddFundsCategorySelect() {
+        const sel = document.getElementById('fund-category');
+        if (!sel) return;
+        try {
+            const r = await fetch('http://127.0.0.1:8000/api/expenses/categories/?type=income', {
+                headers: { Accept: 'application/json' },
+            });
+            if (!r.ok) throw new Error('Failed to fetch categories');
+            const data = await r.json();
+            const list = data.results || data;
+            sel.innerHTML = '<option value="" disabled selected>Select Category</option>';
+            list.forEach((c) => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.label;
+                sel.appendChild(opt);
+            });
+        } catch (e) {
+            sel.innerHTML = '<option value="" disabled selected>No categories available</option>';
+        }
+    }
+
     async function submitAddFunds(keepOpen) {
         const wallet = document.getElementById('fund-wallet');
+        const category = document.getElementById('fund-category');
         const amount = document.getElementById('fund-amount');
         const note = document.getElementById('fund-note');
         const dateInput = document.getElementById('fund-date');
@@ -528,6 +562,11 @@ const partitionColors = [
         if (!wallet || !amount) return;
 
         const fundAmount = Number(amount.value);
+
+        if (!category || !category.value) {
+            alert("Please select a category.");
+            return;
+        }
 
         if (isNaN(fundAmount) || fundAmount <= 0) {
             alert("Fund amount must be greater than 0.");
@@ -546,12 +585,55 @@ const partitionColors = [
         }
 
         try {
-            await window.__addFunds({
-                wallet: wallet.value,
-                amount: amount.value,
-                note: note?.value || '',
-                transaction_date: dateInput?.value || '',
+            const authToken = localStorage.getItem("auth_token");
+            const response = await fetch("http://127.0.0.1:8000/api/expenses/transactions/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    ...(authToken ? { Authorization: "Token " + authToken } : {}),
+                },
+                body: JSON.stringify({
+                    transaction_type: "add funds",
+                    wallet: parseInt(wallet.value),
+                    amount: parseFloat(amount.value),
+                    note: note?.value || "",
+                    category: category.value || "generic_income",
+                    transaction_date: dateInput?.value || new Date().toISOString().split("T")[0],
+                }),
             });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || response.statusText || "Request failed");
+            }
+
+            const createdTransaction = await response.json();
+
+            const attachmentInput = document.getElementById('fund-attachment-input');
+            const attachmentFile = attachmentInput?.files?.[0];
+            if (attachmentFile && createdTransaction?.id) {
+                const attachmentForm = new FormData();
+                attachmentForm.append('transaction', createdTransaction.id);
+                attachmentForm.append('photo', attachmentFile);
+
+                const attachmentRes = await fetch("http://127.0.0.1:8000/api/expenses/attachments/", {
+                    method: "POST",
+                    headers: {
+                        Accept: "application/json",
+                        ...(authToken ? { Authorization: "Token " + authToken } : {}),
+                        // Do not set Content-Type here — the browser needs to add the
+                        // multipart boundary itself for FormData uploads.
+                    },
+                    body: attachmentForm,
+                });
+
+                if (!attachmentRes.ok) {
+                    const attachmentErrorText = await attachmentRes.text();
+                    console.error('Attachment upload failed:', attachmentErrorText);
+                    alert('Funds were added, but the attachment failed to upload.');
+                }
+            }
 
             if (btn) {
                 btn.textContent = originalText;
@@ -565,7 +647,11 @@ const partitionColors = [
                 note.value = '';
                 dateInput.value = '';
                 wallet.value = '';
+                if (attachmentInput) attachmentInput.value = '';
+                const attachmentLabel = document.getElementById('fund-attachment-filename');
+                if (attachmentLabel) attachmentLabel.textContent = 'Select files';
                 if (wallet.options.length > 0) wallet.selectedIndex = 0;
+                if (category.options.length > 0) category.selectedIndex = 0;
                 await reloadDashboard('add-funds-modal');
             } else {
                 closeModal(document.getElementById('add-funds-modal'));
@@ -639,12 +725,14 @@ const partitionColors = [
         }
 
         try {
+            const moveAttachmentInput = document.getElementById('move-attachment-input');
             await window.__moveFunds({
                 from_wallet: source.value,
                 to_wallet: dest.value,
                 amount: amount.value,
                 note: note?.value || '',
                 transaction_date: dateInput?.value || '',
+                attachment: moveAttachmentInput?.files?.[0] || null,
             });
 
             if (btn) {
@@ -658,6 +746,9 @@ const partitionColors = [
                 dest.value = '';
                 note.value = '';
                 dateInput.value = '';
+                if (moveAttachmentInput) moveAttachmentInput.value = '';
+                const moveAttachmentLabel = document.getElementById('move-attachment-filename');
+                if (moveAttachmentLabel) moveAttachmentLabel.textContent = 'Select files';
                 await reloadDashboard('move-funds-modal');
             } else {
                 closeModal(document.getElementById('move-funds-modal'));
@@ -679,6 +770,8 @@ const partitionColors = [
     }
 
     document.addEventListener("astro:page-load", async () => {
+        _populateAddFundsCategorySelect();
+
         const reopenModalId = sessionStorage.getItem('kwentadoor:reopen-modal');
         if (reopenModalId) {
             sessionStorage.removeItem('kwentadoor:reopen-modal');
@@ -807,11 +900,18 @@ const partitionColors = [
         wireAttachmentPreview("fund-attachment-input", "fund-attachment-filename");
         wireAttachmentPreview("move-attachment-input", "move-attachment-filename");
 
-        document.querySelector("#add-funds-modal .btn-primary--navy")
-            ?.addEventListener("click", () => submitAddFunds(false));
+        const addFundsSubmitBtn = document.querySelector("#add-funds-modal .btn-primary--navy");
+        const addFundsSaveAnotherBtn = document.querySelector("#add-funds-modal .btn-save-another");
 
-        document.querySelector("#add-funds-modal .btn-save-another")
-            ?.addEventListener("click", () => submitAddFunds(true));
+        if (addFundsSubmitBtn && !addFundsSubmitBtn.dataset.bound) {
+            addFundsSubmitBtn.dataset.bound = "true";
+            addFundsSubmitBtn.addEventListener("click", () => submitAddFunds(false));
+        }
+
+        if (addFundsSaveAnotherBtn && !addFundsSaveAnotherBtn.dataset.bound) {
+            addFundsSaveAnotherBtn.dataset.bound = "true";
+            addFundsSaveAnotherBtn.addEventListener("click", () => submitAddFunds(true));
+        }
 
         document.querySelector("#move-funds-modal .btn-primary--move")
             ?.addEventListener("click", () => submitMoveFunds(false));

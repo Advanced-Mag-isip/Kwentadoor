@@ -49,10 +49,19 @@ function formatTransactionDate(value) {
         : "";
 }
 
+function parseWalletAmount(value) {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+    const normalized = String(value).replace(/[^0-9.-]/g, "");
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
 let wallets = [];
 try {
   const res = await fetch("http://127.0.0.1:8000/api/expenses/wallets/", {
     headers: { Accept: "application/json" },
+        cache: "no-store",
   });
   if (res.ok) {
     const data = await res.json();
@@ -61,7 +70,7 @@ try {
       id: w.id,
       name: w.name,
       description: w.description || "",
-      amount: parseFloat(w.balance || 0),
+            amount: parseWalletAmount(w.balance),
       type: WALLET_TYPE_MAP[w.name] || "cash",
       created_at: w.created_at,
       updated_at: w.updated_at,
@@ -71,23 +80,31 @@ try {
 
 const selectedWallet = wallets.length > 0 ?
   wallets[0] : { id: null, name: "No wallets", description: "", amount: 0, type: "cash" };
+const selectedWalletAmount = parseWalletAmount(selectedWallet.amount);
 const icon = selectedWallet.type ?
   walletType[selectedWallet.type as keyof typeof walletType]?.icon : IconCash;
 
 let transactions = [];
 try {
-  const txRes = await fetch("http://127.0.0.1:8000/api/expenses/transactions/?limit=20", {
+  const txRes = await fetch("http://127.0.0.1:8000/api/expenses/transactions/?limit=100", {
     headers: { Accept: "application/json" },
+        cache: "no-store",
   });
   if (txRes.ok) {
     const txData = await txRes.json();
     const rawList = txData.results || txData;
-    // Sort newest first, tie by ID descending
-    const list = rawList.slice().sort((a, b) => {
+
+    let filteredList = rawList;
+    if (selectedWallet && selectedWallet.id) {
+      filteredList = rawList.filter((t) => String(t.wallet) === String(selectedWallet.id) || t.wallet_name === selectedWallet.name);
+    }
+
+    const list = filteredList.slice().sort((a, b) => {
       const dateDiff = new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime();
       if (dateDiff !== 0) return dateDiff;
       return (b.id || 0) - (a.id || 0);
     });
+    
     transactions = list.map((t) => ({
       id: t.id,
       amount: t.amount,
@@ -146,11 +163,11 @@ try {
                 </div>
 
                 <div
-                    id="balance-amount"
+                    id="wallet-balance-amount"
                     class="balancecard-amount truncate"
-                    data-balance={selectedWallet.amount}
+                    data-balance={selectedWalletAmount}
                 >
-                    {`₱${selectedWallet.amount.toLocaleString("en-PH", {
+                    {`₱${selectedWalletAmount.toLocaleString("en-PH", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                     })}`}
@@ -327,20 +344,31 @@ try {
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="fund-wallet">DESTINATION WALLET</label>
-                    <div class="input-icon-wrapper">
-                        <span class="input-icon"><Fragment set:html={IconWallet} /></span>
-                        <select id="fund-wallet" name="wallet">
-                            <option value="" disabled selected>Select Wallet</option>
-                            {
-                                wallets.map((wallet) => (
-                                    <option value={wallet.id}>
-                                        {wallet.name}
-                                    </option>
-                                ))
-                            }
-                        </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fund-category">CATEGORY</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon"><Fragment set:html={IconCashDown} /></span>
+                            <select id="fund-category" name="category">
+                                <option value="" disabled selected>Loading categories...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fund-wallet">DESTINATION WALLET</label>
+                        <div class="input-icon-wrapper">
+                            <span class="input-icon"><Fragment set:html={IconWallet} /></span>
+                            <select id="fund-wallet" name="wallet">
+                                <option value="" disabled selected>Select Wallet</option>
+                                {
+                                    wallets.map((wallet) => (
+                                        <option value={wallet.id}>
+                                            {wallet.name}
+                                        </option>
+                                    ))
+                                }
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -580,6 +608,7 @@ try {
         modalOutside.showModal();
       });
     }
+    
   });
 </script>
 
@@ -1496,21 +1525,66 @@ try {
     // Shared API helpers
     const API_BASE = "http://127.0.0.1:8000/api/expenses";
 
+    function _authHeaders() {
+        const token = localStorage.getItem("auth_token");
+        return token ? { Authorization: "Token " + token } : {};
+    }
+
     function apiFetch(path, options) {
+        options = options || {};
         return fetch(API_BASE + path, {
+            ...options,
+            credentials: "include",
             headers: {
                 "Content-Type": "application/json",
-                Accept: "application/json"
+                Accept: "application/json",
+                ..._authHeaders(),
+                ...(options.headers || {}),
             },
-            ...options,
-        }).then(r => {
-            if (!r.ok) return r.json().then(e => { throw new Error(JSON.stringify(e)); });
-            return r.json();
+        }).then(async (r) => {
+            if (!r.ok) {
+                const errorText = await r.text();
+                if (!errorText) {
+                    throw new Error(`Request failed with status ${r.status}`);
+                }
+                throw new Error(errorText);
+            }
+
+            if (r.status === 204 || r.status === 205) {
+                return null;
+            }
+
+            const text = await r.text();
+            if (!text) return null;
+
+            try {
+                return JSON.parse(text);
+            } catch (_) {
+                return text;
+            }
         });
     }
 
     function reloadPage() {
         window.location.reload();
+    }
+
+    async function _populateAddFundsCategorySelect() {
+        const sel = document.getElementById('fund-category');
+        if (!sel) return;
+        try {
+            const data = await apiFetch('/categories/?type=income');
+            const list = data.results || data;
+            sel.innerHTML = '<option value="" disabled selected>Select Category</option>';
+            list.forEach((c) => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.label;
+                sel.appendChild(opt);
+            });
+        } catch (e) {
+            sel.innerHTML = '<option value="" disabled selected>No categories available</option>';
+        }
     }
 
     // --- Wallet selection ---
@@ -1522,6 +1596,8 @@ try {
         };
 
         window.apiFetch = apiFetch;
+
+        _populateAddFundsCategorySelect();
 
         const walletItems = document.querySelectorAll(".wallet-item");
         
@@ -1554,12 +1630,12 @@ try {
             // Update balance card
             const walletName = document.getElementById("wallet-name");
             const walletDescription = document.getElementById("wallet-description");
-            const walletAmount = document.getElementById("balance-amount");
+            const walletAmount = document.getElementById("wallet-balance-amount");
             const walletIcon = document.getElementById("wallet-icon");
 
             if(walletName) walletName.textContent = item.dataset.name;
             if(walletDescription) walletDescription.textContent = item.dataset.description;
-            
+
             const amount = Number(item.dataset.amount);
             if(walletAmount) {
                 walletAmount.textContent = "₱" + amount.toLocaleString("en-PH", {
@@ -1568,21 +1644,28 @@ try {
                 });
                 walletAmount.dataset.balance = amount;
             }
+
             if(walletIcon) {
                 walletIcon.innerHTML = walletIcons[item.dataset.type] || IconCash;
             }
 
             // Update current wallet
+            const walletAmountValue = Number(item.dataset.amount) || 0;
             window.currentWallet = {
                 id: item.dataset.id,
                 name: item.dataset.name,
                 description: item.dataset.description,
-                amount: item.dataset.amount,
+                amount: walletAmountValue,
                 type: item.dataset.type
             };
+
+            sessionStorage.setItem('activeWalletId', item.dataset.id);
+
+            if (typeof window.__loadRecentTransactions === 'function') {
+                window.__loadRecentTransactions(window.__currentTransactionFilter);
+            }
         }
 
-        // Initialize Wallet from session or first item
         const savedWalletId = sessionStorage.getItem('activeWalletId');
         let walletToActivate = walletItems.length > 0 ? walletItems[0] : null;
 
@@ -1768,19 +1851,42 @@ try {
         });
 
         // Add Funds
-        document.getElementById('add-funds-submit')?.addEventListener('click', () => submitAddFunds(false));
-        document.getElementById('add-funds-save-another')?.addEventListener('click', () => submitAddFunds(true));
+        const addFundsSubmitBtn = document.getElementById('add-funds-submit');
+        const addFundsSaveAnotherBtn = document.getElementById('add-funds-save-another');
+
+        if (addFundsSubmitBtn && !addFundsSubmitBtn.dataset.bound) {
+            addFundsSubmitBtn.dataset.bound = 'true';
+            addFundsSubmitBtn.addEventListener('click', () => submitAddFunds(false));
+        }
+        if (addFundsSaveAnotherBtn && !addFundsSaveAnotherBtn.dataset.bound) {
+            addFundsSaveAnotherBtn.dataset.bound = 'true';
+            addFundsSaveAnotherBtn.addEventListener('click', () => submitAddFunds(true));
+        }
+
+        let addFundsInFlight = false;
 
         async function submitAddFunds(keepOpen) {
+            if (addFundsInFlight) return;
+
             const walletSelect = document.getElementById('fund-wallet');
+            const categorySelect = document.getElementById('fund-category');
             const amountInput = document.getElementById('fund-amount');
             const noteInput = document.getElementById('fund-note');
             const dateInput = document.getElementById('fund-date');
 
             const walletId = walletSelect?.value;
+            const categoryId = categorySelect?.value;
             const amount = parseFloat(amountInput?.value);
             if (!walletId) { alert('Please select a wallet.'); return; }
+            if (!categoryId) { alert('Please select a category.'); return; }
             if (isNaN(amount) || amount <= 0) { alert('Amount must be greater than 0.'); return; }
+
+            addFundsInFlight = true;
+            const activeBtn = keepOpen ? addFundsSaveAnotherBtn : addFundsSubmitBtn;
+            const originalText = activeBtn ? activeBtn.textContent : '';
+            if (addFundsSubmitBtn) addFundsSubmitBtn.disabled = true;
+            if (addFundsSaveAnotherBtn) addFundsSaveAnotherBtn.disabled = true;
+            if (activeBtn) activeBtn.textContent = 'Saving...';
 
             try {
                 await apiFetch('/transactions/', {
@@ -1789,6 +1895,7 @@ try {
                         wallet: walletId,
                         amount: amount,
                         transaction_type: 'add funds',
+                        category: categoryId,
                         note: noteInput?.value || '',
                         transaction_date: dateInput?.value || null,
                     })
@@ -1802,14 +1909,32 @@ try {
                 reloadPage();
             } catch (e) {
                 alert('Failed to add funds: ' + e.message);
+            } finally {
+                addFundsInFlight = false;
+                if (addFundsSubmitBtn) addFundsSubmitBtn.disabled = false;
+                if (addFundsSaveAnotherBtn) addFundsSaveAnotherBtn.disabled = false;
+                if (activeBtn) activeBtn.textContent = originalText;
             }
         }
 
         // Move Funds
-        document.getElementById('move-funds-submit')?.addEventListener('click', () => submitMoveFunds(false));
-        document.getElementById('move-funds-save-another')?.addEventListener('click', () => submitMoveFunds(true));
+        const moveFundsSubmitBtn = document.getElementById('move-funds-submit');
+        const moveFundsSaveAnotherBtn = document.getElementById('move-funds-save-another');
+
+        if (moveFundsSubmitBtn && !moveFundsSubmitBtn.dataset.bound) {
+            moveFundsSubmitBtn.dataset.bound = 'true';
+            moveFundsSubmitBtn.addEventListener('click', () => submitMoveFunds(false));
+        }
+        if (moveFundsSaveAnotherBtn && !moveFundsSaveAnotherBtn.dataset.bound) {
+            moveFundsSaveAnotherBtn.dataset.bound = 'true';
+            moveFundsSaveAnotherBtn.addEventListener('click', () => submitMoveFunds(true));
+        }
+
+        let moveFundsInFlight = false;
 
         async function submitMoveFunds(keepOpen) {
+            if (moveFundsInFlight) return;
+
             const source = document.getElementById('move-source');
             const dest = document.getElementById('move-destination');
             const amountInput = document.getElementById('move-amount');
@@ -1835,28 +1960,25 @@ try {
                 }
             }
 
+            moveFundsInFlight = true;
+            const activeBtn = keepOpen ? moveFundsSaveAnotherBtn : moveFundsSubmitBtn;
+            const originalText = activeBtn ? activeBtn.textContent : '';
+            if (moveFundsSubmitBtn) moveFundsSubmitBtn.disabled = true;
+            if (moveFundsSaveAnotherBtn) moveFundsSaveAnotherBtn.disabled = true;
+            if (activeBtn) activeBtn.textContent = 'Saving...';
+
             try {
-                await apiFetch('/transactions/', {
+                await apiFetch('/transfers/', {
                     method: 'POST',
                     body: JSON.stringify({
-                        wallet: sourceId,
+                        from_wallet: sourceId,
+                        to_wallet: destId,
                         amount: amount,
-                        transaction_type: 'spend funds',
-                        note: noteInput?.value || `Transfer to ${dest.options[dest.selectedIndex].text}`,
-                        transaction_date: dateInput?.value || null,
+                        note: noteInput?.value || '',
+                        transaction_date: dateInput?.value || null
                     })
                 });
-                await apiFetch('/transactions/', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        wallet: destId,
-                        amount: amount,
-                        transaction_type: 'add funds',
-                        note: noteInput?.value || `Transfer from ${source.options[source.selectedIndex].text}`,
-                        transaction_date: dateInput?.value || null,
-                    })
-                });
-                
+
                 if (keepOpen) {
                     sessionStorage.setItem('reopenModal', 'move-funds-modal');
                     sessionStorage.setItem('activeWalletId', window.currentWallet ? window.currentWallet.id : sourceId);
@@ -1866,54 +1988,67 @@ try {
                 reloadPage();
             } catch (e) {
                 alert('Failed to move funds: ' + e.message);
+            } finally {
+                moveFundsInFlight = false;
+                if (moveFundsSubmitBtn) moveFundsSubmitBtn.disabled = false;
+                if (moveFundsSaveAnotherBtn) moveFundsSaveAnotherBtn.disabled = false;
+                if (activeBtn) activeBtn.textContent = originalText;
             }
         }
     });
 </script>
 
 <script is:inline>
-window.__currentTransactionFilter = "all";
-window.__loadRecentTransactions = function (filter) {
-    filter = filter || window.__currentTransactionFilter || "all";
-    window.__currentTransactionFilter = filter;
-    var baseUrl = "http://127.0.0.1:8000/api/expenses/transactions/?limit=20";
-    
-    var typeValue = null;
-    if (filter !== "all") {
-        typeValue = filter === "added" ? "add funds" : "spend funds";
-        baseUrl += "&transaction_type=" + encodeURIComponent(typeValue);
-    }
+    window.__loadRecentTransactions = function (filter) {
+        filter = filter || window.__currentTransactionFilter || "all";
+        window.__currentTransactionFilter = filter;
 
-    fetch(baseUrl, {
-        headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json"
-        }
-    }).then(function (res) {
-        if (!res.ok) throw new Error("Failed to fetch");
-        return res.json();
-    }).then(function (data) {
-        var list = data.results || data;
-    
-        var container = document.getElementById("recent-transactions");
-
-        if (!container) return;
-
-        if (typeValue) {
-            list = list.filter(function(t) {
-                return t.transaction_type === typeValue;
-            });
+        var baseUrl = "http://127.0.0.1:8000/api/expenses/transactions/?limit=100";
+        
+        var typeValue = null;
+        if (filter !== "all") {
+            typeValue = filter === "added" ? "add funds" : "spend funds";
+            baseUrl += "&transaction_type=" + encodeURIComponent(typeValue);
         }
 
-        if (!list.length) {
-            container.innerHTML =
-                '<div class="transactionrow">' +
-                '<p style="grid-column:1/-1;text-align:center;opacity:.5">' +
-                'No transactions yet' +
-                '</p>' +
-                '</div>';
-            return;
-        }
+        var _token = localStorage.getItem("auth_token");
+        fetch(baseUrl, {
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                ...(_token ? { Authorization: "Token " + _token } : {})
+            }
+        }).then(function (res) {
+            if (!res.ok) throw new Error("Failed to fetch");
+            return res.json();
+        }).then(function (data) {
+            var list = data.results || data;
+            var container = document.getElementById("recent-transactions");
+
+            if (!container) return;
+
+            if (window.currentWallet && window.currentWallet.id) {
+                list = list.filter(function(t) {
+                    return String(t.wallet) === String(window.currentWallet.id) || t.wallet_name === window.currentWallet.name;
+                });
+            }
+
+            if (typeValue) {
+                list = list.filter(function(t) {
+                    return t.transaction_type === typeValue;
+                });
+            }
+
+            if (!list.length) {
+                container.innerHTML =
+                    '<div class="transactionrow">' +
+                    '<p style="grid-column:1/-1;text-align:center;opacity:.5">' +
+                    'No transactions yet' +
+                    '</p>' +
+                    '</div>';
+                return;
+            }
 
         list.sort(function(a, b) {
             var dateDiff = new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime();
@@ -2001,10 +2136,71 @@ function initWalletPage() {
     });
 }
 
+function _loadInitialWalletTransactions() {
+    window.__loadRecentTransactions("all");
+}
+
+function _refreshWalletBalances() {
+    var token = localStorage.getItem("auth_token");
+
+    function parseAmount(value) {
+        if (value === null || value === undefined) return 0;
+        var normalized = String(value).replace(/[^0-9.-]/g, "");
+        var parsed = Number(normalized);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    fetch("http://127.0.0.1:8000/api/expenses/wallets/", {
+        headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            ...(token ? { Authorization: "Token " + token } : {})
+        }
+    })
+    .then(function (res) {
+        if (!res.ok) throw new Error("Failed to fetch wallets");
+        return res.json();
+    })
+    .then(function (data) {
+        var list = data.results || data;
+        list.forEach(function (wallet) {
+            var el = document.querySelector('.wallet-item[data-id="' + wallet.id + '"]');
+            if (!el) return;
+
+            var newAmount = parseAmount(wallet.balance);
+            el.dataset.amount = String(newAmount);
+
+            if (el.classList.contains('active')) {
+                var walletAmount = document.getElementById("wallet-balance-amount");
+                if (walletAmount) {
+                    walletAmount.textContent = "₱" + newAmount.toLocaleString("en-PH", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    walletAmount.dataset.balance = String(newAmount);
+                }
+
+                window.currentWallet = {
+                    id: String(wallet.id),
+                    name: wallet.name,
+                    description: wallet.description || "",
+                    amount: newAmount,
+                    type: el.dataset.type || "cash"
+                };
+            }
+        });
+    })
+    .catch(console.error);
+}
+
 if (document.readyState === 'complete') {
     initWalletPage();
+    _loadInitialWalletTransactions();
+    _refreshWalletBalances();
 } else {
     document.addEventListener('astro:page-load', initWalletPage);
+    document.addEventListener('astro:page-load', _loadInitialWalletTransactions);
+    document.addEventListener('astro:page-load', _refreshWalletBalances);
 }
 
 window.__spendFunds = async function (data) {
@@ -2024,11 +2220,13 @@ window.__spendFunds = async function (data) {
     }
 
     try {
+        const authToken = localStorage.getItem("auth_token");
         const response = await fetch("http://127.0.0.1:8000/api/expenses/transactions/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Accept: "application/json"
+                Accept: "application/json",
+                ...(authToken ? { Authorization: "Token " + authToken } : {})
             },
             body: JSON.stringify(payload)
         });

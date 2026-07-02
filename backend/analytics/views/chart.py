@@ -15,8 +15,6 @@ from analytics.services.chart import (
 
 
 def _get_qs(request):
-    if request.user.is_authenticated:
-        return Transaction.objects.filter(user=request.user)
     return Transaction.objects.all()
 
 
@@ -103,7 +101,7 @@ class MonthlyMetricsView(APIView):
         )
         incoming = qs.filter(transaction_type="add funds").aggregate(t=Sum("amount"))["t"] or 0
         outgoing = qs.filter(transaction_type="spend funds").aggregate(t=Sum("amount"))["t"] or 0
-        count = qs.aggregate(c=Count("id"))["c"] or 0
+        count = qs.exclude(transaction_type="move funds").aggregate(c=Count("id"))["c"] or 0
         return Response({
             "incoming": round(float(incoming), 2),
             "outgoing": round(float(outgoing), 2),

@@ -76,7 +76,7 @@ class LogoutView(generics.GenericAPIView):
                 ip_address=get_client_ip(request)
             )
             
-            request.user.auth_token.delete()
+            Token.objects.filter(user=request.user).delete()
             return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
