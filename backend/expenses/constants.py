@@ -46,6 +46,8 @@ EXPENSE_CATEGORIES_DATA = [
     },
 ]
 
+BIR_CATEGORY_MAP = { item["id"]: item["bir_mapping"] for item in EXPENSE_CATEGORIES_DATA }
+
 ALL_CATEGORIES_DATA = INCOME_CATEGORIES_DATA + EXPENSE_CATEGORIES_DATA + TRANSFER_CATEGORIES_DATA
 CATEGORY_CHOICES = [(cat["id"], cat["label"]) for cat in ALL_CATEGORIES_DATA]
 BIR_MAPPING = {cat["id"]: cat["bir_mapping"] for cat in ALL_CATEGORIES_DATA}
