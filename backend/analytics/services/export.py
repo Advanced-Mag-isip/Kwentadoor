@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.db.models import Sum
 from xhtml2pdf import pisa
+from .constants import BIR_CATEGORY_MAP
 
 def export_transactions_to_xlsx(queryset, period_label):
     # Create an in-memory workbook
@@ -16,7 +17,7 @@ def export_transactions_to_xlsx(queryset, period_label):
         "Transaction Type", 
         "User", 
         "Wallet", 
-        "Category", 
+        "BIR Category", 
         "Date", 
         "Amount", 
         "Counterparty", 
@@ -44,7 +45,7 @@ def export_transactions_to_xlsx(queryset, period_label):
             str(tx.user) if tx.user_id else "", 
             str(tx.wallet) if tx.wallet_id else "",
             
-            tx.category or "",
+            tx.bir_category or "",
             tx.transaction_date.strftime("%Y-%m-%d") if tx.transaction_date else "",
             float(tx.amount) if tx.amount is not None else 0.0,
             tx.counterparty or "",
@@ -67,17 +68,19 @@ def export_transactions_to_xlsx(queryset, period_label):
 
 def export_summary_to_pdf(summary_data, queryset, period_label):
     # Calculate top 5 categories
-    category_breakdown = queryset.filter(transaction_type="spend funds") \
+    category_breakdown = list(queryset.filter(transaction_type="spend funds") \
         .values('category') \
         .annotate(total=Sum('amount')) \
-        .order_by('-total')[:5]
+        .order_by('-total')[:5])
 
-    # UPDATE YOUR CONTEXT DICTIONARY HERE:
+    # Inject the BIR mapping into the aggregated dictionaries
+    for cat in category_breakdown:
+        cat['bir_category'] = BIR_CATEGORY_MAP.get(cat['category'], "Uncategorized/Other")
+
     context = {
         'summary': summary_data,
         'categories': category_breakdown,
         'period_label': period_label,
-        # Add the full list of transactions, sorted by date:
         'transactions': queryset.order_by('-transaction_date') 
     }
 
