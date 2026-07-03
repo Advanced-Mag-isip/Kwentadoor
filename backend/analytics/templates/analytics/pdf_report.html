@@ -56,9 +56,12 @@
         </thead>
         <tbody>
             {% for cat in categories %}
-            <tr>
-                <td>{{ cat.category|default:"Uncategorized" }}</td>
-                <td class="text-right money" >{{ cat.total|floatformat:2 }}</td>
+           <tr>
+                <td>
+                    {{ cat.category|default:"Uncategorized" }}<br>
+                    <small style="color: #7f8c8d;">BIR: {{ cat.bir_category }}</small>
+                </td>
+                <td class="text-right money">{{ cat.total|floatformat:2 }}</td>
             </tr>
             {% empty %}
             <tr>
@@ -77,7 +80,7 @@
                 <th>Date</th>
                 <th>Type</th>
                 <th>Wallet</th>
-                <th>Category</th>
+                <th>BIR Category</th>
                 <th>Counterparty</th>
                 <th class="text-right">Amount</th>
                 <th>pre- balance</th>
@@ -91,7 +94,7 @@
                 <td>{{ tx.transaction_date|date:"Y-m-d" }}</td>
                 <td>{{ tx.transaction_type|title }}</td>
                 <td>{{ tx.wallet|default:"-" }}</td>
-                <td>{{ tx.category|default:"-" }}</td>
+                <td>{{ tx.bir_category|default:"-" }}</td>
                 <td>
                     {{ tx.counterparty|default:"-"}}
                 </td>
@@ -129,6 +132,21 @@
         font-size: 12px; 
     }
     
+    table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        margin-top: 15px; 
+        table-layout: fixed; 
+    }
+
+        th, td { 
+            padding: 8px; 
+            text-align: left; 
+            border-bottom: 1px solid #ddd; 
+            word-wrap: break-word; 
+            overflow-wrap: break-word; 
+            vertical-align: top; 
+        }
 </style>
 
 </html>

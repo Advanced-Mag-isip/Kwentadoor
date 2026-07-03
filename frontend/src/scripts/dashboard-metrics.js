@@ -151,6 +151,14 @@ function _sortByRecency(list) {
   });
 }
 
+function _escAttr(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 window.__loadRecentTransactions = function (filter) {
   var url = "/transactions/?limit=100";
   var container = document.querySelector(".transaction-history-slots");
@@ -176,15 +184,28 @@ window.__loadRecentTransactions = function (filter) {
       var cat = t.BIR_label || t.category || "";
       var isAdd = t.transaction_type === "add funds";
       var isSpend = t.transaction_type === "spend funds";
-      var color = isAdd ? "#2ecc71" : (isSpend ? "#e74c3c" : "#f39c12");
-      var sign = isAdd ? "+" : (isSpend ? "-" : "~");
-      return '<div class="transactionrow">'
-        + '<p style="color:' + color + ';font-weight:600">' + sign + '\u20B1' + amt + '</p>'
+      var isTransferIn = t.transaction_type === "transfer in";
+      var isTransferOut = t.transaction_type === "transfer out";
+      var color = isAdd? "#2ecc71" : isSpend ? "#e74c3c" : "#f39c12";
+      var sign = (isAdd || isTransferIn) ? "+" : (isSpend || isTransferOut) ? "-" : "~";
+
+      return '<div class="transactionrow"'
+        + ' data-id="' + _escAttr(t.id) + '"'
+        + ' data-date="' + _escAttr(date) + '"'
+        + ' data-type="' + _escAttr(t.transaction_type) + '"'
+        + ' data-amount="' + _escAttr(amt) + '"'
+        + ' data-sign="' + _escAttr(sign) + '"'
+        + ' data-category="' + _escAttr(cat) + '"'
+        + ' data-wallet="' + _escAttr(wname) + '"'
+        + ' data-note="' + _escAttr(note) + '"'
+        + ' data-user="' + _escAttr(uname) + '"'
+        + '>'
+        + '<p>' + date + '</p>'
         + '<p>' + wname + '</p>'
         + '<p>' + cat + '</p>'
         + '<p>' + note + '</p>'
         + '<p>' + uname + '</p>'
-        + '<p>' + date + '</p>'
+        + '<p style="color:' + color + ';font-weight:600">' + sign + '\u20B1' + amt + '</p>'
         + '</div>';
     }).join("");
   }).catch(function (err) {

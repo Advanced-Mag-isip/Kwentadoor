@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from .constants import CATEGORY_CHOICES, TRANSACTION_TYPE_CHOICES
+from .constants import BIR_CATEGORY_MAP, CATEGORY_CHOICES, TRANSACTION_TYPE_CHOICES
 
 class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -88,6 +88,12 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"{self.transaction_type} - {self.amount}"
+    
+    @property
+    def bir_category(self):
+        """Returns the BIR mapping for this transaction's category."""
+        # .get() safely returns "Uncategorized" if the category isn't in your list
+        return BIR_CATEGORY_MAP.get(self.category, "Uncategorized/ Other")
 
 class Attachment(models.Model):
     transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name="attachments")

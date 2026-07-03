@@ -16,7 +16,9 @@ import IconChevronDown from '../assets/chevron-down.svg?raw';
 import IconWallet from '../assets/wallet-icon.svg?raw';
 import IconPeso from '../assets/philippine-peso.svg?raw';
 import IconAttachment from '../assets/paperclip.svg?raw';
-import AddExpenseModal from "../components/AddFundsModal.astro"; 
+import AddExpenseModal from "../components/AddFundsModal.astro";
+import TransactionReceipt from "../components/TransactionReceipt.astro";
+
 
 const apiBase = import.meta.env.INTERNAL_API_URL ?? "http://127.0.0.1:8000/api";
 
@@ -93,6 +95,7 @@ try {
             note: t.note || "--",
             user_name: t.user_name || "User 1",
             transaction_date: t.transaction_date,
+            attachment: t.attachment || null
         }));
     }
 } catch (_) {}
@@ -209,17 +212,8 @@ const partitionColors = [
             <div class="metric-container">
                 <div class="metric-card">
                     <div class="metric-info">
-                        <span class="metric-label">INCOMING FUNDS THIS MONTH</span>
+                        <span class="metric-label">DEPOSITS THIS MONTH</span>
                         <span class="metric-value" id="dash-incoming-value">---</span>
-                    </div>
-                    <div class="metric-icon-wrapper">
-                        <Fragment set:html={IconCashUp} />
-                    </div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-info">
-                        <span class="metric-label">OUTGOING FUNDS THIS MONTH</span>
-                        <span class="metric-value" id="dash-outgoing-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
                         <Fragment set:html={IconCashDown} />
@@ -227,7 +221,16 @@ const partitionColors = [
                 </div>
                 <div class="metric-card">
                     <div class="metric-info">
-                        <span class="metric-label">TOTAL PROFIT THIS MONTH</span>
+                        <span class="metric-label">EXPENSES THIS MONTH</span>
+                        <span class="metric-value" id="dash-outgoing-value">---</span>
+                    </div>
+                    <div class="metric-icon-wrapper">
+                        <Fragment set:html={IconCashUp} />
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-label">NET AMOUNT THIS MONTH</span>
                         <span class="metric-value" id="dash-profit-value">---</span>
                     </div>
                     <div class="metric-icon-wrapper">
@@ -247,15 +250,15 @@ const partitionColors = [
 
             <div class="graph-section">
                 <div class="graph-card">
-                    <span class="graph-label orange">TOTAL INCOMING VS OUTGOING THIS MONTH</span>
+                    <span class="graph-label orange">TOTAL DEPOSITS VS EXPENSES THIS MONTH</span>
                     <div class="graph-content"><DashboardIncomeVsOutgoing /></div>
                 </div>
                 <div class="graph-card">
-                    <span class="graph-label orange">INCOMING FUNDS BY WALLET SOURCE</span>
+                    <span class="graph-label orange">DEPOSITS BY WALLET SOURCE</span>
                     <div class="graph-content"><DashboardIncomingByWallet /></div>
                 </div>
                 <div class="graph-card">
-                    <span class="graph-label orange">OUTGOING FUNDS BY EXPENSE CATEGORY</span>
+                    <span class="graph-label orange">EXPENSES BY CATEGORY</span>
                     <div class="graph-content"><DashboardExpensesByCategory /></div>
                 </div>
             </div>
@@ -274,12 +277,12 @@ const partitionColors = [
                         </div>
                     </div>
                     <div class="transactionlabels">
-                        <p>AMOUNT</p>
+                        <p>DATE</p>
                         <p>WALLET</p>
                         <p>CATEGORY</p>
                         <p>NOTE</p>
                         <p>USER</p>
-                        <p>DATE</p>
+                        <p>AMOUNT</p>
                     </div>
                 </div>
 
@@ -302,7 +305,19 @@ const partitionColors = [
                                 const amt = Number(t.amount).toLocaleString("en-PH", {minimumFractionDigits:2});
 
                                 
-                                return <div class="transactionrow">
+                                return <div
+                                            class="transactionrow"
+                                            data-id={t.id}
+                                            data-date={formatTransactionDate(t.transaction_date)}
+                                            data-type={t.transaction_type}
+                                            data-amount={amt}
+                                            data-sign={sign}
+                                            data-category={t.category_label || t.category}
+                                            data-wallet={t.wallet_name}
+                                            data-note={t.note}
+                                            data-user={t.user_name}
+                                            data-attachment={t.attachment || ""}
+                                        >
                                     <p>{formatTransactionDate(t.transaction_date)}</p>
                                     <p>{t.wallet_name}</p>
                                     <p>{t.category_label || t.category}</p>
@@ -514,6 +529,7 @@ const partitionColors = [
         </div>
     </div>
 <AddExpenseModal />
+<TransactionReceipt id="modal" />
 
 <script>
     import "../scripts/dashboard-metrics.js";
@@ -867,6 +883,35 @@ const partitionColors = [
                 if (!modal) return;
                 openModal(modal);
             });
+        });
+
+        const receiptDialog = document.getElementById("transaction-receipt-modal");
+        const typeLabels = { "add funds": "Add Funds", "spend funds": "Spend Funds" };
+
+        document.getElementById("recent-transactions")?.addEventListener("click", (e) => {
+            const row = e.target.closest(".transactionrow");
+            if (!row || !row.dataset.id || !receiptDialog) return;
+
+            const setField = (field, value) => {
+                const el = receiptDialog.querySelector(`[data-receipt-field="${field}"]`);
+                if (el) el.textContent = value || "--";
+            };
+
+            setField("date", row.dataset.date);
+            setField("transaction", typeLabels[row.dataset.type] || row.dataset.type);
+            setField("id", row.dataset.id);
+            setField("amount", row.dataset.amount ? `${row.dataset.sign}₱${row.dataset.amount}` : "--");
+            setField("category", row.dataset.category);
+            setField("wallet", row.dataset.wallet);
+            setField("note", row.dataset.note);
+            setField("user", row.dataset.user);
+
+            const attachmentField = receiptDialog.querySelector('[data-receipt-field="attachments"]');
+            attachmentField.innerHTML = row.dataset.attachment
+                ? `<a href="${row.dataset.attachment}" target="_blank" rel="noopener">View attachment</a>`
+                : "--";
+
+            receiptDialog.showModal();
         });
 
         document.querySelectorAll(".modal-overlay").forEach(modal => {
@@ -1261,7 +1306,7 @@ const partitionColors = [
     }
 
     .transaction-headings {
-        padding: var(--space-md);
+        padding: var(--space-md) var(--space-lg);
         color: #ffffff;
         display: flex;
         flex-direction: column;
@@ -1276,9 +1321,22 @@ const partitionColors = [
         gap: var(--space-sm);
     }
 
+    .transaction-top-row > div:first-child p:first-child {
+        font-family: var(--display-headings-font);
+        font-size: 1.125rem;
+        font-weight: 700;
+        letter-spacing: .02em;
+    }
+
+    .transaction-top-row > div:first-child p:last-child {
+        font-size: var(--small-text);
+        opacity: .85;
+        margin-top: 2px;
+    }
+
     .filtergroup {
         display: flex;
-        gap: 8px;
+        gap: var(--space-sm);
         align-items: center;
         flex-wrap: wrap;
     }
@@ -1286,8 +1344,8 @@ const partitionColors = [
     .filter-chip {
         border: 2px solid #ffffff;
         border-radius: var(--radius-pill);
-        padding: 6px var(--space-md);
-        font-size: var(--paragraph-text);
+        padding: var(--space-sm) var(--space-md);
+        font-size: var(--small-text);
         cursor: pointer;
 
         background: transparent;
@@ -1312,7 +1370,7 @@ const partitionColors = [
     :global(.transactionlabels) {
         display: grid;
         grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr 1fr;
-        padding: 0 var(--space-lg);
+        gap: var(--space-sm);
     }
 
     .transaction-history-scrollable {
@@ -1327,9 +1385,31 @@ const partitionColors = [
         display: grid;
         grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr 1fr;
         align-items: center;
+        gap: var(--space-sm);
         padding: var(--space-md) var(--space-lg);
         border-bottom: 1px solid var(--light-grey);
         transition: background-color .15s ease, transform .15s ease;
+        cursor: pointer;
+    }
+
+    :global(.transactionrow:hover) {
+        background-color: #eef2f7;
+    }
+
+    :global(.transactionlabels p) {
+        font-size: var(--label-text);
+        font-weight: 600;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        opacity: .85;
+    }
+
+    :global(.transactionrow p) {
+        font-size: var(--small-text);
+    }
+
+    :global(.transactionrow p:first-child) {
+        font-weight: 600;
     }
 
     .balance-hidden {
@@ -1845,18 +1925,33 @@ const partitionColors = [
             width: 190px;
         }
 
+        .transaction-headings {
+            padding: var(--space-sm) var(--space-md);
+            gap: var(--space-sm);
+        }
+
+        .transaction-top-row > div:first-child p:first-child {
+            font-size: 0.9rem;
+        }
+
+        .filter-chip {
+            padding: 5px 10px;
+            font-size: 0.7rem;
+        }
+
         :global(.transactionlabels),
         :global(.transactionrow) {
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1.2fr 1fr;
         }
 
-        :global(.transactionrow:hover) {
-            background: #fafafa;
-            transform: translateX(4px);
+        :global(.transactionrow) {
+            padding: var(--space-sm) var(--space-md);
         }
 
-        :global(.transactionlabels p:nth-child(n+4)),
-        :global(.transactionrow p:nth-child(n+4)) {
+        :global(.transactionlabels p:nth-child(4)),
+        :global(.transactionlabels p:nth-child(5)),
+        :global(.transactionrow p:nth-child(4)),
+        :global(.transactionrow p:nth-child(5)) {
             display: none;
         }
 
