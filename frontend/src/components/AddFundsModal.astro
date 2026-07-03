@@ -78,7 +78,7 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
             <div class="input-group">
               <label>ATTACHMENT</label>
               <label class="file-upload-wrapper" for="attachment-input">
-                <span class="placeholder-text">Select files</span>
+                <span class="placeholder-text" id="attachment-filename">Select files</span>
                 <span class="paperclip-icon"><Fragment set:html={IconAttachment}></Fragment></span>
               </label>
               <input type="file" id="attachment-input" name="attachment" accept="image/*" style="display: none;" />
@@ -175,6 +175,14 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
     _populateWalletSelect();
     _populateCategorySelect();
 
+    const attachmentInput = document.getElementById('attachment-input');
+    const attachmentLabel = document.getElementById('attachment-filename');
+    if (attachmentInput && attachmentLabel) {
+      attachmentInput.addEventListener('change', () => {
+        attachmentLabel.textContent = attachmentInput.files?.[0]?.name || 'Select files';
+      });
+    }
+
     async function submitSpend(keepOpen) {
       const wallet = document.getElementById('source-wallet-input');
       const amount = document.getElementById('fund-amount-input');
@@ -230,7 +238,7 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
           category.selectedIndex = 0;
           wallet.selectedIndex = 0;
           if (attachmentInputEl) attachmentInputEl.value = '';
-          const attachmentPlaceholder = document.querySelector('.file-upload-wrapper .placeholder-text');
+          const attachmentPlaceholder = attachmentLabel;
           if (attachmentPlaceholder) attachmentPlaceholder.textContent = 'Select files';
           reloadForModal('addExpenseModal');
           return;

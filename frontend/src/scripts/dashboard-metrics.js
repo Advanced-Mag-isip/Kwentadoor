@@ -175,15 +175,18 @@ window.__loadRecentTransactions = function (filter) {
       var cat = t.BIR_label || t.category || "";
       var isAdd = t.transaction_type === "add funds";
       var isSpend = t.transaction_type === "spend funds";
-      var color = isAdd ? "#2ecc71" : (isSpend ? "#e74c3c" : "#f39c12");
-      var sign = isAdd ? "+" : (isSpend ? "-" : "~");
+      var isTransferIn = t.transaction_type === "transfer in";
+      var isTransferOut = t.transaction_type === "transfer out";
+      var color = isAdd? "#2ecc71" : isSpend ? "#e74c3c" : "#f39c12";
+      var sign = (isAdd || isTransferIn) ? "+" : (isSpend || isTransferOut) ? "-" : "~";
+
       return '<div class="transactionrow">'
-        + '<p style="color:' + color + ';font-weight:600">' + sign + '\u20B1' + amt + '</p>'
+        + '<p>' + date + '</p>'
         + '<p>' + wname + '</p>'
         + '<p>' + cat + '</p>'
         + '<p>' + note + '</p>'
         + '<p>' + uname + '</p>'
-        + '<p>' + date + '</p>'
+        + '<p style="color:' + color + ';font-weight:600">' + sign + '\u20B1' + amt + '</p>'
         + '</div>';
     }).join("");
   }).catch(function (err) {

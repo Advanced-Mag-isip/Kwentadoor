@@ -96,7 +96,7 @@ const amountLabel =
       </div>
       <div class="receipt-row">
         <span class="receipt-label">Attachments</span>
-        <span class="receipt-value">--</span>
+        <span class="receipt-value" data-receipt-field="attachments">--</span>
       </div>
     </div>
 
@@ -274,3 +274,26 @@ const amountLabel =
     }
   }
 </style>
+
+<script>
+  function closeReceipt(dialog) {
+    if (dialog?.open) dialog.close();
+  }
+
+  function wireReceiptModals() {
+    document.querySelectorAll(".receipt-modal").forEach((dialog) => {
+      if (dialog.dataset.receiptWired === "true") return;
+      dialog.dataset.receiptWired = "true";
+
+      dialog
+        .querySelector("[data-close-receipt]")
+        ?.addEventListener("click", () => closeReceipt(dialog));
+
+      dialog.addEventListener("click", (e) => {
+        if (e.target === dialog) closeReceipt(dialog);
+      });
+    });
+  }
+
+  document.addEventListener("astro:page-load", wireReceiptModals);
+</script>
