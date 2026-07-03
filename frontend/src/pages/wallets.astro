@@ -17,6 +17,7 @@ import IconWallet from '../assets/wallet-icon.svg?raw';
 import IconPeso from '../assets/philippine-peso.svg?raw';
 import IconAttachment from '../assets/paperclip.svg?raw';
 import AddExpenseModal from "../components/AddFundsModal.astro";
+import TransactionReceipt from "../components/TransactionReceipt.astro";
 
 const WALLET_TYPE_MAP = {
   "Petty Cash": "cash",
@@ -254,7 +255,7 @@ try {
                                 const isTransferIn = t.transaction_type === "transfer in";
                                 const isTransferOut = t.transaction_type === "transfer out";
                                 const amt = Number(t.amount).toLocaleString("en-PH", {minimumFractionDigits:2});
-                                const color = isAdd ? "#2ecc71" : isSpend ? "#e74c3c" : "#f39c12";
+                                const color = isAdd? "#2ecc71" : isSpend ? "#e74c3c" : "#f39c12";
                                 const sign = (isAdd || isTransferIn) ? "+" : (isSpend || isTransferOut) ? "-" : "~";
                                 return 
                                 <div class="transactionrow">
@@ -587,6 +588,17 @@ try {
 
 <AddExpenseModal />
 
+<TransactionReceipt
+    id="wallets"
+    amount=""
+    wallet_name=""
+    category_label=""
+    transaction_type=""
+    note=""
+    user_name=""
+    transaction_date=""
+/>
+
 <script>
   document.addEventListener('astro:page-load', () => {
     const openBtn = document.getElementById('spend-funds-button');
@@ -914,6 +926,12 @@ try {
         padding: var(--space-md) var(--space-lg);
         border-bottom: 1px solid var(--light-grey);
         transition: background-color .15s ease, transform .15s ease;
+        cursor: pointer;
+        transition: background-color .15s ease;
+    }
+
+    .transactionrow:hover {
+        background:#eef2f7;
     }
 
     .transactionrow p {
@@ -2091,11 +2109,24 @@ try {
             var isAdd = t.transaction_type === "add funds";
             var isSpend = t.transaction_type === "spend funds";
             
-            var color = isAdd ? "#2ecc71" : isSpend ? "#e74c3c" : "#f39c12";
-            var sign = isAdd ? "+" : isSpend ? "-" : "~";
+            var isTransferIn = t.transaction_type === "transfer in";
+            var isTransferOut = t.transaction_type === "transfer out";
+            var color = isAdd? "#2ecc71" : isSpend ? "#e74c3c" : "#f39c12";
+            var sign = (isAdd || isTransferIn) ? "+" : (isSpend || isTransferOut) ? "-" : "~";
             
             return `
-                <div class="transactionrow">
+                <div
+                    class="transactionrow"
+                    data-id="${t.id || ''}"
+                    data-date="${dateStr}"
+                    data-wallet="${wname}"
+                    data-category="${cat}"
+                    data-note="${note}"
+                    data-user="${uname}"
+                    data-type="${t.transaction_type}"
+                    data-amount="${amt}"
+                    data-sign="${sign}"
+                >
                     <p>${dateStr}</p>
                     <p>${wname}</p>
                     <p>${cat}</p>
@@ -2195,6 +2226,64 @@ function _refreshWalletBalances() {
     })
     .catch(console.error);
 }
+
+const receipt = document.getElementById("transaction-receipt-wallets");
+
+window.__showTransactionReceipt = function(data){
+
+    receipt.querySelector('[data-receipt-field="date"]').textContent =
+        data.date || "--";
+
+    receipt.querySelector('[data-receipt-field="transaction"]').textContent =
+        data.type || "--";
+
+    receipt.querySelector('[data-receipt-field="id"]').textContent =
+    data.id || "--";
+
+    receipt.querySelector('[data-receipt-field="amount"]').textContent =
+        data.sign + "₱" + data.amount;
+
+    receipt.querySelector('[data-receipt-field="wallet"]').textContent =
+        data.wallet || "--";
+
+    receipt.querySelector('[data-receipt-field="category"]').textContent =
+        data.category || "--";
+
+    receipt.querySelector('[data-receipt-field="note"]').textContent =
+        data.note || "--";
+
+    receipt.querySelector('[data-receipt-field="user"]').textContent =
+        data.user || "--";
+
+    receipt.showModal();
+};
+
+document.addEventListener("click",(e)=>{
+
+    const row=e.target.closest(".transactionrow");
+
+    if(!row) return;
+
+    if(!row.dataset.amount) return;
+
+    window.__showTransactionReceipt({
+
+        id: row.dataset.id,
+        date: row.dataset.date,
+        wallet: row.dataset.wallet,
+        category: row.dataset.category,
+        note: row.dataset.note,
+        user: row.dataset.user,
+        type: row.dataset.type,
+        amount: row.dataset.amount,
+        sign: row.dataset.sign
+
+    });
+
+});
+
+receipt?.querySelector("[data-close-receipt]")
+?.addEventListener("click",()=>receipt.close());
 
 if (document.readyState === 'complete') {
     initWalletPage();

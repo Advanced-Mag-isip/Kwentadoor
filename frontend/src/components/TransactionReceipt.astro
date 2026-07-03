@@ -64,35 +64,35 @@ const amountLabel =
     <div class="receipt-rows">
       <div class="receipt-row">
         <span class="receipt-label">Date</span>
-        <span class="receipt-value">{fallback(transaction_date)}</span>
+        <span class="receipt-value" data-receipt-field="date">{fallback(transaction_date)}</span>
       </div>
       <div class="receipt-row">
         <span class="receipt-label">Transaction</span>
-        <span class="receipt-value">{typeLabel}</span>
+        <span class="receipt-value" data-receipt-field="transaction">{typeLabel}</span>
+      </div>
+      <div class="receipt-row">
+        <span class="receipt-label">Transaction ID</span>
+        <span class="receipt-value" data-receipt-field="id">{fallback(id)}</span>
       </div>
       <div class="receipt-row">
         <span class="receipt-label">Amount</span>
-        <span class="receipt-value">{amountLabel}</span>
+        <span class="receipt-value" data-receipt-field="amount">{amountLabel}</span>
       </div>
       <div class="receipt-row">
         <span class="receipt-label">Category</span>
-        <span class="receipt-value">{fallback(category_label)}</span>
+        <span class="receipt-value" data-receipt-field="category">{fallback(category_label)}</span>
       </div>
       <div class="receipt-row">
         <span class="receipt-label">Wallet</span>
-        <span class="receipt-value">{fallback(wallet_name)}</span>
-      </div>
-      <div class="receipt-row">
-        <span class="receipt-label">Counter Party</span>
-        <span class="receipt-value">--</span>
+        <span class="receipt-value" data-receipt-field="wallet">{fallback(wallet_name)}</span>
       </div>
       <div class="receipt-row">
         <span class="receipt-label">Note</span>
-        <span class="receipt-value">{fallback(note)}</span>
+        <span class="receipt-value" data-receipt-field="note">{fallback(note)}</span>
       </div>
       <div class="receipt-row">
         <span class="receipt-label">User</span>
-        <span class="receipt-value">{fallback(user_name)}</span>
+        <span class="receipt-value" data-receipt-field="user">{fallback(user_name)}</span>
       </div>
       <div class="receipt-row">
         <span class="receipt-label">Attachments</span>
@@ -103,7 +103,6 @@ const amountLabel =
     <div class="receipt-divider" role="presentation"></div>
 
     <div class="receipt-actions">
-      <button type="button" class="receipt-btn receipt-btn--void" data-void-receipt>Report Void</button>
       <button type="button" class="receipt-btn receipt-btn--download" data-download-receipt>Download Receipt</button>
     </div>
   </div>
@@ -243,7 +242,6 @@ const amountLabel =
   /* ---------- Actions ---------- */
   .receipt-actions {
     display: flex;
-    gap: 12px;
     padding-top: 2px;
   }
   .receipt-btn {
@@ -268,6 +266,30 @@ const amountLabel =
     background: var(--receipt-orange);
   }
 
+  .receipt-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding-top: 4px;
+  }
+
+  .receipt-brand {
+    margin: 0;
+    font-family: "Montserrat", sans-serif;
+    font-size: 1.45rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .receipt-brand-white {
+    color: var(--primary-navyblue);
+  }
+
+  .receipt-brand-orange {
+    color: var(--primary-orange);
+  }
+
   @media (max-width: 480px) {
     .receipt-card {
       padding: 26px 20px 22px;
@@ -280,6 +302,21 @@ const amountLabel =
     if (dialog?.open) dialog.close();
   }
 
+  async function downloadReceipt(dialog) {
+    const card = dialog.querySelector(".receipt-card");
+
+    const canvas = await html2canvas(card, {
+      backgroundColor: "#ffffff",
+      scale: 3,
+      useCORS: true
+    });
+
+    const link = document.createElement("a");
+    link.download = `transaction-receipt-${dialog.id.replace("transaction-receipt-", "")}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }
+
   function wireReceiptModals() {
     document.querySelectorAll(".receipt-modal").forEach((dialog) => {
       if (dialog.dataset.receiptWired === "true") return;
@@ -288,6 +325,10 @@ const amountLabel =
       dialog
         .querySelector("[data-close-receipt]")
         ?.addEventListener("click", () => closeReceipt(dialog));
+
+      dialog
+        .querySelector("[data-download-receipt]")
+        ?.addEventListener("click", () => downloadReceipt(dialog));
 
       dialog.addEventListener("click", (e) => {
         if (e.target === dialog) closeReceipt(dialog);

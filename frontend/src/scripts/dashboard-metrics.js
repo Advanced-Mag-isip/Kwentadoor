@@ -150,6 +150,14 @@ function _sortByRecency(list) {
   });
 }
 
+function _escAttr(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 window.__loadRecentTransactions = function (filter) {
   var url = "/transactions/?limit=100";
   var container = document.querySelector(".transaction-history-slots");
@@ -180,7 +188,17 @@ window.__loadRecentTransactions = function (filter) {
       var color = isAdd? "#2ecc71" : isSpend ? "#e74c3c" : "#f39c12";
       var sign = (isAdd || isTransferIn) ? "+" : (isSpend || isTransferOut) ? "-" : "~";
 
-      return '<div class="transactionrow">'
+      return '<div class="transactionrow"'
+        + ' data-id="' + _escAttr(t.id) + '"'
+        + ' data-date="' + _escAttr(date) + '"'
+        + ' data-type="' + _escAttr(t.transaction_type) + '"'
+        + ' data-amount="' + _escAttr(amt) + '"'
+        + ' data-sign="' + _escAttr(sign) + '"'
+        + ' data-category="' + _escAttr(cat) + '"'
+        + ' data-wallet="' + _escAttr(wname) + '"'
+        + ' data-note="' + _escAttr(note) + '"'
+        + ' data-user="' + _escAttr(uname) + '"'
+        + '>'
         + '<p>' + date + '</p>'
         + '<p>' + wname + '</p>'
         + '<p>' + cat + '</p>'

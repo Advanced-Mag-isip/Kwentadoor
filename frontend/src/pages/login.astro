@@ -145,43 +145,40 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
 <style>
 
   #main-container{
-        padding: var(--space-lg) var(--space-lg);
-        flex: 1;
-        overflow-y: auto;
-        background-image: repeating-linear-gradient(
-			-45deg,
-			transparent,
-			transparent 10px,
-			#e2e8f0 10px,
-			#e2e8f0 11px
-		);
-
+    padding: var(--space-lg) var(--space-lg);
+    flex: 1;
+    overflow-y: auto;
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 10px,
+      #e2e8f0 10px,
+      #e2e8f0 11px
+    );
     z-index: -1;
-    }
-  #main-container {
     display: flex;
     flex-direction: row;
-    height: 100vh;
-    width: 100vw;
+    align-items: stretch;
+    min-height: 100vh;
+    width: 100%;
     font-family: var(--general-text-font, 'Roboto', sans-serif);
   }
 
   #login-text-container {
-    width: 60%;
-    height: 100%;
+    flex: 3;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
+    padding: clamp(1.5rem, 4vw, 4rem);
   }
 
   .brand-wrapper {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    max-width: 100%;
-    margin-bottom: 10rem;
+    max-width: 650px;
+    width: 100%;
+    margin-bottom: clamp(2rem, 8vw, 10rem);
   }
 
   #company-logo-and-name {
@@ -193,14 +190,14 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
   }
 
   #company-logo-and-name :global(svg) {
-    width: 106px;
+    width: clamp(70px, 10vw, 106px);
     height: auto;
   }
 
   h1 {
     font-family: var(--display-headings-font);
     font-weight: 800;
-    font-size: 64px;  
+    font-size: clamp(2.3rem, 6vw, 4rem);
     margin: 0;
   }
 
@@ -208,15 +205,15 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
   .text-orange { color: var(--primary-orange); }
 
   .title-text {
-    font-size: var(--title-text);
     font-weight: 800;
     margin: 0 0 10px 0;
     font-family: var(--display-headings-font);
     color: var(--primary-navyblue);
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
   }
 
   .paragraph-text {
-    font-size: var(--paragraph-text);
+    font-size: clamp(0.95rem, 1.5vw, 1.1rem);
     margin: 0;
     font-family: var(--general-text-font);
     color: var(--primary-navyblue); 
@@ -224,26 +221,22 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
   }
 
   #login-form-main-container {
-    width: 40%; 
-    height: 100%;
+    flex: 2;
     display: flex;
-    flex-direction: column;
     justify-content: center;
-    align-items: flex-start;
-    opacity: 100%;
+    align-items: center;
+    padding: clamp(1rem, 3vw, 2rem);
   }
 
   .form-wrapper {
-    width: 385px;
-    height: 531px;
-    max-width: 400px; 
+    width: min(100%, 400px);
+    min-height: 531px;
     padding: 20px;
     border-radius: 25px;
     box-shadow: var(--default-shadow);
     display: flex;
     flex-direction: column;
-      opacity: 100%;
-    background-color: var(--white);
+    background: var(--white);
   }
 
   #login-header {
@@ -369,6 +362,76 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
     opacity: 0.7;
     cursor: not-allowed;
   }
+
+  @media (max-width: 900px) {
+    #main-container {
+      flex-direction: column;
+      overflow-y: auto;
+      padding-bottom: 30vh;
+    }
+
+    #login-text-container,
+    #login-form-main-container {
+      width: 100%;
+      flex: none;
+      padding: 2rem 1.5rem;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-wrapper {
+      margin-bottom: 2rem;
+      align-items: center;
+      text-align: center;
+    }
+
+    #company-logo-and-name {
+      justify-content: center;
+    }
+
+    .form-wrapper {
+      width: 100%;
+      max-width: 400px;
+    }
+  }
+
+  @media (max-width: 600px) {
+
+    #main-container {
+      padding: 1rem;
+      padding-bottom: 50vh;
+    }
+
+    #company-logo-and-name {
+      gap: 10px;
+    }
+
+    #company-logo-and-name :global(svg) {
+      width: 64px;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 8vw, 2.8rem);
+    }
+
+    .title-text {
+      font-size: 1.15rem;
+    }
+
+    .paragraph-text {
+      font-size: 0.95rem;
+    }
+
+    .form-wrapper {
+      padding: 18px;
+      border-radius: 20px;
+    }
+
+    #login-header {
+      margin: -18px -18px 0 -18px;
+    }
+  }
+
 </style>
 </body>
 </html>
