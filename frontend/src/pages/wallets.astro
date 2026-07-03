@@ -57,15 +57,18 @@ function parseWalletAmount(value) {
     return Number.isFinite(parsed) ? parsed : 0;
 }
 
+const API_INTERNAL = import.meta.env.INTERNAL_API_URL ?? "http://127.0.0.1:8000/api";
+
 let wallets = [];
 try {
-  const res = await fetch("http://127.0.0.1:8000/api/expenses/wallets/", {
+    const res = await fetch(`${API_INTERNAL}/expenses/wallets/`, {
     headers: { Accept: "application/json" },
         cache: "no-store",
   });
   if (res.ok) {
     const data = await res.json();
     const list = data.results || data;
+    console.log("WALLET FETCH SUCCESS:", JSON.stringify(data));
     wallets = list.map((w) => ({
       id: w.id,
       name: w.name,
@@ -75,8 +78,12 @@ try {
       created_at: w.created_at,
       updated_at: w.updated_at,
     }));
-  }
-} catch (_) {}
+  } else {
+        console.error("WALLET FETCH BAD STATUS:", res.status, await res.text());
+    }
+} catch (error) {
+    console.error("WALLET FETCH ERROR:", error);
+}
 
 const selectedWallet = wallets.length > 0 ?
   wallets[0] : { id: null, name: "No wallets", description: "", amount: 0, type: "cash" };
@@ -86,7 +93,7 @@ const icon = selectedWallet.type ?
 
 let transactions = [];
 try {
-  const txRes = await fetch("http://127.0.0.1:8000/api/expenses/transactions/?limit=100", {
+  const txRes = await fetch(`${API_INTERNAL}/expenses/transactions/?limit=20`, {
     headers: { Accept: "application/json" },
         cache: "no-store",
   });
@@ -117,7 +124,9 @@ try {
       transaction_date: t.transaction_date,
     }));
   }
-} catch (_) {}
+} catch (error) {
+    console.error("TRANSACTIONS FETCH ERROR:", error);
+}
 
 ---
 
@@ -1511,7 +1520,9 @@ try {
     }
 </style>
 
-<script define:vars={{ IconCash, IconBank, IconEWallet }}>
+<script define:vars={{ IconCash, IconBank, IconEWallet, publicApiUrl: import.meta.env.PUBLIC_API_URL || 'http://localhost:8000/api' }}>
+    window.__PUBLIC_API_URL = publicApiUrl;
+
     function closeModal(modal) {
         modal.classList.remove('open');
         modal.setAttribute('aria-hidden', 'true');
@@ -1523,7 +1534,7 @@ try {
     });
 
     // Shared API helpers
-    const API_BASE = "http://127.0.0.1:8000/api/expenses";
+    const API_BASE = publicApiUrl + '/expenses';
 
     function _authHeaders() {
         const token = localStorage.getItem("auth_token");
@@ -1999,11 +2010,16 @@ try {
 </script>
 
 <script is:inline>
+
+    function getApiBase() {
+        return window.__PUBLIC_API_URL || 'http://localhost:8000/api';
+    }
+
     window.__loadRecentTransactions = function (filter) {
         filter = filter || window.__currentTransactionFilter || "all";
         window.__currentTransactionFilter = filter;
 
-        var baseUrl = "http://127.0.0.1:8000/api/expenses/transactions/?limit=100";
+        var baseUrl = getApiBase() + '/expenses/transactions/?limit=20';
         
         var typeValue = null;
         if (filter !== "all") {
@@ -2150,7 +2166,7 @@ function _refreshWalletBalances() {
         return Number.isFinite(parsed) ? parsed : 0;
     }
 
-    fetch("http://127.0.0.1:8000/api/expenses/wallets/", {
+    fetch(getApiBase() + "/expenses/wallets/", {
         headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
@@ -2221,7 +2237,7 @@ window.__spendFunds = async function (data) {
 
     try {
         const authToken = localStorage.getItem("auth_token");
-        const response = await fetch("http://127.0.0.1:8000/api/expenses/transactions/", {
+        const response = await fetch(getApiBase() + "/expenses/transactions/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+
+  db:
+    image: postgres:16-alpine
+    container_name: kwentadoor_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - kwentadoor_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kwentadoor_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DEBUG: ${DEBUG}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: db
+      DB_PORT: 5432
+      DTR_API_BASE_URL: ${DTR_API_BASE_URL}
+      DTR_API_KEY: ${DTR_API_KEY}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        PUBLIC_API_URL: ${PUBLIC_API_URL}
+        INTERNAL_API_URL: http://backend:8000/api
+    container_name: kwentadoor_frontend
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      HOST: 0.0.0.0
+      PORT: "4321"
+      INTERNAL_API_URL: http://backend:8000/api
+      PUBLIC_API_URL: ${PUBLIC_API_URL}
+    ports:
+      - "4321:4321"
+
+volumes:
+  kwentadoor_pg_data:

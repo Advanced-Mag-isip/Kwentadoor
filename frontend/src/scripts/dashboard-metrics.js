@@ -1,4 +1,5 @@
-var API_BASE = "http://127.0.0.1:8000/api/expenses";
+var API_ROOT = import.meta.env.PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+var API_BASE = API_ROOT + "/expenses";
 
 function _authHeaders() {
   var token = localStorage.getItem("auth_token");
@@ -9,7 +10,7 @@ function _loadDashMetrics() {
   const now = new Date();
   const y = now.getFullYear();
   const m = now.getMonth() + 1;
-  fetch("http://127.0.0.1:8000/api/analytics/charts/monthly-metrics/?year=" + y + "&month=" + m, { headers: Object.assign({ Accept: "application/json" }, _authHeaders()) })
+  fetch(API_ROOT + "/analytics/charts/monthly-metrics/?year=" + y + "&month=" + m, { headers: Object.assign({ Accept: "application/json" }, _authHeaders()) })
     .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
     .then(function (d) {
       var fmt = function (n) { return "\u20B1" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2 }); };

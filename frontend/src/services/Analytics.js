@@ -1,5 +1,7 @@
-const BASE_URL = "http://127.0.0.1:8000/api/analytics";
-
+const BASE_URL = import.meta.env.PUBLIC_API_URL
+  ? `${import.meta.env.PUBLIC_API_URL}/analytics`
+  : "http://127.0.0.1:8000/api/analytics";
+  
 async function safeFetch(url) {
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   const text = await res.text();

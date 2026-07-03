@@ -46,7 +46,7 @@ const {
 
     await _ensureChartJs();
 
-    const BASE = "http://127.0.0.1:8000/api/analytics";
+    const BASE = `${import.meta.env.PUBLIC_API_URL}/analytics`;
     const el = document.getElementById(_chartId);
     const defaults = { period: el.dataset.period, year: parseInt(el.dataset.year), month: el.dataset.month ? parseInt(el.dataset.month) : null };
     const f = window.__chartFilters || defaults;

@@ -18,6 +18,8 @@ import IconPeso from '../assets/philippine-peso.svg?raw';
 import IconAttachment from '../assets/paperclip.svg?raw';
 import AddExpenseModal from "../components/AddFundsModal.astro"; 
 
+const apiBase = import.meta.env.INTERNAL_API_URL ?? "http://127.0.0.1:8000/api";
+
 const WALLET_TYPE_MAP = {
     "Petty Cash": "cash",
     "Emergency Cash": "cash",
@@ -45,12 +47,13 @@ function formatTransactionDate(value) {
 
 let wallets = [];
 try {
-    const res = await fetch("http://127.0.0.1:8000/api/expenses/wallets/", {
+    const res = await fetch(`${apiBase}/expenses/wallets/`, {
         headers: { Accept: "application/json" },
     });
     if (res.ok) {
         const data = await res.json();
         const list = data.results || data;
+        console.log("WALLET FETCH SUCCESS:", JSON.stringify(data));
         wallets = list.map((w) => ({
             id: w.id,
             name: w.name,
@@ -60,12 +63,16 @@ try {
             created_at: w.created_at,
             updated_at: w.updated_at,
         }));
+    } else {
+        console.error("WALLET FETCH BAD STATUS:", res.status, await res.text());
     }
-} catch (_) {}
+} catch (error) {
+    console.error("WALLET FETCH ERROR:", error);
+}
 
 let transactions = [];
 try {
-    const res = await fetch("http://127.0.0.1:8000/api/expenses/transactions/?limit=20", {
+    const res = await fetch(`${apiBase}/expenses/transactions/?limit=20`, {
         headers: { Accept: "application/json" },
     });
     if (res.ok) {
@@ -505,11 +512,12 @@ const partitionColors = [
     import "../scripts/dashboard-metrics.js";
 </script>
 
-<script define:vars={{ wallets }}>
+<script define:vars={{ wallets, publicApiUrl: import.meta.env.PUBLIC_API_URL || 'http://localhost:8000/api' }}>
     window.wallets = wallets;
+    window.__PUBLIC_API_URL = publicApiUrl;
 </script>
 
-<script is:inline>
+<script>
     function openModal(modal) {
         if (!modal) return;
         modal.classList.add('open');
@@ -534,11 +542,11 @@ const partitionColors = [
         const sel = document.getElementById('fund-category');
         if (!sel) return;
         try {
-            const r = await fetch('http://127.0.0.1:8000/api/expenses/categories/?type=income', {
+            const res = await fetch(`${window.__PUBLIC_API_URL}/expenses/categories/`, {
                 headers: { Accept: 'application/json' },
             });
-            if (!r.ok) throw new Error('Failed to fetch categories');
-            const data = await r.json();
+            if (!res.ok) throw new Error('Failed to fetch categories');
+            const data = await res.json();
             const list = data.results || data;
             sel.innerHTML = '<option value="" disabled selected>Select Category</option>';
             list.forEach((c) => {
@@ -586,7 +594,7 @@ const partitionColors = [
 
         try {
             const authToken = localStorage.getItem("auth_token");
-            const response = await fetch("http://127.0.0.1:8000/api/expenses/transactions/", {
+            const response = await fetch(`${window.__PUBLIC_API_URL}/expenses/transactions/`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -617,7 +625,7 @@ const partitionColors = [
                 attachmentForm.append('transaction', createdTransaction.id);
                 attachmentForm.append('photo', attachmentFile);
 
-                const attachmentRes = await fetch("http://127.0.0.1:8000/api/expenses/attachments/", {
+                    const attachmentRes = await fetch(`${window.__PUBLIC_API_URL}/expenses/attachments/`, {
                     method: "POST",
                     headers: {
                         Accept: "application/json",

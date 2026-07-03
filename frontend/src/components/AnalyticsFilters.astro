@@ -69,7 +69,7 @@
 
 <script>
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const BASE = "http://127.0.0.1:8000/api/analytics";
+    const BASE = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:8000/api/analytics';
 
     let _periodData = null;
 
