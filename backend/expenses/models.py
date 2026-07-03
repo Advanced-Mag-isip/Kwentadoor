@@ -24,11 +24,17 @@ class Wallet(models.Model):
 
     @property
     def balance(self):
-        additions = self.transactions.filter(transaction_type__in=['add funds', 'transfer-in']).aggregate(models.Sum('amount'))['amount__sum'] or 0
-        deductions = self.transactions.filter(transaction_type__in=['spend funds', 'transfer out']).aggregate(models.Sum('amount'))['amount__sum'] or 0
-        transfers_in = WalletTransfer.objects.filter(to_wallet=self).aggregate(models.Sum('amount'))['amount__sum'] or 0
-        transfers_out = WalletTransfer.objects.filter(from_wallet=self).aggregate(models.Sum('amount'))['amount__sum'] or 0
-        return additions - deductions + transfers_in - transfers_out
+       
+        additions = self.transactions.filter(
+            transaction_type__in=['add funds', 'transfer in']
+        ).aggregate(models.Sum('amount'))['amount__sum'] or 0
+        
+        deductions = self.transactions.filter(
+            transaction_type__in=['spend funds', 'transfer out']
+        ).aggregate(models.Sum('amount'))['amount__sum'] or 0
+        
+
+        return additions - deductions
 
 class WalletTransfer(models.Model):
     from_wallet = models.ForeignKey(Wallet, on_delete=models.PROTECT, related_name="transfers_out")
