@@ -23,6 +23,8 @@ class WalletTransferSerializer(serializers.ModelSerializer):
     transaction_date = serializers.DateField(write_only=True, required=False, allow_null=True)
     note = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
+    DUPLICATE_WINDOW_SECONDS = 5
+
     class Meta:
         model = WalletTransfer
         fields = '__all__'
@@ -31,6 +33,26 @@ class WalletTransferSerializer(serializers.ModelSerializer):
         validated_data.pop('note', None)
         validated_data.pop('transaction_date', None)
         return super().create(validated_data)
+
+    def validate(self, attrs):
+        from_wallet = attrs.get("from_wallet")
+        to_wallet = attrs.get("to_wallet")
+        amount = attrs.get("amount")
+
+        if from_wallet and to_wallet and amount is not None:
+            recent_cutoff = timezone.now() - timedelta(seconds=self.DUPLICATE_WINDOW_SECONDS)
+            duplicate_exists = WalletTransfer.objects.filter(
+                from_wallet=from_wallet,
+                to_wallet=to_wallet,
+                amount=amount,
+                created_at__gte=recent_cutoff,
+            ).exists()
+            if duplicate_exists:
+                raise serializers.ValidationError({
+                    "non_field_errors": "Duplicate transfer detected. Please wait a moment before retrying."
+                })
+
+        return attrs
 
 
 class SpendSerializer(serializers.ModelSerializer):
