@@ -11,7 +11,7 @@ class WalletAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ["transaction_type", "user", "wallet", "category", "amount", "transaction_date"]
+    list_display = ["transaction_type", "user", "wallet", "category", "amount", "transaction_date", 'wallet_balance_before', 'wallet_balance_after']
     list_filter = ["transaction_type", "category", "transaction_date", "wallet"]
     search_fields = ["note", "counterparty"]
 

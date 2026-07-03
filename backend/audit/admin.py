@@ -3,10 +3,10 @@ from .models import AuditLog
 
 @admin.register(AuditLog)
 class AuditLogAdmin(admin.ModelAdmin):
-    list_display = ('user', 'action', 'model_name', 'description', 'timestamp', 'ip_address')
+    list_display = ('user', 'action', 'model_name', 'description', 'timestamp', 'ip_address', 'wallet_balance_before', 'wallet_balance_after')
     list_filter = ('action', 'model_name', 'timestamp')
     search_fields = ('user__username', 'user__email', 'description', 'model_name', 'object_id')
-    readonly_fields = ('user', 'action', 'model_name', 'object_id', 'changes', 'timestamp', 'ip_address', 'description')
+    readonly_fields = ('user', 'action', 'model_name', 'object_id', 'changes', 'timestamp', 'ip_address', 'description', 'wallet_balance_before', 'wallet_balance_after')
     
     # Prevent creation, modification, and deletion in the admin panel
     def has_add_permission(self, request):

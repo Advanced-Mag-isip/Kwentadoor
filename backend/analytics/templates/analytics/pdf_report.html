@@ -2,7 +2,7 @@
 <html>
 <head>
     <style>
-        @page { size: A4; margin: 2cm; }
+        @page { size: A4; margin: 0.5cm; }
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; font-size: 12px; }
         h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 24px; }
         h3 { color: #2c3e50; margin-top: 25px; }
@@ -20,20 +20,23 @@
         .text-right { text-align: right; }
         
     </style>
-
+    
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800&display=swap" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;550;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h1>Financial Report ({{ period_label }})</h1>
+    <h1>Financial Report ({{ period_label|title }})</h1>
     
     <div class="summary-box">
         <h3>Overview</h3>
-        <p><strong>Total Incoming Funds:</strong> Php{{ summary.total_incoming_funds|floatformat:2 }}</p>
-        <p><strong>Total Outgoing Expenses:</strong> Php{{ summary.total_outgoing_funds|floatformat:2 }}</p>
+        <p><strong>Total Incoming Funds:</strong><span class = "money">{{ summary.total_incoming_funds|floatformat:2 }}</span></p>
+        <p><strong>Total Outgoing Expenses:</strong></strong><span class = "money">{{ summary.total_outgoing_funds|floatformat:2 }}</span></p>
+        <p><strong>Average Incoming Expenses:</strong></strong><span class = "money">{{ summary.average_incoming_funds|floatformat:2 }}</span></p>
+        <p><strong>Average Outgoing Expenses:</strong></strong><span class = "money">{{ summary.average_outgoing_funds|floatformat:2 }}</span></p>
         
+    
         <p>
             Total expenses this period are 
             <span class="{% if summary.expense_growth > 0 %}growth-positive{% else %}growth-negative{% endif %}">
@@ -55,7 +58,7 @@
             {% for cat in categories %}
             <tr>
                 <td>{{ cat.category|default:"Uncategorized" }}</td>
-                <td class="text-right">Php{{ cat.total|floatformat:2 }}</td>
+                <td class="text-right money" >{{ cat.total|floatformat:2 }}</td>
             </tr>
             {% empty %}
             <tr>
@@ -75,7 +78,9 @@
                 <th>Type</th>
                 <th>Wallet</th>
                 <th>Category</th>
-                <th>Note / Counterparty</th>
+                <th>Counterparty</th>
+                <th>pre- balance</th>
+                <th>post- balance</th>
                 <th class="text-right">Amount</th>
             </tr>
         </thead>
@@ -87,10 +92,11 @@
                 <td>{{ tx.wallet|default:"-" }}</td>
                 <td>{{ tx.category|default:"-" }}</td>
                 <td>
-                    {% if tx.counterparty %}<strong>{{ tx.counterparty }}</strong><br>{% endif %}
-                    {{ tx.note|default:"-" }}
+                    {{ tx.counterparty|default:"-"}}
                 </td>
-                <td class="text-right">Php{{ tx.amount|floatformat:2 }}</td>
+                <td class="text-right money">{{ tx.wallet_balance_before|floatformat:2 }}</td>
+                <td class="text-right money">{{ tx.wallet_balance_after|floatformat:2 }}</td>
+                <td class="text-right money">{{ tx.amount|floatformat:2 }}</td>
             </tr>
             {% empty %}
             <tr>
@@ -100,7 +106,6 @@
         </tbody>
     </table>
 </body>
-</html>
 
 <style>
     /* 1. Register the custom font */
@@ -110,7 +115,7 @@
         src: url('/static/fonts/Roboto-Regular.ttf'); 
     }
 
-    @page { size: A4; margin: 2cm; }
+    @page { size: A4; margin: 0.5cm; }
     
     /* 2. Apply it to your body */
     body { 
@@ -119,5 +124,7 @@
         font-size: 12px; 
     }
     
-    /* ... keep the rest of your CSS the exact same ... */
 </style>
+
+</html>
+

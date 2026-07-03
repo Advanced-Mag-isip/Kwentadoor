@@ -96,6 +96,8 @@ window.__moveFunds = function (data) {
       from_wallet: parseInt(data.from_wallet),
       to_wallet: parseInt(data.to_wallet),
       amount: parseFloat(data.amount),
+      note: data.note || "",
+      transaction_date: data.transaction_date || null,
     }),
   }).then(function (result) {
     return _uploadAttachment(result.transaction, data.attachment)
@@ -108,6 +110,7 @@ window.__moveFunds = function (data) {
       });
   });
 };
+
 
 window.__loadWalletBalance = function () {
   apiFetch("/wallets/").then(function (data) {

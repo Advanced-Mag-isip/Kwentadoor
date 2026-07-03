@@ -36,8 +36,6 @@ class TransactionSummaryView(APIView):
         return Response(data)
 
 
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
 from django.utils import timezone
 from .summary import _get_qs, get_monthly_summary, get_quarterly_summary, get_yearly_summary
 from analytics.services.export import export_transactions_to_xlsx, export_summary_to_pdf
@@ -73,6 +71,6 @@ class DataExportView(APIView):
             period_label = f"Month_{month}_{year}"
 
         if export_format == "xlsx":
-            return export_transactions_to_xlsx(filtered_qs)
+            return export_transactions_to_xlsx(filtered_qs, period_label)
         elif export_format == "pdf":
             return export_summary_to_pdf(summary_data, filtered_qs, period_label)
