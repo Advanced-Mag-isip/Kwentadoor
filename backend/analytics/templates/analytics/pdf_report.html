@@ -20,7 +20,7 @@
         .text-right { text-align: right; }
         
     </style>
-    
+
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800&display=swap" rel="stylesheet">
@@ -79,9 +79,10 @@
                 <th>Wallet</th>
                 <th>Category</th>
                 <th>Counterparty</th>
+                <th class="text-right">Amount</th>
                 <th>pre- balance</th>
                 <th>post- balance</th>
-                <th class="text-right">Amount</th>
+                
             </tr>
         </thead>
         <tbody>
@@ -94,9 +95,13 @@
                 <td>
                     {{ tx.counterparty|default:"-"}}
                 </td>
+
+                <td class="text-right money">{{ tx.amount|floatformat:2 }}</td>
+
+
                 <td class="text-right money">{{ tx.wallet_balance_before|floatformat:2 }}</td>
                 <td class="text-right money">{{ tx.wallet_balance_after|floatformat:2 }}</td>
-                <td class="text-right money">{{ tx.amount|floatformat:2 }}</td>
+                
             </tr>
             {% empty %}
             <tr>
