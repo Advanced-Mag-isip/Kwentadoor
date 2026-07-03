@@ -120,8 +120,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
             wallet_balance_before=balance_before
         )
 
-        transaction = serializer.save(user=user)
-
         transaction.wallet_balance_after = wallet.balance
         transaction.save(update_fields=['wallet_balance_after'])
 
@@ -232,7 +230,7 @@ class WalletTransferViewSet(viewsets.ModelViewSet):
             from_wallet = serializer.validated_data['from_wallet']
             to_wallet = serializer.validated_data['to_wallet']
 
-            
+
             from_balance_before = from_wallet.balance
             to_balance_before = to_wallet.balance
 
