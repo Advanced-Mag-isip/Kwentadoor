@@ -52,7 +52,8 @@ BIR_MAPPING = {cat["id"]: cat["bir_mapping"] for cat in ALL_CATEGORIES_DATA}
 CATEGORY_MAP = {cat["id"]: cat for cat in ALL_CATEGORIES_DATA}
 
 TRANSACTION_TYPE_CHOICES = [
-    ("add funds", "Add Funds"),
-    ("spend funds", "Spend Funds"),
-    ("move funds", "Move Funds"),
+    ('add funds', 'Add Funds'),
+    ('spend funds', 'Spend Funds'),
+    ('transfer out', 'Transfer Out'), # New
+    ('transfer in', 'Transfer In'),   # New
 ]

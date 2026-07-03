@@ -4,7 +4,7 @@ from django.template.loader import render_to_string
 from django.db.models import Sum
 from xhtml2pdf import pisa
 
-def export_transactions_to_xlsx(queryset):
+def export_transactions_to_xlsx(queryset, period_label):
     # Create an in-memory workbook
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -21,8 +21,8 @@ def export_transactions_to_xlsx(queryset):
         "Amount", 
         "Counterparty", 
         "Note", 
-        "Wallet Transfer ID", 
-        "Spend ID", 
+        "Balance Before",
+        "Balance After", 
         "Created At", 
         "Updated At"
     ]
@@ -51,8 +51,8 @@ def export_transactions_to_xlsx(queryset):
             tx.note or "",
             
             # For optional foreign keys, grabbing the ID directly is the safest/fastest method
-            tx.wallet_transfer_id or "", 
-            tx.spend_id or "",
+            tx.wallet_balance_before or "", 
+            tx.wallet_balance_after or "",
             
             # Formatting timestamps so Excel can read them easily
             tx.created_at.strftime("%Y-%m-%d %H:%M:%S") if tx.created_at else "",
@@ -61,7 +61,7 @@ def export_transactions_to_xlsx(queryset):
 
     # 3. Build and return the response
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="transactions_export.xlsx"'
+    response['Content-Disposition'] = f'attachment; filename="transactions_export_{period_label}.xlsx"'
     wb.save(response)
     return response
 

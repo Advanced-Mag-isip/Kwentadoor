@@ -20,6 +20,9 @@ class AuditLog(models.Model):
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     description = models.TextField(blank=True, help_text="Human readable description of the action")
 
+    wallet_balance_before = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    wallet_balance_after = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+
     class Meta:
         ordering = ['-timestamp']
         verbose_name = 'Audit Log'

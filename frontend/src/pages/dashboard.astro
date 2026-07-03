@@ -291,18 +291,25 @@ const partitionColors = [
                             </div>
                         ) : (
                             transactions.map((t) => {
+                                
                                 const isAdd = t.transaction_type === "add funds";
                                 const isSpend = t.transaction_type === "spend funds";
+                                const isTransferIn = t.transaction_type === "transfer in"; 
+                                const isTransferOut = t.transaction_type === "transfer out"; 
+                                
                                 const color = isAdd ? "#2ecc71" : (isSpend ? "#e74c3c" : "#f39c12");
-                                const sign = isAdd ? "+" : (isSpend ? "-" : "~");
+                                const sign = (isAdd || isTransferIn) ? "+" : ((isSpend || isTransferOut) ? "-" : "~");
                                 const amt = Number(t.amount).toLocaleString("en-PH", {minimumFractionDigits:2});
+
+                                
                                 return <div class="transactionrow">
-                                    <p style={`color:${color};font-weight:600`}>{sign}₱{amt}</p>
+                                    <p>{formatTransactionDate(t.transaction_date)}</p>
                                     <p>{t.wallet_name}</p>
                                     <p>{t.category_label || t.category}</p>
                                     <p>{t.note}</p>
                                     <p>{t.user_name}</p>
-                                    <p>{formatTransactionDate(t.transaction_date)}</p>
+                                     <p style={`color:${color};font-weight:600`}>{sign}₱{amt}</p>
+                                    
                                 </div>;
                             })
                         )}

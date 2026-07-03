@@ -111,11 +111,23 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
-        transaction = serializer.save(user=user)
+      
+        wallet = serializer.validated_data['wallet']
+
+        balance_before = wallet.balance
+        transaction = serializer.save(
+            user=user,
+            wallet_balance_before=balance_before
+        )
+
+        transaction.wallet_balance_after = wallet.balance
+        transaction.save(update_fields=['wallet_balance_after'])
+
+
         Log.objects.create(
             user=user,
             action="Create Expense",
-            new_data=serializer.data
+            new_data=serializer.data,
         )
         AuditLog.objects.create(
             user=user,
@@ -123,7 +135,9 @@ class TransactionViewSet(viewsets.ModelViewSet):
             model_name='Transaction',
             object_id=str(transaction.id),
             changes={'new_data': serializer.data},
-            description=f"Created a new {transaction.transaction_type} transaction."
+            description=f"Created a new {transaction.transaction_type} transaction.",
+            wallet_balance_before = balance_before,
+            wallet_balance_after = transaction.wallet_balance_after,
         )
 
     def perform_update(self, serializer):
@@ -131,6 +145,16 @@ class TransactionViewSet(viewsets.ModelViewSet):
         old_data = self.get_serializer(instance).data
         user = self.request.user
         transaction = serializer.save()
+
+        wallet = serializer.validated_data.get('wallet', instance.wallet)
+        balance_before = wallet.balance
+
+        transaction = serializer.save(wallet_balance_before=balance_before)
+        
+        transaction.wallet_balance_after = wallet.balance
+        transaction.save(update_fields=['wallet_balance_after'])
+
+
         Log.objects.create(
             user=user,
             action="Update Expense",
@@ -143,7 +167,9 @@ class TransactionViewSet(viewsets.ModelViewSet):
             model_name='Transaction',
             object_id=str(transaction.id),
             changes={'old_data': old_data, 'new_data': serializer.data},
-            description=f"Updated a {transaction.transaction_type} transaction."
+            description=f"Updated a {transaction.transaction_type} transaction.",
+            wallet_balance_before = balance_before,
+            wallet_balance_after = transaction.wallet_balance_after,
         )
 
     def perform_destroy(self, instance):
@@ -201,6 +227,14 @@ class WalletTransferViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         from datetime import datetime as dt
         with transaction.atomic():
+            from_wallet = serializer.validated_data['from_wallet']
+            to_wallet = serializer.validated_data['to_wallet']
+
+
+            from_balance_before = from_wallet.balance
+            to_balance_before = to_wallet.balance
+
+
             wt = serializer.save()
             user = self.request.user
             tx_date_str = self.request.data.get('transaction_date', '')
@@ -209,8 +243,8 @@ class WalletTransferViewSet(viewsets.ModelViewSet):
             except (ValueError, TypeError):
                 tx_date = wt.created_at.date()
 
-            txn = Transaction.objects.create(
-                transaction_type="move funds",
+            txn_out = Transaction.objects.create(
+                transaction_type="transfer out", # Distinguishes from a normal expense
                 user=user,
                 wallet=wt.from_wallet,
                 category="transfers",
@@ -219,8 +253,28 @@ class WalletTransferViewSet(viewsets.ModelViewSet):
                 counterparty=wt.to_wallet.name,
                 wallet_transfer=wt,
                 note=self.request.data.get('note', ''),
+                wallet_balance_before=from_balance_before,
             )
-            wt.transaction = txn
+            txn_out.wallet_balance_after = from_wallet.balance
+            txn_out.save(update_fields=['wallet_balance_after'])
+
+            txn_in = Transaction.objects.create(
+                transaction_type="transfer in", # Distinguishes from normal income
+                user=user,
+                wallet=wt.to_wallet,
+                category="transfers",
+                transaction_date=tx_date,
+                amount=wt.amount,
+                counterparty=wt.from_wallet.name,
+                wallet_transfer=wt,
+                note=self.request.data.get('note', ''),
+                wallet_balance_before=to_balance_before,
+            )
+            
+            txn_in.wallet_balance_after = to_wallet.balance
+            txn_in.save(update_fields=['wallet_balance_after'])
+
+            wt.transaction = txn_out
             wt.save(update_fields=["transaction"])
 
 class SpendViewSet(viewsets.ModelViewSet):
@@ -231,6 +285,10 @@ class SpendViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         from datetime import datetime as dt
         with transaction.atomic():
+            wallet = serializer.validated_data['wallet']
+            balance_before = wallet.balance
+
+
             sp = serializer.save()
             user = self.request.user
             tx_date_str = self.request.data.get('transaction_date', '')
@@ -248,7 +306,12 @@ class SpendViewSet(viewsets.ModelViewSet):
                 note=self.request.data.get('note', ''),
                 counterparty=self.request.data.get('counterparty', ''),
                 spend=sp,
+                wallet_balance_before=balance_before,
             )
+
+            txn.wallet_balance_after = wallet.balance
+            txn.save(update_fields=['wallet_balance_after'])
+
             sp.transaction = txn
             sp.save(update_fields=["transaction"])
 
