@@ -73,6 +73,7 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     counterparty = models.CharField(max_length=255, blank=True)
     note = models.TextField(blank=True)
+    
     wallet_transfer = models.ForeignKey(WalletTransfer, on_delete=models.SET_NULL, null=True, blank=True, related_name="transaction_ref")
     spend = models.ForeignKey(Spend, on_delete=models.SET_NULL, null=True, blank=True, related_name="transaction_ref")
 

@@ -13,19 +13,22 @@ def export_transactions_to_xlsx(queryset, period_label):
 
     # 1. Define all columns based strictly on your Transaction model
     headers = [
-        "ID", 
-        "Transaction Type", 
-        "User", 
-        "Wallet", 
-        "BIR Category", 
+        "Date Recorded", 
         "Date", 
-        "Amount", 
+        "User",
+        "Transaction Type", 
+        "Wallet", 
+        "Category", 
         "Counterparty", 
-        "Note", 
+        "Amount", 
+        
+      
         "Balance Before",
-        "Balance After", 
-        "Created At", 
-        "Updated At"
+        "Balance After",
+
+        "Note",  
+      
+    
     ]
     ws.append(headers)
 
@@ -38,26 +41,26 @@ def export_transactions_to_xlsx(queryset, period_label):
     for tx in queryset:
         
         ws.append([
-            tx.id,
+            tx.created_at.strftime("%Y-%m-%d %H:%M:%S") if tx.created_at else "",
+            tx.transaction_date.strftime("%Y-%m-%d") if tx.transaction_date else "",
+            
+            str(tx.user) if tx.user else "", 
             tx.transaction_type,
             
-            # Using str() safely handles ForeignKeys in case they are null
-            str(tx.user) if tx.user_id else "", 
-            str(tx.wallet) if tx.wallet_id else "",
+            
+            str(tx.wallet) if tx.wallet else "",
             
             tx.bir_category or "",
-            tx.transaction_date.strftime("%Y-%m-%d") if tx.transaction_date else "",
-            float(tx.amount) if tx.amount is not None else 0.0,
             tx.counterparty or "",
-            tx.note or "",
-            
-            # For optional foreign keys, grabbing the ID directly is the safest/fastest method
+          
+            float(tx.amount) if tx.amount is not None else 0.0,
+           
+        
             tx.wallet_balance_before or "", 
             tx.wallet_balance_after or "",
-            
-            # Formatting timestamps so Excel can read them easily
-            tx.created_at.strftime("%Y-%m-%d %H:%M:%S") if tx.created_at else "",
-            tx.updated_at.strftime("%Y-%m-%d %H:%M:%S") if tx.updated_at else "",
+
+            tx.note or "",
+        
         ])
 
     # 3. Build and return the response
