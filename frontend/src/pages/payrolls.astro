@@ -1137,6 +1137,7 @@ const defaultPeriodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padS
     // mutable state — single source of truth for the selected period
     let periodStart = '';
     let periodEnd = '';
+    let currentFilter = sessionStorage.getItem('payrollFilter') || 'all';
 
     function getDefaultPeriod() {
         const now = new Date();
@@ -1228,29 +1229,39 @@ const defaultPeriodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padS
         }).join('');
     }
 
-    function attachFilters() {
+    function applyFilter(filter) {
+        currentFilter = filter;
+        sessionStorage.setItem('payrollFilter', filter);
+
         const chips = document.querySelectorAll('.filtergroup .filter-chip[data-filter]');
+        const rows = document.querySelectorAll('.transactionrow');
         const subLabel = document.getElementById('emp-count');
 
         chips.forEach(chip => {
-            chip.addEventListener('click', () => {
-                chips.forEach(c => c.classList.remove('active'));
-                chip.classList.add('active');
-
-                const filter = chip.dataset.filter;
-                const rows = document.querySelectorAll('.transactionrow');
-
-                rows.forEach(row => {
-                    const match = filter === 'all' || row.dataset.status === filter;
-                    row.classList.toggle('hidden', !match);
-                });
-
-                const visibleCount = [...rows].filter(r => !r.classList.contains('hidden')).length;
-                if (subLabel) {
-                    subLabel.textContent = `Showing ${visibleCount} ${filter === 'all' ? '' : filter + ' '}employees`;
-                }
-            });
+            chip.classList.toggle('active', chip.dataset.filter === filter);
         });
+
+        rows.forEach(row => {
+            const show = filter === 'all' || row.dataset.status === filter;
+            row.classList.toggle('hidden', !show);
+        });
+
+        const visibleCount = [...rows].filter(r => !r.classList.contains('hidden')).length;
+
+        if (subLabel) {
+            subLabel.textContent =
+                `Showing ${visibleCount} ${filter === 'all' ? '' : filter + ' '}employees`;
+        }
+    }
+
+    function attachFilters() {
+        document
+            .querySelectorAll('.filtergroup .filter-chip[data-filter]')
+            .forEach(chip => {
+                chip.addEventListener('click', () => {
+                    applyFilter(chip.dataset.filter);
+                });
+            });
     }
 
     // Pay button + modal wiring — re-attached after every table re-render
@@ -1462,16 +1473,7 @@ const defaultPeriodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padS
             tableBody.innerHTML = renderRows(employees);
 
             attachPayButtons();
-            const activeChip = document.querySelector('.filtergroup .filter-chip.active[data-filter]');
-            if (activeChip && activeChip.dataset.filter !== 'all') {
-                const filter = activeChip.dataset.filter;
-                const rows = document.querySelectorAll('.transactionrow');
-                rows.forEach(row => {
-                    row.classList.toggle('hidden', row.dataset.status !== filter);
-                });
-                const visibleCount = [...rows].filter(r => !r.classList.contains('hidden')).length;
-                empCount.textContent = `Showing ${visibleCount} ${filter} employees`;
-            }
+            applyFilter(currentFilter);
         } catch (err) {
             console.error(err);
             tableBody.innerHTML = `<div class="state-text error-text">${err.message}</div>`;
@@ -1554,6 +1556,7 @@ const defaultPeriodEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padS
 
         // Filter chips and DTR/generate buttons — only bound once.
         attachFilters();
+        applyFilter(currentFilter);
         // document.getElementById("sync-btn")?.addEventListener("click", syncDTR);
         // document.getElementById("generate-btn")?.addEventListener("click", generatePayroll);
 
