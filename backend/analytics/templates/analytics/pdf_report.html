@@ -71,27 +71,34 @@
         </tbody>
     </table>
 
-    <div class="page-break"></div>
+    <pdf:nexttemplate name="landscape-layout" />
+    <pdf:nextpage />
     
-    <h3>All Transactions</h3>
+    <div class = "landscape-section">
+            <h3>All Transactions</h3>
     <table>
         <thead>
             <tr>
+                <th>Date Recorded</th>
                 <th>Date</th>
+                <th>User</th>
                 <th>Type</th>
                 <th>Wallet</th>
-                <th>BIR Category</th>
+                <th>Category</th>
                 <th>Counterparty</th>
                 <th class="text-right">Amount</th>
                 <th>pre- balance</th>
                 <th>post- balance</th>
+                
                 
             </tr>
         </thead>
         <tbody>
             {% for tx in transactions %}
             <tr>
+                <td>{{ tx.created_at|date:"Y-m-d" }}</td>
                 <td>{{ tx.transaction_date|date:"Y-m-d" }}</td>
+                <td>{{ tx.user|default:"-" }}</td>
                 <td>{{ tx.transaction_type|title }}</td>
                 <td>{{ tx.wallet|default:"-" }}</td>
                 <td>{{ tx.bir_category|default:"-" }}</td>
@@ -105,6 +112,7 @@
                 <td class="text-right money">{{ tx.wallet_balance_before|floatformat:2 }}</td>
                 <td class="text-right money">{{ tx.wallet_balance_after|floatformat:2 }}</td>
                 
+                
             </tr>
             {% empty %}
             <tr>
@@ -113,24 +121,45 @@
             {% endfor %}
         </tbody>
     </table>
+
+    </div>
+
 </body>
 
 <style>
     /* 1. Register the custom font */
     @font-face {
         font-family: 'Roboto';
-        /* Point this URL to where the font lives in your static folder */
         src: url('/static/fonts/Roboto-Regular.ttf'); 
     }
 
-    @page { size: A4; margin: 0.5cm; }
+    /* 2. Default Page Setup (Portrait) */
+    @page{ 
+        size: A4 portrait; 
+        margin: 0.5cm; 
+    }
     
-    /* 2. Apply it to your body */
+    /* 3. Define a specific Named Page for Landscape */
+    @page landscape-layout { 
+        size: A4 landscape; 
+        margin: 0.5cm; 
+    }
+
+    /* 4. The class that triggers the landscape page */
+    .landscape-section { 
+        page: landscape-layout; 
+        /* This automatically forces a page break before and after the landscape section */
+    }
+
+    /* 5. General Styles */
     body { 
         font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif; 
         color: #333; 
         font-size: 12px; 
     }
+    h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 24px; }
+    h3 { color: #2c3e50; margin-top: 25px; }
+    .summary-box { background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; font-size: 14px; }
     
     table { 
         width: 100%; 
@@ -138,16 +167,21 @@
         margin-top: 15px; 
         table-layout: fixed; 
     }
-
-        th, td { 
-            padding: 8px; 
-            text-align: left; 
-            border-bottom: 1px solid #ddd; 
-            word-wrap: break-word; 
-            overflow-wrap: break-word; 
-            vertical-align: top; 
-        }
+    th, td { 
+        padding: 8px; 
+        text-align: left; 
+        border-bottom: 1px solid #ddd; 
+        word-wrap: break-word; 
+        overflow-wrap: break-word; 
+        vertical-align: top; 
+    }
+    th { background-color: #f2f2f2; font-weight: bold; }
+    
+    .growth-positive { color: #e74c3c; font-weight: bold; }
+    .growth-negative { color: #27ae60; font-weight: bold; }
+    .text-right { text-align: right; }
+    
+    /* You no longer need the .page-break class because the 'page' property handles it inherently */
 </style>
-
 </html>
 

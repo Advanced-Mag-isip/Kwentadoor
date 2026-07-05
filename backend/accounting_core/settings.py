@@ -31,9 +31,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'payroll',
+    'audit', 
     'expenses',
     'analytics',
-    'audit',
     'authentication',
 ]
 

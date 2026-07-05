@@ -17,6 +17,7 @@ from .models import User, Wallet, Transaction, Attachment, Log, WalletTransfer, 
 from .serializers import WalletSerializer, TransactionSerializer, AttachmentSerializer, LogSerializer, WalletTransferSerializer, SpendSerializer
 from .constants import EXPENSE_CATEGORIES_DATA, INCOME_CATEGORIES_DATA, TRANSFER_CATEGORIES_DATA
 
+from analytics.models import TransactionsAuditLog
 from audit.models import AuditLog
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -136,6 +137,20 @@ class TransactionViewSet(viewsets.ModelViewSet):
             object_id=str(transaction.id),
             changes={'new_data': serializer.data},
             description=f"Created a new {transaction.transaction_type} transaction.",
+           
+        )
+
+        TransactionsAuditLog.objects.create(
+            transaction_type = transaction.transaction_type,
+            user=user,
+            wallet = transaction.wallet, 
+            category = transaction.category, 
+            transaction_date= transaction.transaction_date, 
+            amount = transaction.amount, 
+            counterparty = transaction.counterparty, 
+            note = transaction.note,
+        
+
             wallet_balance_before = balance_before,
             wallet_balance_after = transaction.wallet_balance_after,
         )
@@ -168,9 +183,23 @@ class TransactionViewSet(viewsets.ModelViewSet):
             object_id=str(transaction.id),
             changes={'old_data': old_data, 'new_data': serializer.data},
             description=f"Updated a {transaction.transaction_type} transaction.",
+        )
+
+        TransactionsAuditLog.objects.create(
+            transaction_type = transaction.transaction_type,
+            user=user,
+            wallet = transaction.wallet, 
+            category = transaction.category, 
+            transaction_date= transaction.transaction_date, 
+            amount = transaction.amount, 
+            counterparty = transaction.counterparty, 
+            note = transaction.note,
+        
+
             wallet_balance_before = balance_before,
             wallet_balance_after = transaction.wallet_balance_after,
         )
+
 
     def perform_destroy(self, instance):
         old_data = self.get_serializer(instance).data
@@ -189,7 +218,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
             model_name='Transaction',
             object_id=str(transaction_id),
             changes={'old_data': old_data},
-            description=f"Deleted a {transaction_type} transaction."
+            description=f"Deleted a {transaction_type} transaction.", 
         )
 
     @action(detail=False, methods=['get'])
@@ -225,6 +254,9 @@ class WalletTransferViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
+        instance = serializer.save()
+        old_data = self.get_serializer(instance).data
+        wt = serializer.save() 
         from datetime import datetime as dt
         with transaction.atomic():
             from_wallet = serializer.validated_data['from_wallet']
@@ -235,7 +267,7 @@ class WalletTransferViewSet(viewsets.ModelViewSet):
             to_balance_before = to_wallet.balance
 
 
-            wt = serializer.save()
+           
             user = self.request.user
             tx_date_str = self.request.data.get('transaction_date', '')
             try:
@@ -254,9 +286,36 @@ class WalletTransferViewSet(viewsets.ModelViewSet):
                 wallet_transfer=wt,
                 note=self.request.data.get('note', ''),
                 wallet_balance_before=from_balance_before,
+                
             )
             txn_out.wallet_balance_after = from_wallet.balance
             txn_out.save(update_fields=['wallet_balance_after'])
+
+
+            AuditLog.objects.create(
+                user=user,
+                action='CREATE',
+                model_name='Transaction',
+                object_id=str(txn_out.id),
+                changes={'old_data': old_data},
+                description=f"Deleted a {txn_out.transaction_type} transaction.", 
+            )
+
+            TransactionsAuditLog.objects.create(
+                transaction_type = txn_out.transaction_type,
+                user=user,
+                wallet = txn_out.wallet, 
+                category = txn_out.category, 
+                transaction_date= txn_out.transaction_date, 
+                amount = txn_out.amount, 
+                counterparty = txn_out.counterparty, 
+                note = txn_out.note,
+            
+
+                wallet_balance_before = txn_out.wallet_balance_before,
+                wallet_balance_after = txn_out.wallet_balance_after,
+            )
+
 
             txn_in = Transaction.objects.create(
                 transaction_type="transfer in", # Distinguishes from normal income
@@ -273,6 +332,32 @@ class WalletTransferViewSet(viewsets.ModelViewSet):
             
             txn_in.wallet_balance_after = to_wallet.balance
             txn_in.save(update_fields=['wallet_balance_after'])
+
+            AuditLog.objects.create(
+                user=user,
+                action='CREATE',
+                model_name='Transaction',
+                object_id=str(txn_in.id),
+                changes={'old_data': old_data},
+                description=f"Deleted a {txn_in.transaction_type} transaction.", 
+
+            )
+
+            TransactionsAuditLog.objects.create(
+                transaction_type = txn_in.transaction_type,
+                user=user,
+                wallet = txn_in.wallet, 
+                category = txn_in.category, 
+                transaction_date= txn_in.transaction_date, 
+                amount = txn_in.amount, 
+                counterparty = txn_in.counterparty, 
+                note = txn_in.note,
+            
+
+                wallet_balance_before = txn_in.wallet_balance_before,
+                wallet_balance_after =txn_in.wallet_balance_after,
+            )
+
 
             wt.transaction = txn_out
             wt.save(update_fields=["transaction"])
@@ -311,6 +396,21 @@ class SpendViewSet(viewsets.ModelViewSet):
 
             txn.wallet_balance_after = wallet.balance
             txn.save(update_fields=['wallet_balance_after'])
+
+            TransactionsAuditLog.objects.create(
+                transaction_type = txn.transaction_type,
+                user=user,
+                wallet = txn.wallet, 
+                category = txn.category, 
+                transaction_date= txn.transaction_date, 
+                amount = txn.amount, 
+                counterparty = txn.counterparty, 
+                note = txn.note,
+            
+
+                wallet_balance_before = txn.wallet_balance_before,
+                wallet_balance_after =txn.wallet_balance_after,
+            )
 
             sp.transaction = txn
             sp.save(update_fields=["transaction"])
