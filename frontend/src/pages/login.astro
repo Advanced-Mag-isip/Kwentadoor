@@ -78,7 +78,7 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
         window.location.replace('/dashboard');
     }
 
-    const API_BASE_URL = 'http://127.0.0.1:8000';
+    const BASE = import.meta.env.PUBLIC_API_URL || 'https://accounting-api.advancedthinkers.app/api';
     const form = document.getElementById('login-form');
     const errorMessage = document.getElementById('error-message');
     const submitBtn = document.getElementById('submit-btn');
@@ -96,7 +96,7 @@ import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
       const password = formData.get('password');
 
       try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/login/`, {
+        const response = await fetch(`${BASE}/api/auth/login/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
