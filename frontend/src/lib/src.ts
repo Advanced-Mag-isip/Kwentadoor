@@ -1,19 +1,21 @@
-const BASE = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000/api';
+function getBase(): string {
+    return import.meta.env.PUBLIC_API_URL || 'https://accounting-api.advancedthinkers.app/api';
+}
 
 export async function get(path: string, token?: string) {
-    const res = await fetch(`${BASE}${path}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+    const res = await fetch(`${getBase()}${path}`, {
+        headers: token ? { Authorization: `Token ${token}` } : {}
     });
     if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
     return res.json();
 }
 
 export async function post(path: string, body: unknown, token?: string) {
-    const res = await fetch(`${BASE}${path}`, {
+    const res = await fetch(`${getBase()}${path}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
+            ...(token ? { Authorization: `Token ${token}` } : {})
         },
         body: JSON.stringify(body),
     });
@@ -22,9 +24,9 @@ export async function post(path: string, body: unknown, token?: string) {
 }
 
 export async function del(path: string, token?: string) {
-    const res = await fetch(`${BASE}${path}`, {
+    const res = await fetch(`${getBase()}${path}`, {
         method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        headers: token ? { Authorization: `Token ${token}` } : {}
     });
     if (!res.ok) throw new Error(`DELETE ${path} failed: ${res.status}`);
     return res.json();
