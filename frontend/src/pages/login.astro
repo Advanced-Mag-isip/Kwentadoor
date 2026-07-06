@@ -1,7 +1,7 @@
 ---
 import '../styles/global.css';
 import trabahadoorLogo from '../assets/trabahadoor-logo.svg?raw';
-import logo from '../assets/Trabahadoor-logo-white.svg';
+import logoUrl from '../assets/Trabahadoor-logo-white.svg?url';
 ---
 
 <!doctype html>
@@ -10,7 +10,7 @@ import logo from '../assets/Trabahadoor-logo-white.svg';
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login | Kwentadoor</title>
-  <link rel="icon" type="image/svg+xml" href={logo} />
+  <link rel="icon" type="image/svg+xml" href={logoUrl} />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,7 +37,7 @@ import logo from '../assets/Trabahadoor-logo-white.svg';
       <div class="form-wrapper">
         
         <div id="login-header">
-          <img src={logo} alt="Trabahadoor Logo" height="50" width="50"/>
+          <img src={logoUrl} alt="Trabahadoor Logo" height="50" width="50"/>
           <h2>Kwenta<span class="text-orange">Door</span></h2>
         </div>
 
