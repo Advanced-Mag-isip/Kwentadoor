@@ -85,7 +85,7 @@ const currentPath = Astro.url.pathname;
                 
                 if (token) {
                     try {
-                        await fetch(`${API_BASE_URL}/api/auth/logout/`, {
+                        await fetch(`${API_BASE_URL}/auth/logout/`, {
                             method: 'POST',
                             headers: {
                                 'Authorization': `Token ${token}`,
