@@ -100,6 +100,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     "http://accounting.advancedthinkers.app:4321",
     "http://accounting.advancedthinkers.app",
+    "https://accounting-api.advancedthinkers.app",
     "http://localhost:4321",
     "http://127.0.0.1:4321",
 ]
