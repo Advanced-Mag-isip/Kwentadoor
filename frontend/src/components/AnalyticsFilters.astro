@@ -67,9 +67,9 @@
     </div>
 </div>
 
-<script>
+<script define:vars={{ PUBLIC_API_URL: import.meta.env.PUBLIC_API_URL || 'http://localhost:8000/api'}}>
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const BASE = import.meta.env.PUBLIC_API_URL || 'http://127.0.0.1:8000/api/analytics';
+    const BASE = PUBLIC_API_URL + '/analytics';
 
     let _periodData = null;
 

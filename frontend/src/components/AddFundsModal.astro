@@ -100,12 +100,12 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
   </div>
 </dialog>
 
-<script>
+<script define:vars={{ apiBase: import.meta.env.PUBLIC_API_URL || 'http://localhost:8000/api' }}>
   async function _populateWalletSelect() {
     const sel = document.getElementById('source-wallet-input');
     if (!sel) return;
     try {
-      const r = await fetch('http://127.0.0.1:8000/api/expenses/wallets/', {
+      const r = await fetch(`${apiBase}/expenses/wallets/`, {
         headers: { Accept: 'application/json' },
       });
       if (!r.ok) throw new Error('Failed to fetch wallets');
@@ -128,7 +128,7 @@ import IconCounterParty from '../assets/users-icon.svg?raw'
     const sel = document.getElementById('spend-category-input');
     if (!sel) return;
     try {
-      const r = await fetch('http://127.0.0.1:8000/api/expenses/categories/', {
+      const r = await fetch(`${apiBase}/expenses/categories/`, {
         headers: { Accept: 'application/json' },
       });
       if (!r.ok) throw new Error('Failed to fetch categories');

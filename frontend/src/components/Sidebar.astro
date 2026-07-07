@@ -72,10 +72,12 @@ const currentPath = Astro.url.pathname;
     </div>
 </nav>
 
-<script>
+<script define:vars={{ apiBaseUrl: import.meta.env.PUBLIC_API_URL || 'http://localhost:8000/api'}}>
+    window.__API_BASE_URL__ = apiBaseUrl;
+
     document.addEventListener('astro:page-load', () => {
         const logoutBtn = document.getElementById('logout-btn');
-        const API_BASE_URL = 'http://127.0.0.1:8000';
+        const API_BASE_URL = window.__API_BASE_URL__ || 'http://localhost:8000/api';
 
         if (logoutBtn) {
             logoutBtn.addEventListener('click', async () => {
