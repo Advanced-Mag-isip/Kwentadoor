@@ -8,10 +8,10 @@ from .serializers import UserSerializer, RegisterSerializer, LoginSerializer
 User = get_user_model()
 
 def get_client_ip(request):
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR", None)
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()

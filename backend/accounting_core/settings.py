@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+import os
 from pathlib import Path
 from decouple import config
 
@@ -98,12 +98,13 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://accounting.advancedthinkers.app:4321",
-    "http://accounting.advancedthinkers.app",
-    "https://accounting-api.advancedthinkers.app",
-    "http://localhost:4321",
-    "http://127.0.0.1:4321",
+    o.strip()
+    for o in os.environ.get(
+        'CORS_ALLOWED_ORIGINS',
+        'http://localhost:4321,http://127.0.0.1:4321'
+    ).split(',')
 ]
+
 CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
